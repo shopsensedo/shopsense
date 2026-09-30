@@ -24,17 +24,17 @@ export const FlutterHandoffView: React.FC = () => {
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 animate-in fade-in duration-150">
       {/* Header */}
-      <div className="bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200 dark:border-[#1E293B] p-6 mb-6 shadow-xs">
+      <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-slate-200 dark:border-[#262626] p-6 mb-6 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#EEF2FF] dark:bg-[#1E1B4B] text-[#4F46E5] dark:text-[#A5B4FC] text-xs font-semibold mb-2">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F2F4D6] dark:bg-[#2B2F0C] text-[#0C0C0C] dark:text-[#CDD835] text-xs font-semibold mb-2">
               <Code className="w-3.5 h-3.5" />
               <span>Flutter ThemeData & Design System Handoff</span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-[#0F172A] dark:text-[#F8FAFC] font-heading">
+            <h1 className="text-xl sm:text-2xl font-bold text-[#0C0C0C] dark:text-[#F5F5F5] font-heading">
               Cross-Platform Parity Specification
             </h1>
-            <p className="text-xs sm:text-sm text-[#64748B] dark:text-[#94A3B8] mt-1 max-w-2xl">
+            <p className="text-xs sm:text-sm text-[#5F5F60] dark:text-[#9C9C9D] mt-1 max-w-2xl">
               Strict 1:1 parity between ShopSense Web and Flutter Mobile. Every color token, typography scale, 8pt spacing step, and corner radius maps directly to Flutter ThemeData.
             </p>
           </div>
@@ -42,7 +42,7 @@ export const FlutterHandoffView: React.FC = () => {
           <button
             type="button"
             onClick={copyFlutterCode}
-            className="h-11 px-5 rounded-xl bg-[#4F46E5] hover:bg-[#3730A3] dark:bg-[#6366F1] dark:hover:bg-[#4F46E5] text-white text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-xs shrink-0 cursor-pointer"
+            className="h-11 px-5 rounded-full bg-[#0C0C0C] hover:bg-[#262626] dark:bg-[#B9C006] dark:hover:bg-[#A3AE05] text-white dark:text-[#0C0C0C] text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-xs shrink-0 cursor-pointer"
           >
             {copiedCode ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             <span>{copiedCode ? 'Copied Dart Code!' : 'Copy Flutter ThemeData'}</span>
@@ -51,15 +51,15 @@ export const FlutterHandoffView: React.FC = () => {
       </div>
 
       {/* Web vs Mobile Interaction Equivalence Guide */}
-      <div className="bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200 dark:border-[#1E293B] p-6 mb-6 shadow-xs">
-        <h2 className="text-base font-bold text-[#0F172A] dark:text-[#F8FAFC] mb-3 font-heading flex items-center gap-2">
-          <Smartphone className="w-4 h-4 text-[#F97316]" />
+      <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-slate-200 dark:border-[#262626] p-6 mb-6 shadow-xs">
+        <h2 className="text-base font-bold text-[#0C0C0C] dark:text-[#F5F5F5] mb-3 font-heading flex items-center gap-2">
+          <Smartphone className="w-4 h-4 text-[#B9C006]" />
           <span>Web vs. Flutter Mobile Interaction Equivalence Table</span>
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-          <div className="p-4 rounded-xl bg-slate-50 dark:bg-[#1E293B] border border-slate-200 dark:border-[#283548]">
-            <div className="font-bold text-[#0F172A] dark:text-[#F8FAFC] mb-1 flex items-center gap-1.5">
-              <Laptop className="w-4 h-4 text-[#4F46E5] dark:text-[#818CF8]" />
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-[#262626] border border-slate-200 dark:border-[#333333]">
+            <div className="font-bold text-[#0C0C0C] dark:text-[#F5F5F5] mb-1 flex items-center gap-1.5">
+              <Laptop className="w-4 h-4 text-[#0C0C0C] dark:text-[#B9C006]" />
               <span>Web Drag-and-Drop & Paste</span>
             </div>
             <p className="text-slate-600 dark:text-slate-300 mb-2">HTML5 dragover/drop + window.onpaste (Ctrl+V) from screenshot clipboard.</p>
@@ -68,9 +68,9 @@ export const FlutterHandoffView: React.FC = () => {
             </div>
           </div>
 
-          <div className="p-4 rounded-xl bg-slate-50 dark:bg-[#1E293B] border border-slate-200 dark:border-[#283548]">
-            <div className="font-bold text-[#0F172A] dark:text-[#F8FAFC] mb-1 flex items-center gap-1.5">
-              <Laptop className="w-4 h-4 text-[#4F46E5] dark:text-[#818CF8]" />
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-[#262626] border border-slate-200 dark:border-[#333333]">
+            <div className="font-bold text-[#0C0C0C] dark:text-[#F5F5F5] mb-1 flex items-center gap-1.5">
+              <Laptop className="w-4 h-4 text-[#0C0C0C] dark:text-[#B9C006]" />
               <span>Desktop Hover Micro-Interactions</span>
             </div>
             <p className="text-slate-600 dark:text-slate-300 mb-2">CSS :hover states, card elevation lift (translateY -2px), button hover colors.</p>
@@ -79,9 +79,9 @@ export const FlutterHandoffView: React.FC = () => {
             </div>
           </div>
 
-          <div className="p-4 rounded-xl bg-slate-50 dark:bg-[#1E293B] border border-slate-200 dark:border-[#283548]">
-            <div className="font-bold text-[#0F172A] dark:text-[#F8FAFC] mb-1 flex items-center gap-1.5">
-              <Laptop className="w-4 h-4 text-[#4F46E5] dark:text-[#818CF8]" />
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-[#262626] border border-slate-200 dark:border-[#333333]">
+            <div className="font-bold text-[#0C0C0C] dark:text-[#F5F5F5] mb-1 flex items-center gap-1.5">
+              <Laptop className="w-4 h-4 text-[#0C0C0C] dark:text-[#B9C006]" />
               <span>Desktop Sticky Filter Sidebar</span>
             </div>
             <p className="text-slate-600 dark:text-slate-300 mb-2">260px wide left sidebar column with range sliders and platform chips.</p>
@@ -93,13 +93,13 @@ export const FlutterHandoffView: React.FC = () => {
       </div>
 
       {/* Design Tokens Table */}
-      <div className="bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200 dark:border-[#1E293B] overflow-hidden shadow-xs mb-6">
-        <div className="p-5 border-b border-slate-200 dark:border-[#1E293B] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-slate-200 dark:border-[#262626] overflow-hidden shadow-xs mb-6">
+        <div className="p-5 border-b border-slate-200 dark:border-[#262626] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-bold text-[#0F172A] dark:text-[#F8FAFC] font-heading">
+            <h2 className="text-base font-bold text-[#0C0C0C] dark:text-[#F5F5F5] font-heading">
               Complete Design Tokens Table
             </h2>
-            <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">All token definitions with web value and Flutter ThemeData equivalent</p>
+            <p className="text-xs text-[#5F5F60] dark:text-[#9C9C9D]">All token definitions with web value and Flutter ThemeData equivalent</p>
           </div>
 
           {/* Category Tabs */}
@@ -111,8 +111,8 @@ export const FlutterHandoffView: React.FC = () => {
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                   selectedCategory === cat
-                    ? 'bg-[#4F46E5] dark:bg-[#6366F1] text-white'
-                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#1E293B]'
+                    ? 'bg-[#0C0C0C] dark:bg-[#B9C006] text-white dark:text-[#0C0C0C]'
+                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#262626]'
                 }`}
               >
                 {cat}
@@ -123,7 +123,7 @@ export const FlutterHandoffView: React.FC = () => {
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 dark:bg-[#1E293B] border-b border-slate-200 dark:border-[#283548] text-slate-700 dark:text-slate-200 font-semibold uppercase tracking-wider">
+            <thead className="bg-slate-50 dark:bg-[#262626] border-b border-slate-200 dark:border-[#333333] text-slate-700 dark:text-slate-200 font-semibold uppercase tracking-wider">
               <tr>
                 <th className="py-3 px-4">Token Name</th>
                 <th className="py-3 px-4">Category</th>
@@ -132,10 +132,10 @@ export const FlutterHandoffView: React.FC = () => {
                 <th className="py-3 px-4">Description</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-[#1E293B]">
+            <tbody className="divide-y divide-slate-100 dark:divide-[#262626]">
               {filteredTokens.map((token, idx) => (
-                <tr key={idx} className="hover:bg-slate-50/75 dark:hover:bg-[#1E293B]/60 transition-colors">
-                  <td className="py-3 px-4 font-mono font-bold text-[#4F46E5] dark:text-[#818CF8] select-all">
+                <tr key={idx} className="hover:bg-slate-50/75 dark:hover:bg-[#262626]/60 transition-colors">
+                  <td className="py-3 px-4 font-mono font-bold text-[#0C0C0C] dark:text-[#B9C006] select-all">
                     {token.name}
                   </td>
                   <td className="py-3 px-4 text-slate-600 dark:text-slate-300 font-medium">
@@ -166,7 +166,7 @@ export const FlutterHandoffView: React.FC = () => {
       </div>
 
       {/* Raw Flutter ThemeData Code Snippet Block */}
-      <div className="bg-[#0F172A] text-slate-200 rounded-2xl p-5 overflow-hidden border border-slate-800 shadow-lg">
+      <div className="bg-[#0C0C0C] text-slate-200 rounded-2xl p-5 overflow-hidden border border-slate-800 shadow-lg">
         <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-red-500" />

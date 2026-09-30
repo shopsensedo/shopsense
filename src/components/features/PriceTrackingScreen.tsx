@@ -44,11 +44,11 @@ export const PriceTrackingScreen: React.FC<PriceTrackingScreenProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-[#0F172A] dark:text-[#F8FAFC] font-heading flex items-center gap-2">
-            <Bell className="w-6 h-6 text-[#F97316]" />
+          <h2 className="text-xl sm:text-2xl font-bold text-[#0C0C0C] dark:text-[#F5F5F5] font-heading flex items-center gap-2">
+            <Bell className="w-6 h-6 text-[#B9C006]" />
             <span>{isUrduMode ? 'Qeemat Alert Manager' : 'Price Tracking & Alerts'}</span>
           </h2>
-          <p className="text-xs sm:text-sm text-[#64748B] dark:text-[#94A3B8] mt-1">
+          <p className="text-xs sm:text-sm text-[#5F5F60] dark:text-[#9C9C9D] mt-1">
             ShopSense checks prices daily and sends alerts to WhatsApp & Email.
           </p>
         </div>
@@ -69,15 +69,15 @@ export const PriceTrackingScreen: React.FC<PriceTrackingScreenProps> = ({
             <div
               key={alert.id}
               onClick={() => onSelectProduct(product)}
-              className={`bg-white dark:bg-[#131B2E] rounded-2xl border p-4 sm:p-5 transition-all duration-150 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer ${
+              className={`bg-white dark:bg-[#1A1A1A] rounded-2xl border p-4 sm:p-5 transition-all duration-150 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer ${
                 alert.enabled
-                  ? 'border-slate-200 dark:border-[#1E293B] hover:border-slate-300 dark:hover:border-slate-700 shadow-xs'
-                  : 'border-slate-200/60 dark:border-[#1E293B]/60 bg-slate-50/50 dark:bg-[#0B0F19]/50 opacity-75'
+                  ? 'border-slate-200 dark:border-[#262626] hover:border-slate-300 dark:hover:border-slate-700 shadow-xs'
+                  : 'border-slate-200/60 dark:border-[#262626]/60 bg-slate-50/50 dark:bg-[#0C0C0C]/50 opacity-75'
               }`}
             >
               {/* Product details */}
               <div className="flex items-center gap-3.5 flex-1 min-w-0">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-slate-200 dark:border-slate-800 overflow-hidden shrink-0 flex items-center justify-center p-2">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-slate-50 dark:bg-[#0C0C0C] border border-slate-200 dark:border-slate-800 overflow-hidden shrink-0 flex items-center justify-center p-2">
                   <img
                     src={product.imageUrl}
                     alt={product.title}
@@ -88,7 +88,7 @@ export const PriceTrackingScreen: React.FC<PriceTrackingScreenProps> = ({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <SourceBadge platform={product.platform} size="sm" />
-                    <span className="text-[11px] text-[#64748B] dark:text-[#94A3B8]">
+                    <span className="text-[11px] text-[#5F5F60] dark:text-[#9C9C9D]">
                       Active since {alert.createdAt}
                     </span>
                     {alert.notificationsSent > 0 && (
@@ -98,7 +98,7 @@ export const PriceTrackingScreen: React.FC<PriceTrackingScreenProps> = ({
                     )}
                   </div>
 
-                  <h3 className="text-sm font-semibold text-[#0F172A] dark:text-[#F8FAFC] truncate">
+                  <h3 className="text-sm font-semibold text-[#0C0C0C] dark:text-[#F5F5F5] truncate">
                     {product.title}
                   </h3>
 
@@ -106,7 +106,7 @@ export const PriceTrackingScreen: React.FC<PriceTrackingScreenProps> = ({
                   <div className="flex items-center gap-4 mt-2 flex-wrap text-xs">
                     <div>
                       <span className="text-slate-500 dark:text-slate-400 block text-[10px]">Current Price</span>
-                      <strong className="text-sm font-bold text-[#0F172A] dark:text-[#F8FAFC] tabular-nums">
+                      <strong className="text-sm font-bold text-[#0C0C0C] dark:text-[#F5F5F5] tabular-nums">
                         {formatPKR(alert.currentPrice)}
                       </strong>
                     </div>
@@ -115,7 +115,7 @@ export const PriceTrackingScreen: React.FC<PriceTrackingScreenProps> = ({
 
                     <div>
                       <span className="text-slate-500 dark:text-slate-400 block text-[10px]">Target Alert</span>
-                      <strong className="text-sm font-bold text-[#F97316] tabular-nums">
+                      <strong className="text-sm font-bold text-[#B9C006] tabular-nums">
                         {formatPKR(alert.targetPrice)}
                       </strong>
                     </div>
@@ -139,7 +139,7 @@ export const PriceTrackingScreen: React.FC<PriceTrackingScreenProps> = ({
               </div>
 
               {/* Controls and Toggles */}
-              <div className="flex items-center gap-2 justify-end pt-2 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-[#1E293B] shrink-0">
+              <div className="flex items-center gap-2 justify-end pt-2 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-[#262626] shrink-0">
                 {/* Enable/Disable Alert Toggle */}
                 <button
                   type="button"
@@ -164,7 +164,7 @@ export const PriceTrackingScreen: React.FC<PriceTrackingScreenProps> = ({
                     e.stopPropagation();
                     onCompareProduct(product);
                   }}
-                  className="h-10 px-3 rounded-xl bg-[#EEF2FF] dark:bg-[#1E1B4B] hover:bg-[#E0E7FF] dark:hover:bg-[#312E81] text-[#4F46E5] dark:text-[#A5B4FC] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="h-10 px-3 rounded-xl bg-[#F2F4D6] dark:bg-[#2B2F0C] hover:bg-[#E7EAB8] dark:hover:bg-[#2B2F0C] text-[#0C0C0C] dark:text-[#CDD835] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <Layers className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Compare</span>
@@ -175,7 +175,7 @@ export const PriceTrackingScreen: React.FC<PriceTrackingScreenProps> = ({
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="h-10 px-3.5 rounded-xl bg-[#4F46E5] hover:bg-[#3730A3] text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                  className="h-10 px-3.5 rounded-xl bg-[#0C0C0C] hover:bg-[#262626] text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
                 >
                   <span>Store</span>
                   <ExternalLink className="w-3.5 h-3.5" />

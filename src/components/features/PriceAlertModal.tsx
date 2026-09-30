@@ -54,10 +54,10 @@ export const PriceAlertModal: React.FC<PriceAlertModalProps> = ({
     >
       <form onSubmit={handleSubmit} className="space-y-4 pt-2">
         {/* Current Price vs Target */}
-        <div className="p-3 bg-slate-50 dark:bg-[#1E293B] rounded-xl border border-slate-200 dark:border-[#283548] flex items-center justify-between">
+        <div className="p-3 bg-slate-50 dark:bg-[#262626] rounded-xl border border-slate-200 dark:border-[#333333] flex items-center justify-between">
           <div>
             <span className="text-xs text-slate-500 dark:text-slate-400">Current PKR Price</span>
-            <div className="text-base font-bold text-[#0F172A] dark:text-[#F8FAFC]">{formatPKR(currentPrice)}</div>
+            <div className="text-base font-bold text-[#0C0C0C] dark:text-[#F5F5F5]">{formatPKR(currentPrice)}</div>
           </div>
           <div className="flex items-center gap-1 text-xs font-semibold text-[#16A34A] dark:text-[#4ADE80] bg-emerald-50 dark:bg-[#052E16] px-2.5 py-1 rounded-md border border-emerald-200 dark:border-[#166534]">
             <TrendingDown className="w-3.5 h-3.5" />
@@ -77,7 +77,7 @@ export const PriceAlertModal: React.FC<PriceAlertModalProps> = ({
 
         {/* Alert Channel */}
         <div>
-          <label className="text-xs font-semibold text-[#0F172A] dark:text-[#F8FAFC] block mb-1.5">
+          <label className="text-xs font-semibold text-[#0C0C0C] dark:text-[#F5F5F5] block mb-1.5">
             How should we notify you?
           </label>
           <div className="grid grid-cols-3 gap-2">
@@ -92,8 +92,8 @@ export const PriceAlertModal: React.FC<PriceAlertModalProps> = ({
                 onClick={() => setChannel(ch.id as any)}
                 className={`py-2 px-3 rounded-lg text-xs font-semibold transition-colors cursor-pointer border ${
                   channel === ch.id
-                    ? 'border-[#4F46E5] dark:border-[#818CF8] bg-[#EEF2FF] dark:bg-[#1E1B4B] text-[#4F46E5] dark:text-[#A5B4FC]'
-                    : 'border-slate-200 dark:border-[#283548] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1E293B]'
+                    ? 'border-[#0C0C0C] dark:border-[#B9C006] bg-[#F2F4D6] dark:bg-[#2B2F0C] text-[#0C0C0C] dark:text-[#CDD835]'
+                    : 'border-slate-200 dark:border-[#333333] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#262626]'
                 }`}
               >
                 {ch.label}

@@ -228,7 +228,7 @@ function ShopSenseApp() {
   const savedIds = savedItems.map((s) => s.product.id);
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0B0F19] text-[#0F172A] dark:text-[#F8FAFC] flex flex-col antialiased transition-colors duration-200">
+    <div className="min-h-screen bg-[#F5F5F5] dark:bg-[#0C0C0C] text-[#0C0C0C] dark:text-[#F5F5F5] flex flex-col antialiased transition-colors duration-200">
       {/* Top Navbar */}
       <Navbar
         currentScreen={currentScreen}
@@ -245,7 +245,7 @@ function ShopSenseApp() {
 
       {/* Guest Banner if not logged in */}
       {(!user || user.isGuest) && currentScreen !== 'home' && (
-        <div className="bg-[#EEF2FF] dark:bg-[#1E1B4B] border-b border-indigo-100 dark:border-indigo-900/50 px-4 py-2 text-xs text-[#4F46E5] dark:text-[#A5B4FC] flex items-center justify-between">
+        <div className="bg-[#F2F4D6] dark:bg-[#2B2F0C] border-b border-indigo-100 dark:border-indigo-900/50 px-4 py-2 text-xs text-[#0C0C0C] dark:text-[#CDD835] flex items-center justify-between">
           <span>
             {isUrduMode
               ? 'Mehmaan Shopper: WhatsApp price alerts ke liye account banayein.'
@@ -254,7 +254,7 @@ function ShopSenseApp() {
           <button
             type="button"
             onClick={() => setIsAuthModalOpen(true)}
-            className="font-bold underline hover:text-[#3730A3] dark:hover:text-white ml-2 shrink-0 cursor-pointer"
+            className="font-bold underline hover:text-[#262626] dark:hover:text-white ml-2 shrink-0 cursor-pointer"
           >
             Sign In
           </button>

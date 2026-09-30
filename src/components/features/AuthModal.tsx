@@ -68,13 +68,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       isBottomSheetOnMobile={true}
     >
       <div className="text-center mb-6 pt-1">
-        <div className="w-12 h-12 rounded-2xl bg-[#EEF2FF] dark:bg-[#1E1B4B] text-[#4F46E5] dark:text-[#818CF8] flex items-center justify-center mx-auto mb-3">
+        <div className="w-12 h-12 rounded-2xl bg-[#F2F4D6] dark:bg-[#2B2F0C] text-[#0C0C0C] dark:text-[#B9C006] flex items-center justify-center mx-auto mb-3">
           <Camera className="w-6 h-6" />
         </div>
-        <h2 className="text-xl font-bold text-[#0F172A] dark:text-[#F8FAFC] font-heading">
+        <h2 className="text-xl font-bold text-[#0C0C0C] dark:text-[#F5F5F5] font-heading">
           {mode === 'signin' ? 'Sign In to ShopSense' : 'Create Free Account'}
         </h2>
-        <p className="text-xs text-[#64748B] dark:text-[#94A3B8] mt-1 max-w-xs mx-auto">
+        <p className="text-xs text-[#5F5F60] dark:text-[#9C9C9D] mt-1 max-w-xs mx-auto">
           {isUrduMode
             ? 'Daraz aur local dukaano se bachat aur WhatsApp price alerts ke liye dakhil hon.'
             : 'Sync saved items and get instant WhatsApp price drop alerts across Daraz & local stores.'}
@@ -120,7 +120,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       </form>
 
       {/* Switch mode */}
-      <div className="mt-4 text-center text-xs text-[#64748B] dark:text-[#94A3B8]">
+      <div className="mt-4 text-center text-xs text-[#5F5F60] dark:text-[#9C9C9D]">
         {mode === 'signin' ? (
           <span>
             Don't have an account?{' '}
@@ -130,7 +130,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 setMode('signup');
                 setError(null);
               }}
-              className="text-[#4F46E5] dark:text-[#818CF8] font-semibold hover:underline"
+              className="text-[#0C0C0C] dark:text-[#B9C006] font-semibold hover:underline"
             >
               Sign up
             </button>
@@ -144,7 +144,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 setMode('signin');
                 setError(null);
               }}
-              className="text-[#4F46E5] dark:text-[#818CF8] font-semibold hover:underline"
+              className="text-[#0C0C0C] dark:text-[#B9C006] font-semibold hover:underline"
             >
               Sign in
             </button>
@@ -155,10 +155,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       {/* Divider */}
       <div className="relative my-5">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-slate-200 dark:border-[#283548]" />
+          <div className="w-full border-t border-slate-200 dark:border-[#333333]" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-white dark:bg-[#131B2E] px-2 text-[#94A3B8] font-medium">Or</span>
+          <span className="bg-white dark:bg-[#1A1A1A] px-2 text-[#9C9C9D] font-medium">Or</span>
         </div>
       </div>
 
@@ -169,7 +169,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           onContinueGuest();
           onClose();
         }}
-        className="w-full h-11 rounded-xl border border-slate-200 dark:border-[#283548] hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-[#1E293B] text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+        className="w-full h-11 rounded-xl border border-slate-200 dark:border-[#333333] hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-[#262626] text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
       >
         <UserCheck className="w-4 h-4 text-slate-400" />
         <span>Continue as Guest</span>
