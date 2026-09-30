@@ -1,0 +1,432 @@
+import React, { useState, useEffect } from 'react';
+import { AppScreen, Product, User, SavedItem, PriceAlert, SearchHistoryItem } from './types';
+import {
+  SAMPLE_PRODUCTS,
+  INITIAL_SAVED_ITEMS,
+  INITIAL_PRICE_ALERTS,
+  INITIAL_SEARCH_HISTORY,
+  MOCK_USER,
+  SNEAKER_IMAGE,
+  KURTA_IMAGE,
+} from './lib/mockData';
+import { ToastProvider, useToast } from './components/ui/Toast';
+import { ThemeProvider, useTheme } from './lib/theme';
+import { Navbar } from './components/ui/Navbar';
+import { BottomNav } from './components/ui/BottomNav';
+import { HomeScreen } from './components/features/HomeScreen';
+import { CropPreviewModal } from './components/features/CropPreviewModal';
+import { SearchLoadingScreen } from './components/features/SearchLoadingScreen';
+import { ResultsScreen } from './components/features/ResultsScreen';
+import { ComparisonViewScreen } from './components/features/ComparisonViewScreen';
+import { ProductDetailModal } from './components/features/ProductDetailModal';
+import { PriceAlertModal } from './components/features/PriceAlertModal';
+import { SavedItemsScreen } from './components/features/SavedItemsScreen';
+import { PriceTrackingScreen } from './components/features/PriceTrackingScreen';
+import { SearchHistoryScreen } from './components/features/SearchHistoryScreen';
+import { AuthModal } from './components/features/AuthModal';
+import { ProfileScreen } from './components/features/ProfileScreen';
+import { FlutterHandoffView } from './components/features/FlutterHandoffView';
+
+function ShopSenseApp() {
+  const { showToast } = useToast();
+  const { isDarkMode, toggleTheme } = useTheme();
+
+  // Navigation State
+  const [currentScreen, setCurrentScreen] = useState<AppScreen>('home');
+  const [isUrduMode, setIsUrduMode] = useState<boolean>(false);
+
+  // User State
+  const [user, setUser] = useState<User | null>(MOCK_USER);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  // Search & Products State
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+  const [searchQueryText, setSearchQueryText] = useState<string>('');
+  const [currentProducts, setCurrentProducts] = useState<Product[]>(SAMPLE_PRODUCTS);
+  const [selectedProductForDetail, setSelectedProductForDetail] = useState<Product | null>(null);
+  const [selectedProductForComparison, setSelectedProductForComparison] = useState<Product | null>(null);
+  const [selectedProductForAlert, setSelectedProductForAlert] = useState<Product | null>(null);
+
+  // Saved Items, Alerts & History State
+  const [savedItems, setSavedItems] = useState<SavedItem[]>(INITIAL_SAVED_ITEMS);
+  const [priceAlerts, setPriceAlerts] = useState<PriceAlert[]>(INITIAL_PRICE_ALERTS);
+  const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>(INITIAL_SEARCH_HISTORY);
+
+  // Handle image selected for upload
+  const handleImageSelected = (imageDataUrl: string, sourceName?: string) => {
+    setUploadedImage(imageDataUrl);
+    setSearchQueryText(sourceName || (isUrduMode ? 'Screenshot se talash' : 'Visual Search Query'));
+    setIsCropModalOpen(true);
+  };
+
+  // Confirm crop and execute visual search
+  const handleConfirmCrop = (croppedDataUrl: string) => {
+    setIsCropModalOpen(false);
+
+    // Determine relevant products based on uploaded image / prompt
+    let matchedProducts = SAMPLE_PRODUCTS;
+    let detectedCat = 'Footwear';
+
+    if (croppedDataUrl.includes('kurta') || searchQueryText.toLowerCase().includes('kurta') || searchQueryText.toLowerCase().includes('suit')) {
+      matchedProducts = SAMPLE_PRODUCTS.filter((p) => p.category === 'Ethnic Wear');
+      detectedCat = 'Ethnic Wear';
+    } else if (croppedDataUrl.includes('smartwatch') || searchQueryText.toLowerCase().includes('watch')) {
+      matchedProducts = SAMPLE_PRODUCTS.filter((p) => p.category === 'Smartwatches');
+      detectedCat = 'Smartwatches';
+    } else if (croppedDataUrl.includes('bag') || searchQueryText.toLowerCase().includes('bag')) {
+      matchedProducts = SAMPLE_PRODUCTS.filter((p) => p.category === 'Bags & Accessories');
+      detectedCat = 'Bags & Accessories';
+    } else {
+      matchedProducts = SAMPLE_PRODUCTS.filter((p) => p.category === 'Footwear');
+    }
+
+    setCurrentProducts(matchedProducts);
+
+    // Add to search history
+    const historyItem: SearchHistoryItem = {
+      id: `hist-${Date.now()}`,
+      queryImage: croppedDataUrl,
+      queryText: searchQueryText || (isUrduMode ? 'Screenshot se talash' : 'Screenshot Visual Search'),
+      timestamp: 'Just now',
+      resultsCount: matchedProducts.length,
+      category: detectedCat,
+    };
+    setSearchHistory((prev) => [historyItem, ...prev]);
+
+    // Go to loading state
+    setCurrentScreen('search_loading');
+  };
+
+  // Handle text-based search (supports Roman Urdu e.g. "kala joota")
+  const handleTextSearch = (query: string) => {
+    setSearchQueryText(query);
+    const qLower = query.toLowerCase();
+
+    let matched = SAMPLE_PRODUCTS;
+    let cat = 'General';
+
+    if (qLower.includes('joota') || qLower.includes('shoe') || qLower.includes('sneaker') || qLower.includes('kala')) {
+      matched = SAMPLE_PRODUCTS.filter((p) => p.category === 'Footwear');
+      cat = 'Footwear';
+      setUploadedImage(SNEAKER_IMAGE);
+    } else if (qLower.includes('suit') || qLower.includes('kurta') || qLower.includes('lal') || qLower.includes('lawn')) {
+      matched = SAMPLE_PRODUCTS.filter((p) => p.category === 'Ethnic Wear');
+      cat = 'Ethnic Wear';
+      setUploadedImage(KURTA_IMAGE);
+    } else if (qLower.includes('watch') || qLower.includes('smartwatch') || qLower.includes('t800')) {
+      matched = SAMPLE_PRODUCTS.filter((p) => p.category === 'Smartwatches');
+      cat = 'Smartwatches';
+    } else if (qLower.includes('bag') || qLower.includes('leather')) {
+      matched = SAMPLE_PRODUCTS.filter((p) => p.category === 'Bags & Accessories');
+      cat = 'Bags & Accessories';
+    }
+
+    setCurrentProducts(matched);
+
+    const historyItem: SearchHistoryItem = {
+      id: `hist-${Date.now()}`,
+      queryImage: uploadedImage || undefined,
+      queryText: query,
+      timestamp: 'Just now',
+      resultsCount: matched.length,
+      category: cat,
+    };
+    setSearchHistory((prev) => [historyItem, ...prev]);
+
+    setCurrentScreen('search_loading');
+  };
+
+  // Re-run an item from search history
+  const handleRerunHistory = (item: SearchHistoryItem) => {
+    if (item.queryImage) {
+      setUploadedImage(item.queryImage);
+    }
+    setSearchQueryText(item.queryText || '');
+    if (item.category === 'Footwear') {
+      setCurrentProducts(SAMPLE_PRODUCTS.filter((p) => p.category === 'Footwear'));
+    } else if (item.category === 'Ethnic Wear') {
+      setCurrentProducts(SAMPLE_PRODUCTS.filter((p) => p.category === 'Ethnic Wear'));
+    } else if (item.category === 'Smartwatches') {
+      setCurrentProducts(SAMPLE_PRODUCTS.filter((p) => p.category === 'Smartwatches'));
+    } else {
+      setCurrentProducts(SAMPLE_PRODUCTS);
+    }
+    setCurrentScreen('search_loading');
+  };
+
+  // Toggle saving an item
+  const handleToggleSave = (product: Product) => {
+    const isAlreadySaved = savedItems.some((s) => s.product.id === product.id);
+
+    if (isAlreadySaved) {
+      setSavedItems((prev) => prev.filter((s) => s.product.id !== product.id));
+      showToast('Removed from saved items', 'info');
+    } else {
+      const newSavedItem: SavedItem = {
+        id: `save-${Date.now()}`,
+        product,
+        savedAt: 'Just now',
+        initialPrice: product.price,
+        currentPrice: product.price,
+        priceChange: 0,
+      };
+      setSavedItems((prev) => [newSavedItem, ...prev]);
+      showToast('Saved to your wishlist! We will track its price.', 'success');
+    }
+  };
+
+  // Handle adding a price alert
+  const handleSetAlert = (product: Product, targetPrice: number) => {
+    const newAlert: PriceAlert = {
+      id: `alert-${Date.now()}`,
+      product,
+      targetPrice,
+      currentPrice: product.price,
+      enabled: true,
+      createdAt: 'Today',
+      notificationsSent: 0,
+    };
+    setPriceAlerts((prev) => [newAlert, ...prev]);
+  };
+
+  // Toggle alert active/inactive
+  const handleToggleAlert = (id: string) => {
+    setPriceAlerts((prev) =>
+      prev.map((a) => (a.id === id ? { ...a, enabled: !a.enabled } : a))
+    );
+    showToast('Alert notification status updated', 'info');
+  };
+
+  // Delete an alert
+  const handleDeleteAlert = (id: string) => {
+    setPriceAlerts((prev) => prev.filter((a) => a.id !== id));
+    showToast('Price alert deleted', 'info');
+  };
+
+  // Remove saved item
+  const handleRemoveSaved = (id: string) => {
+    setSavedItems((prev) => prev.filter((s) => s.id !== id));
+    showToast('Removed from saved items', 'info');
+  };
+
+  // Delete history item
+  const handleDeleteHistory = (id: string) => {
+    setSearchHistory((prev) => prev.filter((h) => h.id !== id));
+  };
+
+  const handleClearAllHistory = () => {
+    setSearchHistory([]);
+    showToast('Search history cleared', 'info');
+  };
+
+  const handleCompareProduct = (product: Product) => {
+    setSelectedProductForComparison(product);
+    setCurrentScreen('comparison');
+  };
+
+  const savedIds = savedItems.map((s) => s.product.id);
+
+  return (
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0B0F19] text-[#0F172A] dark:text-[#F8FAFC] flex flex-col antialiased transition-colors duration-200">
+      {/* Top Navbar */}
+      <Navbar
+        currentScreen={currentScreen}
+        onNavigate={(screen) => setCurrentScreen(screen)}
+        savedCount={savedItems.length}
+        trackingCount={priceAlerts.filter((a) => a.enabled).length}
+        user={user}
+        onOpenAuth={() => setIsAuthModalOpen(true)}
+        isUrduMode={isUrduMode}
+        onToggleLanguage={() => setIsUrduMode(!isUrduMode)}
+        isDarkMode={isDarkMode}
+        onToggleTheme={toggleTheme}
+      />
+
+      {/* Guest Banner if not logged in */}
+      {(!user || user.isGuest) && currentScreen !== 'home' && (
+        <div className="bg-[#EEF2FF] dark:bg-[#1E1B4B] border-b border-indigo-100 dark:border-indigo-900/50 px-4 py-2 text-xs text-[#4F46E5] dark:text-[#A5B4FC] flex items-center justify-between">
+          <span>
+            {isUrduMode
+              ? 'Mehmaan Shopper: WhatsApp price alerts ke liye account banayein.'
+              : 'Browsing as Guest: Sign in to sync saved items & receive WhatsApp price drop alerts.'}
+          </span>
+          <button
+            type="button"
+            onClick={() => setIsAuthModalOpen(true)}
+            className="font-bold underline hover:text-[#3730A3] dark:hover:text-white ml-2 shrink-0 cursor-pointer"
+          >
+            Sign In
+          </button>
+        </div>
+      )}
+
+      {/* Dynamic Screen Content */}
+      <main className="flex-1 pb-20 md:pb-8">
+          {currentScreen === 'home' && (
+            <HomeScreen
+              onImageSelected={handleImageSelected}
+              onTextSearch={handleTextSearch}
+              recentSearches={searchHistory}
+              onRerunHistory={handleRerunHistory}
+              isUrduMode={isUrduMode}
+            />
+          )}
+
+          {currentScreen === 'search_loading' && (
+            <SearchLoadingScreen
+              onComplete={() => setCurrentScreen('results')}
+              isUrduMode={isUrduMode}
+            />
+          )}
+
+          {currentScreen === 'results' && (
+            <ResultsScreen
+              products={currentProducts}
+              queryImage={uploadedImage || undefined}
+              queryText={searchQueryText}
+              savedItemIds={savedIds}
+              onToggleSave={handleToggleSave}
+              onSelectProduct={(p) => setSelectedProductForDetail(p)}
+              onCompareProduct={handleCompareProduct}
+              onNewSearch={() => setCurrentScreen('home')}
+              isUrduMode={isUrduMode}
+            />
+          )}
+
+          {currentScreen === 'comparison' && selectedProductForComparison && (
+            <ComparisonViewScreen
+              selectedProduct={selectedProductForComparison}
+              allProducts={currentProducts}
+              onBack={() => setCurrentScreen('results')}
+              onSelectProduct={(p) => setSelectedProductForDetail(p)}
+              onOpenPriceAlert={(p) => setSelectedProductForAlert(p)}
+              isUrduMode={isUrduMode}
+            />
+          )}
+
+          {currentScreen === 'saved' && (
+            <SavedItemsScreen
+              items={savedItems}
+              onRemoveItem={handleRemoveSaved}
+              onSelectProduct={(p) => setSelectedProductForDetail(p)}
+              onCompareProduct={handleCompareProduct}
+              onExplore={() => setCurrentScreen('home')}
+              isUrduMode={isUrduMode}
+            />
+          )}
+
+          {currentScreen === 'tracking' && (
+            <PriceTrackingScreen
+              alerts={priceAlerts}
+              onToggleAlert={handleToggleAlert}
+              onDeleteAlert={handleDeleteAlert}
+              onSelectProduct={(p) => setSelectedProductForDetail(p)}
+              onCompareProduct={handleCompareProduct}
+              onExplore={() => setCurrentScreen('home')}
+              isUrduMode={isUrduMode}
+            />
+          )}
+
+          {currentScreen === 'history' && (
+            <SearchHistoryScreen
+              history={searchHistory}
+              onRerunSearch={handleRerunHistory}
+              onDeleteItem={handleDeleteHistory}
+              onClearAll={handleClearAllHistory}
+              onStartSearch={() => setCurrentScreen('home')}
+              isUrduMode={isUrduMode}
+            />
+          )}
+
+          {currentScreen === 'profile' && (
+            <ProfileScreen
+              user={user}
+              onLogout={() => {
+                setUser({ id: 'guest', name: 'Guest', email: '', isGuest: true, preferredLanguage: 'en' });
+                showToast('Signed out', 'info');
+              }}
+              onOpenAuth={() => setIsAuthModalOpen(true)}
+              isUrduMode={isUrduMode}
+              onToggleLanguage={() => setIsUrduMode(!isUrduMode)}
+              isDarkMode={isDarkMode}
+              onToggleTheme={toggleTheme}
+            />
+          )}
+
+          {currentScreen === 'flutter_handoff' && (
+            <FlutterHandoffView />
+          )}
+        </main>
+
+        {/* Mobile Bottom Navigation */}
+        <BottomNav
+          currentScreen={currentScreen}
+          onNavigate={(screen) => setCurrentScreen(screen)}
+          savedCount={savedItems.length}
+          trackingCount={priceAlerts.filter((a) => a.enabled).length}
+          isUrduMode={isUrduMode}
+        />
+
+      {/* Global Modals */}
+      {/* 1. Crop & Preview Modal */}
+      {uploadedImage && (
+        <CropPreviewModal
+          isOpen={isCropModalOpen}
+          imageSrc={uploadedImage}
+          onConfirmCrop={handleConfirmCrop}
+          onChangeImage={() => {
+            const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+            input?.click();
+          }}
+          onClose={() => setIsCropModalOpen(false)}
+          isUrduMode={isUrduMode}
+        />
+      )}
+
+      {/* 2. Product Detail Modal with 30-day Price Chart */}
+      <ProductDetailModal
+        product={selectedProductForDetail}
+        isOpen={selectedProductForDetail !== null}
+        onClose={() => setSelectedProductForDetail(null)}
+        isSaved={selectedProductForDetail ? savedIds.includes(selectedProductForDetail.id) : false}
+        onToggleSave={handleToggleSave}
+        onOpenPriceAlert={(p) => {
+          setSelectedProductForDetail(null);
+          setSelectedProductForAlert(p);
+        }}
+        isUrduMode={isUrduMode}
+      />
+
+      {/* 3. Price Alert Modal */}
+      <PriceAlertModal
+        product={selectedProductForAlert}
+        isOpen={selectedProductForAlert !== null}
+        onClose={() => setSelectedProductForAlert(null)}
+        onSetAlert={handleSetAlert}
+        isUrduMode={isUrduMode}
+      />
+
+      {/* 4. Login / Sign Up Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onLoginSuccess={(loggedUser) => setUser(loggedUser)}
+        onContinueGuest={() => {
+          setUser({ id: 'guest', name: 'Guest Shopper', email: '', isGuest: true, preferredLanguage: 'en' });
+        }}
+        isUrduMode={isUrduMode}
+      />
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <ToastProvider>
+        <ShopSenseApp />
+      </ToastProvider>
+    </ThemeProvider>
+  );
+}

@@ -1,0 +1,123 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-heading: 'Poppins', sans-serif;
+    --font-body: 'Inter', sans-serif;
+
+    /* Light Theme Tokens */
+    --color-primary: #4F46E5;
+    --color-primary-dark: #3730A3;
+    --color-primary-light: #EEF2FF;
+    --color-accent: #F97316;
+    --color-accent-light: #FFF7ED;
+    --color-success: #16A34A;
+    --color-warning: #F59E0B;
+    --color-error: #DC2626;
+
+    --color-bg: #F8FAFC;
+    --color-surface: #FFFFFF;
+    --color-surface-subtle: #F1F5F9;
+    --color-border: #E2E8F0;
+    --color-border-subtle: #F1F5F9;
+
+    --color-text-primary: #0F172A;
+    --color-text-secondary: #64748B;
+    --color-text-muted: #94A3B8;
+  }
+
+  :root.dark {
+    /* Dark Theme Tokens */
+    --color-primary: #6366F1;
+    --color-primary-dark: #4F46E5;
+    --color-primary-light: #1E1B4B;
+    --color-accent: #FB923C;
+    --color-accent-light: #431407;
+    --color-success: #22C55E;
+    --color-warning: #FBBF24;
+    --color-error: #EF4444;
+
+    --color-bg: #0B0F19;
+    --color-surface: #131B2E;
+    --color-surface-subtle: #1E293B;
+    --color-border: #283548;
+    --color-border-subtle: #1E293B;
+
+    --color-text-primary: #F8FAFC;
+    --color-text-secondary: #94A3B8;
+    --color-text-muted: #64748B;
+  }
+
+  body {
+    font-family: var(--font-body);
+    background-color: var(--color-bg);
+    color: var(--color-text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  h1, h2, h3, h4, h5, h6, .font-heading {
+    font-family: var(--font-heading);
+    letter-spacing: -0.02em;
+  }
+
+  ::selection {
+    background-color: #4F46E5;
+    color: #FFFFFF;
+  }
+
+  .dark ::selection {
+    background-color: #6366F1;
+    color: #FFFFFF;
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Smooth card hover lift */
+.card-hover {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+}
+
+/* Subtle glow utility for active badges & accents */
+.accent-glow {
+  box-shadow: 0 0 15px -3px rgba(249, 115, 22, 0.3);
+}
+
+.primary-glow {
+  box-shadow: 0 0 15px -3px rgba(79, 70, 229, 0.3);
+}
+
+.dark .primary-glow {
+  box-shadow: 0 0 20px -3px rgba(99, 102, 241, 0.4);
+}

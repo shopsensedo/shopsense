@@ -1,0 +1,6 @@
+{
+  "name": "ShopSense Pakistan - Visual Search & Price Comparison",
+  "description": "AI-powered visual search and multi-platform price comparison platform for Pakistani online shoppers across Daraz, Telemart, Bagallery, and local stores.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
