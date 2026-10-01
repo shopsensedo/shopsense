@@ -6,7 +6,7 @@ import {
   normalizePriceOyeItem,
   normalizeDarazItem,
   type LiveItem,
-} from '../src/lib/liveNormalize';
+} from './_liveNormalize';
 
 export type { LiveItem };
 

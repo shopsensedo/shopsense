@@ -1,11 +1,11 @@
 /**
  * Pure normalization helpers for live marketplace results.
  *
- * Shared by the client pipeline (`src/lib/liveSearch.ts`) and unit tests.
- * NOTE: `api/_liveNormalize.ts` is a server copy of this file — Vercel
- * serverless functions cannot import from `../src/`. Keep the two in sync.
- * No network, no secrets, no side effects — every function here is safe to
- * unit-test with captured real API payloads.
+ * SERVER COPY for the Vercel serverless function (`api/live-search.ts`).
+ * Vercel does not bundle `../src/...` imports into serverless functions
+ * (FUNCTION_INVOCATION_FAILED), so the API route imports from here instead.
+ * Mirrors `src/lib/liveNormalize.ts` — keep the two in sync when the
+ * normalization logic changes. No network, no secrets, no side effects.
  */
 export type FeedSource = 'PriceOye' | 'Daraz';
 
