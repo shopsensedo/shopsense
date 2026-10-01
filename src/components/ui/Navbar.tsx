@@ -62,7 +62,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="w-9 h-9 rounded-xl bg-lime flex items-center justify-center shadow-[0_4px_16px_-4px_rgba(185,192,6,0.6)] group-hover:scale-105 transition-transform">
             <Camera className="w-5 h-5 text-void" strokeWidth={2.25} />
           </div>
-          <span className="text-xl font-bold tracking-wide text-void dark:text-bone font-heading">
+          <span className="text-lg sm:text-xl font-bold tracking-wide text-void dark:text-bone font-heading">
             ShopSense
           </span>
         </button>
@@ -110,12 +110,12 @@ export const Navbar: React.FC<NavbarProps> = ({
         </nav>
 
         {/* Actions */}
-        <div className="flex items-center gap-2">
-          {/* Saved shortcut */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Saved shortcut — hidden on mobile (BottomNav already has Saved with badge) */}
           <button
             type="button"
             onClick={() => onNavigate('saved')}
-            className="relative h-10 w-10 rounded-full border border-[#E5E5E1] dark:border-ash hover:border-void dark:hover:border-lime text-void dark:text-bone flex items-center justify-center transition-colors cursor-pointer"
+            className="relative hidden md:flex h-10 w-10 rounded-full border border-[#E5E5E1] dark:border-ash hover:border-void dark:hover:border-lime text-void dark:text-bone items-center justify-center transition-colors cursor-pointer"
             title={isUrduMode ? 'Mehfooz ashya' : 'Saved items'}
             aria-label="Saved items"
           >
@@ -144,7 +144,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onToggleLanguage}
-            className="h-10 px-3.5 rounded-full border border-[#E5E5E1] dark:border-ash hover:border-void dark:hover:border-lime text-xs font-semibold text-void dark:text-bone flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="h-10 px-2.5 sm:px-3.5 rounded-full border border-[#E5E5E1] dark:border-ash hover:border-void dark:hover:border-lime text-xs font-semibold text-void dark:text-bone flex items-center gap-1.5 transition-colors cursor-pointer"
             title="Toggle between English and Roman Urdu"
           >
             <Globe className="w-3.5 h-3.5 text-olive dark:text-lime" />
