@@ -12,6 +12,7 @@ import {
 import { ToastProvider, useToast } from './components/ui/Toast';
 import { searchByImage, searchByText } from './lib/api';
 import { searchByImageLocal, searchByTextLocal } from './lib/localSearch';
+import { searchLive } from './lib/liveSearch';
 import { ThemeProvider, useTheme } from './lib/theme';
 import { Navbar } from './components/ui/Navbar';
 import { BottomNav } from './components/ui/BottomNav';
@@ -45,6 +46,7 @@ function ShopSenseApp() {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
   const [localClipProgress, setLocalClipProgress] = useState<number | null>(null);
+  const [clipProgressLabel, setClipProgressLabel] = useState<string | undefined>(undefined);
   const [searchReady, setSearchReady] = useState(true);
   const [searchQueryText, setSearchQueryText] = useState<string>('');
   const [currentProducts, setCurrentProducts] = useState<Product[]>(SAMPLE_PRODUCTS);
@@ -103,6 +105,44 @@ function ShopSenseApp() {
       if (matchedProducts.length > 0) detectedCat = matchedProducts[0].category || 'Footwear';
     } catch {
       matchedProducts = null; // backend unreachable — try in-browser CLIP
+    }
+
+    if (!matchedProducts) {
+      try {
+        // LIVE pipeline: understand the photo → fetch REAL listings from
+        // PriceOye + Daraz → CLIP-embed product images → visual rank.
+        // No mock data in this path; throws on any upstream failure.
+        setLocalClipProgress(0);
+        const live = await searchLive(croppedDataUrl, (p) => {
+          if (typeof p === 'number') {
+            setLocalClipProgress(p * 0.4);
+            setClipProgressLabel(isUrduMode ? 'AI model load ho raha hai…' : 'Loading AI model…');
+          } else if (p.stage === 'fetch') {
+            setLocalClipProgress(0.45);
+            setClipProgressLabel(
+              isUrduMode ? 'Live listings la rahe hain…' : 'Fetching live listings…',
+            );
+          } else if (p.stage === 'match') {
+            setLocalClipProgress(0.5 + 0.5 * (p.done / Math.max(1, p.total)));
+            setClipProgressLabel(
+              isUrduMode
+                ? `Tasveerain match ho rahi hain ${p.done}/${p.total}…`
+                : `Matching photos ${p.done}/${p.total}…`,
+            );
+          }
+        });
+        if (live.products.length >= 3) {
+          matchedProducts = live.products;
+          detectedCat = live.category;
+        } else {
+          matchedProducts = null;
+        }
+      } catch {
+        matchedProducts = null; // live failed — try the offline seed catalog
+      } finally {
+        setLocalClipProgress(null);
+        setClipProgressLabel(undefined);
+      }
     }
 
     if (!matchedProducts) {
@@ -365,6 +405,7 @@ function ShopSenseApp() {
               onComplete={() => setCurrentScreen('results')}
               isUrduMode={isUrduMode}
               progress={localClipProgress}
+              progressLabel={clipProgressLabel}
               canComplete={searchReady}
             />
           )}

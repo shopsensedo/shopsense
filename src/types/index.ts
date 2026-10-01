@@ -36,6 +36,7 @@ export interface Product {
   hasPriceDrop?: boolean;
   brand?: string;
   colorName?: string;
+  isLive?: boolean; // true when scraped live from a real store (PriceOye/Daraz)
 }
 
 export interface SearchResult {

@@ -51,8 +51,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         )}
 
         {/* Platform badge — bottom-left */}
-        <div className="absolute bottom-3 left-3">
+        <div className="absolute bottom-3 left-3 flex items-center gap-1.5">
           <SourceBadge platform={product.platform} size="sm" />
+          {product.isLive && (
+            <span className="bg-lime text-void text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-void animate-pulse" />
+              LIVE
+            </span>
+          )}
         </div>
 
         {/* Match pill — bottom-right, subtle */}
