@@ -4,6 +4,7 @@ import { SearchBar } from '../ui/SearchBar';
 import { Dropzone } from '../ui/Dropzone';
 import { SourceBadge } from '../ui/SourceBadge';
 import { SearchHistoryItem, PlatformType } from '../../types';
+import { handleImageError } from '../../utils/imageFallback';
 
 interface HomeScreenProps {
   onImageSelected: (imageDataUrl: string, sourceName?: string) => void;
@@ -192,6 +193,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               >
                 {item.queryImage && (
                   <img
+                    onError={handleImageError}
                     src={item.queryImage}
                     alt={item.queryText || 'Search preview'}
                     className="w-12 h-12 rounded-xl object-cover bg-void shrink-0"

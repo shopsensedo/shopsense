@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Crop, Sparkles, RefreshCw, ZoomIn, ZoomOut, Check } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { handleImageError } from '../../utils/imageFallback';
 
 interface CropPreviewModalProps {
   isOpen: boolean;
@@ -48,7 +49,7 @@ export const CropPreviewModal: React.FC<CropPreviewModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-sm animate-fade-in">
       <div className="relative w-full max-w-2xl bg-white dark:bg-[#1A1A1A] border border-slate-200 dark:border-[#262626] rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
         {/* Header */}
         <div className="px-5 py-4 border-b border-slate-200 dark:border-[#262626] flex items-center justify-between">
@@ -78,6 +79,7 @@ export const CropPreviewModal: React.FC<CropPreviewModalProps> = ({
         <div className="relative flex-1 bg-[#0C0C0C] flex items-center justify-center p-4 overflow-hidden min-h-[300px] select-none">
           <div className="relative max-h-[50vh] max-w-full flex items-center justify-center">
             <img
+              onError={handleImageError}
               src={imageSrc}
               alt="Screenshot Preview"
               className="max-h-[48vh] max-w-full object-contain rounded-lg transition-transform duration-150"

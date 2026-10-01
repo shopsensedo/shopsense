@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bell, Check, TrendingDown } from 'lucide-react';
 import { Product } from '../../types';
 import { Modal } from '../ui/Modal';
@@ -25,7 +25,16 @@ export const PriceAlertModal: React.FC<PriceAlertModalProps> = ({
   const { showToast } = useToast();
   const [targetPrice, setTargetPrice] = useState<string>('');
   const [channel, setChannel] = useState<'whatsapp' | 'email' | 'push'>('whatsapp');
-  const [contact, setContact] = useState('+92 300 1234567');
+  const [contact, setContact] = useState('');
+
+  // Reset the form each time the modal opens (fresh product context)
+  useEffect(() => {
+    if (isOpen) {
+      setTargetPrice('');
+      setChannel('whatsapp');
+      setContact('');
+    }
+  }, [isOpen]);
 
   if (!product) return null;
 
@@ -35,8 +44,21 @@ export const PriceAlertModal: React.FC<PriceAlertModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const priceNum = Number(targetPrice) || suggestedTarget;
+    if (!Number.isFinite(priceNum) || priceNum <= 0) {
+      showToast('Please enter a valid target price greater than zero', 'warning');
+      return;
+    }
     if (priceNum >= currentPrice) {
       showToast('Target price should be lower than current price', 'warning');
+      return;
+    }
+    if (channel !== 'push' && contact.trim() === '') {
+      showToast(
+        channel === 'whatsapp'
+          ? 'Please enter your WhatsApp number to receive alerts'
+          : 'Please enter your email address to receive alerts',
+        'warning'
+      );
       return;
     }
     onSetAlert(product, priceNum);

@@ -34,7 +34,7 @@ export const ComparisonViewScreen: React.FC<ComparisonViewScreenProps> = ({
   const maxSavings = highestProduct.price - lowestProduct.price;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 animate-in fade-in duration-150">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 animate-fade-in">
       {/* Back button & Title bar */}
       <div className="flex items-center justify-between mb-6">
         <button

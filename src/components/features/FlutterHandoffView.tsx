@@ -22,7 +22,7 @@ export const FlutterHandoffView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 animate-in fade-in duration-150">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 animate-fade-in">
       {/* Header */}
       <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-slate-200 dark:border-[#262626] p-6 mb-6 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

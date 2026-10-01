@@ -5,6 +5,7 @@ import { EmptyState } from '../ui/EmptyState';
 import { SourceBadge } from '../ui/SourceBadge';
 import { PriceTag, formatPKR } from '../ui/PriceTag';
 import { Button } from '../ui/Button';
+import { handleImageError } from '../../utils/imageFallback';
 
 interface SavedItemsScreenProps {
   items: SavedItem[];
@@ -38,7 +39,7 @@ export const SavedItemsScreen: React.FC<SavedItemsScreenProps> = ({
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 animate-in fade-in duration-150">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 animate-fade-in">
       {/* Page Title Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -75,6 +76,7 @@ export const SavedItemsScreen: React.FC<SavedItemsScreenProps> = ({
               <div className="flex items-center gap-3.5 flex-1 min-w-0">
                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-slate-50 dark:bg-[#0C0C0C] border border-slate-200 dark:border-slate-800 overflow-hidden shrink-0 flex items-center justify-center p-2">
                   <img
+                    onError={handleImageError}
                     src={product.imageUrl}
                     alt={product.title}
                     className="w-full h-full object-contain"

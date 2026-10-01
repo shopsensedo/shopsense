@@ -28,7 +28,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const [dailyDigest, setDailyDigest] = useState(false);
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 animate-in fade-in duration-150">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 animate-fade-in">
       {/* Account Info Header */}
       <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-slate-200 dark:border-[#262626] p-5 sm:p-6 mb-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
