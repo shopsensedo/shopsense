@@ -32,6 +32,10 @@ interface ResultsScreenProps {
   priceSort?: 'asc' | 'desc' | null;
   /** Which label band the match pills use: image search or text search. */
   searchKind?: 'image' | 'text';
+  /** Epoch ms when the shown results were cached (null = fresh live results). */
+  cacheAt?: number | null;
+  /** Re-run the search bypassing the cache. */
+  onRefresh?: () => void;
 }
 
 const SORT_OPTIONS = [
@@ -59,6 +63,8 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
   marketplaceQuery = null,
   priceSort = null,
   searchKind = 'image',
+  cacheAt = null,
+  onRefresh,
 }) => {
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -424,6 +430,25 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
                           ? 'Behtareen nataij — sab se zyada qeemat pehle'
                           : 'Best matches, sorted by highest price'}
                     </span>
+                  )}
+                </p>
+              )}
+              {cacheAt != null && (
+                <p className="text-xs text-smoke dark:text-fog mt-1 flex items-center gap-2">
+                  <span>
+                    {isUrduMode
+                      ? `Mehfooz nataij — ${Math.max(1, Math.round((Date.now() - cacheAt) / 60000))} min pehle`
+                      : `Showing saved results from ${Math.max(1, Math.round((Date.now() - cacheAt) / 60000))} min ago`}
+                  </span>
+                  {onRefresh && (
+                    <button
+                      type="button"
+                      onClick={onRefresh}
+                      className="inline-flex items-center gap-1 rounded-full border border-[#E5E5E1] dark:border-graphite px-2 py-0.5 text-[11px] font-bold text-void dark:text-bone hover:bg-limetint dark:hover:bg-limedim"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                      {isUrduMode ? 'Refresh' : 'Refresh'}
+                    </button>
                   )}
                 </p>
               )}

@@ -11,9 +11,10 @@ import {
 } from './lib/mockData';
 import { ToastProvider, useToast } from './components/ui/Toast';
 import { searchByImage, searchByText } from './lib/api';
-import { searchByImageLocal, searchByTextLocal } from './lib/localSearch';
+import { searchByImageLocal, searchByTextLocal, parseQuery } from './lib/localSearch';
 import { searchLive, searchLiveText, SourceStatus } from './lib/liveSearch';
 import { isDemoMode } from './lib/demoMode';
+import { getCached, setCached, cacheKeyForText, cacheKeyForImage } from './lib/searchCache';
 import { ThemeProvider, useTheme } from './lib/theme';
 import { Navbar } from './components/ui/Navbar';
 import { BottomNav } from './components/ui/BottomNav';
@@ -49,6 +50,7 @@ function ShopSenseApp() {
   const [mappedQuery, setMappedQuery] = useState<string | null>(null);
   const [marketplaceQuery, setMarketplaceQuery] = useState<string | null>(null);
   const [priceSort, setPriceSort] = useState<'asc' | 'desc' | null>(null);
+  const [cacheInfo, setCacheInfo] = useState<{ at: number } | null>(null);
   const [lastSearch, setLastSearch] = useState<
     { type: 'image'; dataUrl: string } | { type: 'text'; query: string } | null
   >(null);
@@ -101,12 +103,47 @@ function ShopSenseApp() {
     }
   }, [savedItems]);
   // Fake seed alerts/history are demo-only; production starts empty.
-  const [priceAlerts, setPriceAlerts] = useState<PriceAlert[]>(() =>
-    demoMode ? INITIAL_PRICE_ALERTS : [],
-  );
-  const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>(() =>
-    demoMode ? INITIAL_SEARCH_HISTORY : [],
-  );
+  const [priceAlerts, setPriceAlerts] = useState<PriceAlert[]>(() => {
+    try {
+      const raw = localStorage.getItem('shopsense_price_alerts_v1');
+      if (raw) return JSON.parse(raw) as PriceAlert[];
+    } catch {
+      // storage unavailable — fall through to defaults
+    }
+    return demoMode ? INITIAL_PRICE_ALERTS : [];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('shopsense_price_alerts_v1', JSON.stringify(priceAlerts));
+    } catch {
+      // storage unavailable — session-only behavior, non-fatal
+    }
+  }, [priceAlerts]);
+  const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>(() => {
+    try {
+      const raw = localStorage.getItem('shopsense_search_history_v1');
+      if (raw) return JSON.parse(raw) as SearchHistoryItem[];
+    } catch {
+      // storage unavailable — fall through to defaults
+    }
+    return demoMode ? INITIAL_SEARCH_HISTORY : [];
+  });
+
+  useEffect(() => {
+    try {
+      // Cap at 30 items and drop oversized inline photos (data URLs) so a
+      // single huge screenshot can't blow the ~5MB localStorage quota.
+      const slim = searchHistory.slice(0, 30).map((h) => ({
+        ...h,
+        queryImage:
+          h.queryImage && h.queryImage.length > 100_000 ? undefined : h.queryImage,
+      }));
+      localStorage.setItem('shopsense_search_history_v1', JSON.stringify(slim));
+    } catch {
+      // storage unavailable — session-only behavior, non-fatal
+    }
+  }, [searchHistory]);
 
   // Handle image selected for upload
   const handleImageSelected = (imageDataUrl: string, sourceName?: string) => {
@@ -119,7 +156,7 @@ function ShopSenseApp() {
   // Production: backend (local dev) → LIVE pipeline. Any failure shows an
   // honest error — NEVER sample/seed/mock data. Demo mode (?demo=1) additionally
   // falls back to the seed catalog and then the mock catalog, under a banner.
-  const handleConfirmCrop = async (croppedDataUrl: string) => {
+  const handleConfirmCrop = async (croppedDataUrl: string, forceRefresh = false) => {
     setIsCropModalOpen(false);
     setSearchReady(false);
     setSearchError(null);
@@ -127,9 +164,29 @@ function ShopSenseApp() {
     setMappedQuery(null);
     setMarketplaceQuery(null);
     setCurrentScreen('search_loading');
+    setCacheInfo(null);
+
+    // Served-from-cache path: key is the SHA-256 of the downscaled image.
+    if (!demoMode && !forceRefresh) {
+      try {
+        const hit = await getCached(await cacheKeyForImage(croppedDataUrl));
+        if (hit && hit.products.length > 0) {
+          setSearchError(null);
+          setCurrentProducts(hit.products);
+          setSourceStatus(hit.sources ?? null);
+          setLastSearch({ type: 'image', dataUrl: croppedDataUrl });
+          setCacheInfo({ at: hit.at });
+          setSearchReady(true);
+          return;
+        }
+      } catch {
+        // hashing failed — fall through to the live pipeline
+      }
+    }
 
     let matchedProducts: Product[] | null = null;
     let detectedCat = 'Footwear';
+    let freshSources: SourceStatus | null = null;
 
     try {
       matchedProducts = await searchByImage(croppedDataUrl, 7);
@@ -164,6 +221,7 @@ function ShopSenseApp() {
         });
         // Always surface what each source did — even when it failed.
         setSourceStatus(live.sources);
+        freshSources = live.sources;
         if (live.products.length > 0) {
           matchedProducts = live.products;
           detectedCat = live.category;
@@ -227,6 +285,19 @@ function ShopSenseApp() {
 
     setSearchError(null);
     setCurrentProducts(matchedProducts);
+    if (!demoMode) {
+      try {
+        await setCached({
+          key: await cacheKeyForImage(croppedDataUrl),
+          at: Date.now(),
+          products: matchedProducts,
+          category: detectedCat,
+          sources: freshSources,
+        });
+      } catch {
+        // cache write failed — results are still shown, non-fatal
+      }
+    }
 
     // Add to search history
     const historyItem: SearchHistoryItem = {
@@ -247,7 +318,7 @@ function ShopSenseApp() {
   // Production: backend (local dev) only — no live text pipeline yet, and
   // NEVER seed/mock fallbacks. Any failure shows an honest error.
   // Demo mode (?demo=1) keeps the seed + mock fallbacks, under a banner.
-  const handleTextSearch = async (query: string) => {
+  const handleTextSearch = async (query: string, forceRefresh = false) => {
     setSearchQueryText(query);
     setSearchReady(false);
     setSearchError(null);
@@ -256,6 +327,25 @@ function ShopSenseApp() {
     setMarketplaceQuery(null);
     setPriceSort(null);
     setCurrentScreen('search_loading');
+    setCacheInfo(null);
+
+    // Served-from-cache path: skip the live pipeline entirely.
+    if (!demoMode && !forceRefresh) {
+      const { keywords, priceIntent } = parseQuery(query);
+      const hit = await getCached(cacheKeyForText(keywords.join(' '), priceIntent));
+      if (hit && hit.products.length > 0) {
+        setSearchError(null);
+        setCurrentProducts(hit.products);
+        setSourceStatus(hit.sources ?? null);
+        setMappedQuery(hit.mappedQuery ?? null);
+        setMarketplaceQuery(hit.marketplaceQuery ?? null);
+        setPriceSort(hit.priceSort ?? null);
+        setCacheInfo({ at: hit.at });
+        setLastSearch({ type: 'text', query });
+        setSearchReady(true);
+        return;
+      }
+    }
 
     let matched: Product[] | null = null;
     let cat = 'General';
@@ -305,6 +395,19 @@ function ShopSenseApp() {
           matched = live.products;
           cat = live.category || 'General';
           queryImage = live.products[0].imageUrl;
+          if (!demoMode) {
+            const { keywords, priceIntent } = parseQuery(query);
+            await setCached({
+              key: cacheKeyForText(keywords.join(' '), priceIntent),
+              at: Date.now(),
+              products: live.products,
+              mappedQuery: live.mappedQuery,
+              marketplaceQuery: live.marketplaceQuery,
+              priceSort: live.priceSort,
+              category: live.category,
+              sources: live.sources,
+            });
+          }
         } else {
           matched = null;
         }
@@ -554,6 +657,12 @@ function ShopSenseApp() {
               marketplaceQuery={marketplaceQuery}
               priceSort={priceSort}
               searchKind={lastSearch?.type === 'text' ? 'text' : 'image'}
+              cacheAt={cacheInfo?.at ?? null}
+              onRefresh={() => {
+                if (lastSearch?.type === 'text') handleTextSearch(lastSearch.query, true);
+                else if (lastSearch?.type === 'image')
+                  handleConfirmCrop(lastSearch.dataUrl, true);
+              }}
             />
           )}
 

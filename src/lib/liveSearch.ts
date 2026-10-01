@@ -112,6 +112,18 @@ async function fetchWithTimeout(url: string, ms: number): Promise<Response> {
   }
 }
 
+/** Deduplicate live listings by product URL — the same product can appear in
+ *  both sources' feeds. Keeps the first occurrence. */
+export function dedupeListings(listings: LiveListing[]): LiveListing[] {
+  const seen = new Set<string>();
+  return listings.filter((l) => {
+    const u = (l.url || '').trim();
+    if (!u || seen.has(u)) return false;
+    seen.add(u);
+    return true;
+  });
+}
+
 /** Real listings from /api/live-search (PriceOye + Daraz, fetched live).
  * When `siteQuery` is given it is sent to BOTH sources verbatim (text search
  * short query); otherwise the tuned per-category SITE_QUERIES are used
@@ -136,10 +148,9 @@ export async function fetchLiveListings(
     // The function itself failed — both sources are unknown/unavailable.
     return { listings: [], sources: EMPTY_SOURCES };
   }
-  const results = (Array.isArray(d?.results) ? d.results : []).slice(
-    0,
-    MAX_CANDIDATES,
-  ) as LiveListing[];
+  const results = dedupeListings(
+    (Array.isArray(d?.results) ? d.results : []) as LiveListing[],
+  ).slice(0, MAX_CANDIDATES);
   // /api/live-search reports per-source outcomes as count | 'error'.
   const src = d?.sources ?? {};
   const toStatus = (v: unknown): { ok: true; count: number } | { ok: false } =>
