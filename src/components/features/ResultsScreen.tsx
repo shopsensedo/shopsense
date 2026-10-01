@@ -41,11 +41,28 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
 }) => {
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+
+  // Live results (PriceOye/Daraz) carry real PKR prices far above the old
+  // mock-catalog range, so the price ceiling adapts to the actual result set.
+  const priceCap = (() => {
+    const maxP = products.reduce((m, p) => Math.max(m, p.price || 0), 0);
+    if (maxP <= 10000) return 10000;
+    const pow = Math.pow(10, Math.floor(Math.log10(maxP)));
+    const n = maxP / pow;
+    const nice = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
+    return nice * pow;
+  })();
+  const priceStep = Math.max(250, Math.round(priceCap / 40));
+  // Live visual-similarity scores (cosine×100) run lower than curated seed
+  // scores, so the default similarity floor relaxes when live items are present.
+  const hasLive = products.some((p) => p.isLive);
+  const defaultMinSimilarity = hasLive ? 40 : 85;
+
   const [filters, setFilters] = useState<FilterOptions>({
     minPrice: 0,
-    maxPrice: 10000,
+    maxPrice: priceCap,
     platforms: ['daraz', 'telemart', 'bagallery', 'priceoye', 'elo', 'shophive', 'gulahmed'],
-    minSimilarity: 85,
+    minSimilarity: defaultMinSimilarity,
     inStockOnly: false,
     sortBy: 'relevance',
   });
@@ -107,9 +124,9 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
   const resetFilters = () => {
     setFilters({
       minPrice: 0,
-      maxPrice: 10000,
+      maxPrice: priceCap,
       platforms: allPlatforms,
-      minSimilarity: 85,
+      minSimilarity: defaultMinSimilarity,
       inStockOnly: false,
       sortBy: 'relevance',
     });
@@ -133,9 +150,9 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
         <input
           type="range"
           min={0}
-          max={10000}
-          step={250}
-          value={filters.maxPrice}
+          max={priceCap}
+          step={priceStep}
+          value={Math.min(filters.maxPrice, priceCap)}
           onChange={(e) => setFilters({ ...filters, maxPrice: Number(e.target.value) })}
           className="w-full accent-lime cursor-pointer"
         />
@@ -183,25 +200,27 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
         </div>
         <input
           type="range"
-          min={70}
+          min={hasLive ? 20 : 70}
           max={98}
           step={2}
-          value={filters.minSimilarity}
+          value={Math.max(filters.minSimilarity, hasLive ? 20 : 70)}
           onChange={(e) => setFilters({ ...filters, minSimilarity: Number(e.target.value) })}
           className="w-full accent-lime cursor-pointer"
         />
       </div>
 
-      {/* In Stock Only */}
-      <label className="flex items-center gap-2.5 cursor-pointer text-xs font-semibold text-void dark:text-bone select-none">
-        <input
-          type="checkbox"
-          checked={filters.inStockOnly}
-          onChange={(e) => setFilters({ ...filters, inStockOnly: e.target.checked })}
-          className="rounded-full accent-lime w-4 h-4 cursor-pointer"
-        />
-        <span>{isUrduMode ? 'Sirf Mojood (In Stock)' : 'In Stock Only'}</span>
-      </label>
+      {/* In Stock Only — hidden for live results: availability is not verified on scraped listings */}
+      {!hasLive && (
+        <label className="flex items-center gap-2.5 cursor-pointer text-xs font-semibold text-void dark:text-bone select-none">
+          <input
+            type="checkbox"
+            checked={filters.inStockOnly}
+            onChange={(e) => setFilters({ ...filters, inStockOnly: e.target.checked })}
+            className="rounded-full accent-lime w-4 h-4 cursor-pointer"
+          />
+          <span>{isUrduMode ? 'Sirf Mojood (In Stock)' : 'In Stock Only'}</span>
+        </label>
+      )}
 
       {/* Reset */}
       <button
