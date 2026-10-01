@@ -13,6 +13,7 @@ import { ToastProvider, useToast } from './components/ui/Toast';
 import { searchByImage, searchByText } from './lib/api';
 import { searchByImageLocal, searchByTextLocal, parseQuery } from './lib/localSearch';
 import { searchLive, searchLiveText, SourceStatus } from './lib/liveSearch';
+import { preloadClipModels, isClipPreloaded, onPreloadProgress } from './lib/clipEmbed';
 import { isDemoMode } from './lib/demoMode';
 import { getCached, setCached, cacheKeyForText, cacheKeyForImage } from './lib/searchCache';
 import { ThemeProvider, useTheme } from './lib/theme';
@@ -68,6 +69,9 @@ function ShopSenseApp() {
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
   const [localClipProgress, setLocalClipProgress] = useState<number | null>(null);
   const [clipProgressLabel, setClipProgressLabel] = useState<string | undefined>(undefined);
+  // Background CLIP preload progress (0-100) shown as a small pill on the
+  // home screen; null = not started or already done.
+  const [modelPreloadPct, setModelPreloadPct] = useState<number | null>(null);
   const [searchReady, setSearchReady] = useState(true);
   const [searchQueryText, setSearchQueryText] = useState<string>('');
   const [currentProducts, setCurrentProducts] = useState<Product[]>([]);
@@ -145,11 +149,65 @@ function ShopSenseApp() {
     }
   }, [searchHistory]);
 
+  // Background CLIP preload: start downloading both model towers (vision +
+  // text, ~150MB total) during home-page idle time, without blocking the UI.
+  // Skipped in demo mode (seed/mock fallbacks don't need the models).
+  useEffect(() => {
+    if (demoMode) return;
+    let cancelled = false;
+    const off = onPreloadProgress((f) => {
+      if (!cancelled) setModelPreloadPct(f >= 1 ? null : Math.round(f * 100));
+    });
+    const start = () => {
+      if (cancelled) return;
+      preloadClipModels().catch(() => {
+        // Download failed (offline?) — hide the pill; the next search retries
+        // and surfaces the honest error.
+        if (!cancelled) setModelPreloadPct(null);
+      });
+    };
+    const w = window as unknown as {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    let idleId: number | undefined;
+    let timer: number | undefined;
+    if (typeof w.requestIdleCallback === 'function') {
+      idleId = w.requestIdleCallback(start, { timeout: 5000 });
+    } else {
+      timer = window.setTimeout(start, 1500);
+    }
+    return () => {
+      cancelled = true;
+      off();
+      if (idleId !== undefined) w.cancelIdleCallback?.(idleId);
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
+  }, [demoMode]);
+
   // Handle image selected for upload
   const handleImageSelected = (imageDataUrl: string, sourceName?: string) => {
     setUploadedImage(imageDataUrl);
     setSearchQueryText(sourceName || (isUrduMode ? 'Screenshot se talash' : 'Visual Search Query'));
     setIsCropModalOpen(true);
+  };
+
+  // If the user starts a search before the background preload finished, wait
+  // for the models (showing the honest label) instead of starting a second
+  // download — the search runs automatically when they are ready.
+  const waitForModelsIfNeeded = async () => {
+    if (isClipPreloaded()) return;
+    setLocalClipProgress(0);
+    setClipProgressLabel(
+      isUrduMode
+        ? 'AI model abhi load ho raha hai, search khud shuru ho jayegi…'
+        : 'AI model is still loading, your search will start automatically…',
+    );
+    try {
+      await preloadClipModels();
+    } catch {
+      // fall through — the pipeline below surfaces the honest error
+    }
   };
 
   // Confirm crop and execute visual search.
@@ -200,6 +258,7 @@ function ShopSenseApp() {
         // LIVE pipeline: understand the photo → fetch REAL listings from
         // PriceOye + Daraz → CLIP-embed product images → visual rank.
         // No mock data in this path; source failures are reported, not hidden.
+        await waitForModelsIfNeeded();
         setLocalClipProgress(0);
         const live = await searchLive(croppedDataUrl, (p) => {
           if (typeof p === 'number') {
@@ -367,6 +426,7 @@ function ShopSenseApp() {
         // LIVE text pipeline: Roman Urdu -> English keywords -> REAL listings
         // from PriceOye + Daraz -> CLIP text-to-image ranking over thumbnails.
         // No mock data in this path; source failures are reported, not hidden.
+        await waitForModelsIfNeeded();
         setLocalClipProgress(0);
         setMappedQuery(null);
         const live = await searchLiveText(query, (p) => {
@@ -628,6 +688,7 @@ function ShopSenseApp() {
               recentSearches={searchHistory}
               onRerunHistory={handleRerunHistory}
               isUrduMode={isUrduMode}
+              modelPreloadPct={modelPreloadPct}
             />
           )}
 

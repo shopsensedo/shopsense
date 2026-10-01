@@ -12,6 +12,8 @@ interface HomeScreenProps {
   recentSearches: SearchHistoryItem[];
   onRerunHistory: (item: SearchHistoryItem) => void;
   isUrduMode?: boolean;
+  /** Background CLIP download progress 0-100; null = not started or done. */
+  modelPreloadPct?: number | null;
 }
 
 const CATEGORY_PILLS = [
@@ -28,6 +30,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   recentSearches,
   onRerunHistory,
   isUrduMode = false,
+  modelPreloadPct = null,
 }) => {
   const [textQuery, setTextQuery] = useState('');
 
@@ -72,6 +75,20 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             }}
             isUrduMode={isUrduMode}
           />
+          {/* Background CLIP preload indicator — small, non-blocking */}
+          {modelPreloadPct !== null && (
+            <div className="mt-3 flex justify-center" role="status" aria-live="polite">
+              <span className="inline-flex items-center gap-2 text-[11px] font-semibold text-smoke dark:text-fog bg-white/70 dark:bg-carbon/70 border border-[#E5E5E1] dark:border-ash rounded-full px-3 py-1.5">
+                <span
+                  className="w-3.5 h-3.5 rounded-full border-2 border-lime border-t-transparent animate-spin"
+                  aria-hidden="true"
+                />
+                {isUrduMode
+                  ? `AI model load ho raha hai ${modelPreloadPct}%`
+                  : `AI model loading ${modelPreloadPct}%`}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Category pills — like the reference's category tabs */}
