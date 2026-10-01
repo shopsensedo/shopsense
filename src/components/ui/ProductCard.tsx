@@ -1,9 +1,9 @@
 import React from 'react';
-import { Heart, ExternalLink, Star, Check } from 'lucide-react';
+import { Heart, ExternalLink, Star, Check, ImageOff } from 'lucide-react';
 import { Product } from '../../types';
 import { SourceBadge } from './SourceBadge';
 import { formatPKR } from './PriceTag';
-import { formatPriceOrUnavailable } from '../../lib/liveNormalize';
+import { formatPriceOrUnavailable, liveWasDiscount } from '../../lib/liveNormalize';
 import { handleImageError } from '../../utils/imageFallback';
 import { similarityLabel, textSimilarityLabel } from '../../lib/liveSearch';
 
@@ -38,16 +38,28 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       onClick={() => onSelect?.(product)}
       className={`group relative flex flex-col bg-white dark:bg-carbon rounded-[20px] border border-[#E5E5E1] dark:border-graphite overflow-hidden card-lift cursor-pointer ${className}`}
     >
-      {/* Image well — deep black like the Protech reference */}
+      {/* Image well — deep black like the Protech reference. When the live
+          thumbnail failed to load, show an honest placeholder instead of a
+          broken image. */}
       <div className="relative aspect-[4/3] w-full bg-void overflow-hidden">
-        <img
-          onError={handleImageError}
-          src={product.imageUrl}
-          alt={product.title}
-          referrerPolicy="no-referrer"
-          loading="lazy"
-          className="w-full h-full object-contain p-4 transition-transform duration-300 group-hover:scale-105"
-        />
+        {product.imageUnavailable ? (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-4 text-center">
+            <ImageOff className="w-8 h-8 text-fog/60" aria-hidden />
+            <span className="text-xs font-semibold text-fog/80">Image unavailable</span>
+            <span className="text-[10px] text-fog/50 leading-snug">
+              Scored by title match — open the product page to see photos
+            </span>
+          </div>
+        ) : (
+          <img
+            onError={handleImageError}
+            src={product.imageUrl}
+            alt={product.title}
+            referrerPolicy="no-referrer"
+            loading="lazy"
+            className="w-full h-full object-contain p-4 transition-transform duration-300 group-hover:scale-105"
+          />
+        )}
 
         {/* Sale badge — lime pill, top-left */}
         {hasDiscount && (
@@ -67,14 +79,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           )}
         </div>
 
-        {/* Match pill — bottom-right, subtle */}
+        {/* Match pill — bottom-right, subtle. A title-scored listing (image
+            unavailable) never claims visual similarity: it shows the
+            title-derived label instead. */}
         <span
           data-testid="match-label-pill"
           className="absolute bottom-3 right-3 bg-white/10 backdrop-blur-sm px-2 py-0.5 rounded-full text-[11px] font-semibold text-white/90 tabular-nums"
         >
-          {labelKind === 'text'
-            ? (product.textLabel ?? textSimilarityLabel((product.cosineSimilarity ?? product.similarityScore / 100)))
-            : similarityLabel(product.similarityScore)}
+          {product.imageUnavailable && product.textLabel
+            ? product.textLabel
+            : labelKind === 'text'
+              ? (product.textLabel ?? textSimilarityLabel((product.cosineSimilarity ?? product.similarityScore / 100)))
+              : similarityLabel(product.similarityScore)}
         </span>
 
         {/* Heart — circular, top-right */}
@@ -111,18 +127,32 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </div>
 
         {/* Price — "Price unavailable" when the parsed price is missing,
-            below Rs 50, or the source text carries no currency marker */}
-        <div className="flex items-baseline gap-2 mb-1">
+            below Rs 50, or the source text carries no currency marker.
+            Live items with raw originalPrice+discount show "was Rs 999 · 81% off". */}
+        <div className="flex items-baseline gap-2 mb-1 flex-wrap">
           {(() => {
             const priceStr = formatPriceOrUnavailable(product.price, product.priceText);
-            return priceStr ? (
-              <span className="text-xl font-bold text-void dark:text-bone tracking-tight tabular-nums font-heading">
-                {priceStr}
-              </span>
-            ) : (
-              <span className="text-sm font-semibold text-smoke dark:text-fog">
-                Price unavailable
-              </span>
+            const was =
+              priceStr && product.isLive
+                ? liveWasDiscount(product.rawPrice, product.price)
+                : null;
+            return (
+              <>
+                {priceStr ? (
+                  <span className="text-xl font-bold text-void dark:text-bone tracking-tight tabular-nums font-heading">
+                    {priceStr}
+                  </span>
+                ) : (
+                  <span className="text-sm font-semibold text-smoke dark:text-fog">
+                    Price unavailable
+                  </span>
+                )}
+                {was && (
+                  <span className="text-xs font-medium text-smoke dark:text-fog tabular-nums">
+                    was {was.was} · {was.off}
+                  </span>
+                )}
+              </>
             );
           })()}
           {hasDiscount && (

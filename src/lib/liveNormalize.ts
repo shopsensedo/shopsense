@@ -84,6 +84,31 @@ export function isPriceAvailable(price: number, priceText?: string): boolean {
   return formatPriceOrUnavailable(price, priceText) !== null;
 }
 
+/**
+ * "was Rs 999 · 81% off" for live cards and the detail modal — from RAW
+ * source fields only. Returns null unless the source sent both a raw
+ * originalPrice and a raw discount string AND the parsed original is higher
+ * than the current price. Nothing is calculated or invented: the original
+ * price and the discount text are the source's own values (digits grouped
+ * for readability).
+ */
+export function liveWasDiscount(
+  rawPrice: unknown,
+  price: number,
+): { was: string; off: string } | null {
+  const rp =
+    rawPrice !== null && typeof rawPrice === 'object'
+      ? (rawPrice as { originalPrice?: unknown; discount?: unknown })
+      : null;
+  const orig = toInt(rp?.originalPrice);
+  const disc = String(rp?.discount ?? '').trim();
+  if (!orig || !disc || orig <= price) return null;
+  return {
+    was: `Rs ${orig.toLocaleString('en-PK')}`,
+    off: disc.replace(/off/i, 'off'),
+  };
+}
+
 /** Normalize one raw PriceOye suggest-API item. Never drops; the client-side
  *  `isValid` filter decides what is usable, so API result counts are unchanged. */
 export function normalizePriceOyeItem(it: any): LiveItem {
@@ -138,8 +163,13 @@ export interface FunnelStages {
   attempted: number;
   /** Thumbnails that embedded OK and entered ranking. */
   usable: number;
+  /** Listings whose thumbnail failed but were kept and scored by title match. */
+  titleScored?: number;
   /** Survivors of the relevance floor. */
   floored: number;
+  /** Image-scored survivors of the relevance shortlist. When absent, the
+   *  shortlist-drop count falls back to the whole pool size. */
+  imageKept?: number;
   /** Survivors of the relevance shortlist (top-8 / 12-cap). */
   pooled: number;
   /** Final products handed to the UI. */
@@ -152,6 +182,9 @@ export interface FilterFunnel {
   capDropped: number;
   compared: number;
   usableImage: number;
+  /** Kept despite a failed thumbnail; scored by title match, marked
+   *  "Image unavailable" in the UI. */
+  titleScored: number;
   belowFloor: number;
   shortlistDropped: number;
   shown: number;
@@ -163,8 +196,12 @@ export function buildFilterFunnel(s: FunnelStages): FilterFunnel {
     capDropped: Math.max(0, s.returned - s.cap),
     compared: s.attempted,
     usableImage: s.usable,
+    titleScored: s.titleScored ?? 0,
     belowFloor: Math.max(0, s.usable - s.floored),
-    shortlistDropped: Math.max(0, s.floored - s.pooled),
+    // The relevance cut applies to image-scored rows only — title-scored
+    // rows bypass it (E1-1) — so shortlist drops are counted against the
+    // image-scored survivors, not the whole pool.
+    shortlistDropped: Math.max(0, s.floored - (s.imageKept ?? s.pooled)),
     shown: s.shown,
   };
 }
@@ -175,19 +212,26 @@ export function buildFilterFunnel(s: FunnelStages): FilterFunnel {
  * other drop (16-thumbnail cap, failed thumbnails, relevance shortlist).
  * Nothing is dropped without being counted.
  */
+/**
+ * One consistent chain, e.g.:
+ *   returned 12 → images loaded 8 → title-scored 4 → below relevance floor 1 → shown 7
+ * The "title-scored" step appears only when thumbnails failed and were kept
+ * via title-match scoring ("Image unavailable"). Cap/shortlist drops ride in
+ * the parenthetical notes.
+ */
 export function formatFilterFunnel(f: FilterFunnel): string {
-  const parts = [
+  const chain = [
     `returned ${f.returned}`,
-    `usable image ${f.usableImage}`,
-    `compared ${f.compared}`,
+    `images loaded ${f.usableImage}`,
+    ...(f.titleScored > 0 ? [`title-scored ${f.titleScored}`] : []),
     `below relevance floor ${f.belowFloor}`,
     `shown ${f.shown}`,
-  ];
+  ].join(' → ');
   const notes: string[] = [];
-  if (f.capDropped > 0) notes.push(`16-thumbnail cap dropped ${f.capDropped}`);
-  const thumbFailed = f.compared - f.usableImage;
-  if (thumbFailed > 0)
-    notes.push(`${thumbFailed} thumbnail${thumbFailed === 1 ? '' : 's'} failed to load`);
-  if (f.shortlistDropped > 0) notes.push(`relevance shortlist dropped ${f.shortlistDropped}`);
-  return notes.length > 0 ? `${parts.join(', ')} (${notes.join('; ')})` : parts.join(', ');
+  if (f.capDropped > 0) notes.push(`${f.capDropped} dropped by the 16-thumbnail cap`);
+  if (f.titleScored > 0)
+    notes.push(`${f.titleScored} kept with "Image unavailable" (scored by title match)`);
+  if (f.shortlistDropped > 0)
+    notes.push(`${f.shortlistDropped} dropped by the relevance shortlist`);
+  return notes.length > 0 ? `${chain} (${notes.join('; ')})` : chain;
 }

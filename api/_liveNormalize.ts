@@ -140,6 +140,9 @@ export interface FunnelStages {
   usable: number;
   /** Survivors of the relevance floor. */
   floored: number;
+  /** Image-scored survivors of the relevance shortlist. When absent, the
+   *  shortlist-drop count falls back to the whole pool size. */
+  imageKept?: number;
   /** Survivors of the relevance shortlist (top-8 / 12-cap). */
   pooled: number;
   /** Final products handed to the UI. */
@@ -164,7 +167,10 @@ export function buildFilterFunnel(s: FunnelStages): FilterFunnel {
     compared: s.attempted,
     usableImage: s.usable,
     belowFloor: Math.max(0, s.usable - s.floored),
-    shortlistDropped: Math.max(0, s.floored - s.pooled),
+    // The relevance cut applies to image-scored rows only — title-scored
+    // rows bypass it (E1-1) — so shortlist drops are counted against the
+    // image-scored survivors, not the whole pool.
+    shortlistDropped: Math.max(0, s.floored - (s.imageKept ?? s.pooled)),
     shown: s.shown,
   };
 }
