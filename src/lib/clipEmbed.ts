@@ -132,6 +132,57 @@ export async function embedQueryImage(
   return embedImageUrl(dataUrl, onProgress);
 }
 
+/**
+ * Embed several short texts in ONE text-tower forward pass.
+ * Used for the image-search category prompts (`a photo of <label>`).
+ */
+export async function embedTextBatch(texts: string[]): Promise<number[][]> {
+  const { tokenizer, model } = await getTextModel();
+  const inputs = await tokenizer(texts, { padding: true, truncation: true });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const output: any = await model(inputs);
+  const embeds = output.text_embeds ?? output[0];
+  if (!embeds?.data) throw new Error('CLIP text model returned no embeddings');
+  const data = embeds.data as ArrayLike<number>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const dims = (embeds as any).dims as [number, number] | undefined;
+  const batch = dims ? dims[0] : texts.length;
+  const dim = dims ? dims[1] : Math.floor(data.length / batch);
+  const out: number[][] = [];
+  for (let b = 0; b < batch; b++) {
+    const row: number[] = new Array(dim);
+    for (let i = 0; i < dim; i++) row[i] = data[b * dim + i];
+    out.push(l2normalize(row));
+  }
+  return out;
+}
+
+export interface CategoryTextEmbedding {
+  key: string;
+  embedding: number[];
+}
+
+let categoryEmbeddingsCache: CategoryTextEmbedding[] | null = null;
+
+/**
+ * Zero-shot classification vocabulary for image search, encoded once with the
+ * in-browser CLIP text tower and then cached in memory. Encoding at runtime
+ * (instead of shipping precomputed 512-dim vectors) keeps the bundle small
+ * and guarantees the category vectors come from the exact same model weights
+ * as the query image embedding. The text tower is preloaded on home idle, so
+ * this is normally instant; otherwise it loads on demand.
+ */
+export async function getCategoryEmbeddings(
+  categories: { key: string; label: string }[],
+): Promise<CategoryTextEmbedding[]> {
+  if (!categoryEmbeddingsCache) {
+    const prompts = categories.map((c) => `a photo of ${c.label}`);
+    const vectors = await embedTextBatch(prompts);
+    categoryEmbeddingsCache = categories.map((c, i) => ({ key: c.key, embedding: vectors[i] }));
+  }
+  return categoryEmbeddingsCache;
+}
+
 // ---------------------------------------------------------------------------
 // Background preload (cold-start mitigation).
 // Both CLIP towers (vision ~85MB + text ~62MB, q8) are downloaded once, in

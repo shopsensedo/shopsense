@@ -2,7 +2,8 @@
  * LIVE visual search pipeline (the hybrid design):
  *
  *   user photo → CLIP embed (in-browser)
- *     → zero-shot classify vs pre-computed category text embeddings
+ *     → zero-shot classify vs category text embeddings (encoded at runtime
+ *        by the in-browser text tower from IMAGE_CATEGORIES labels)
  *     → /api/live-search?q=… fetches REAL listings from PriceOye + Daraz
  *     → product images embedded in-browser (via /api/img proxy where needed)
  *     → cosine-ranked vs the user's photo → real products, prices, links
@@ -11,9 +12,16 @@
  * site API seconds before it is shown.
  */
 import type { PlatformType, Product } from '../types';
-import { embedQueryImage, embedImageUrl, embedTextQuery, cosineSim } from './clipEmbed';
+import {
+  embedQueryImage,
+  embedImageUrl,
+  embedTextQuery,
+  cosineSim,
+  getCategoryEmbeddings,
+  type CategoryTextEmbedding,
+} from './clipEmbed';
 import { parseQuery, isPriceWord, STOPWORDS, romanUrduMap, type PriceIntent } from './localSearch';
-import categoryEmbeddingsRaw from '../data/category_embeddings.json';
+import { IMAGE_CATEGORIES } from '../data/imageCategories';
 import brandsRaw from '../data/brands.json';
 import coloursRaw from '../data/colours.json';
 
@@ -25,11 +33,28 @@ const COLOUR_WORDS: Set<string> = new Set(
   (coloursRaw as string[]).map((c) => c.toLowerCase()),
 );
 
-interface CategoryEntry {
+export interface Classified {
+  category: string;
   query: string;
-  embedding: number[];
+  score: number;
 }
-const CATEGORIES = categoryEmbeddingsRaw as Record<string, CategoryEntry>;
+
+/**
+ * Zero-shot classification: cosine(image embedding, category text embeddings).
+ * Pure function — the category embeddings are supplied by the caller (encoded
+ * at runtime via getCategoryEmbeddings), which keeps this unit-testable.
+ */
+export function classifyImage(
+  embedding: number[],
+  categories: CategoryTextEmbedding[],
+): Classified {
+  let best: Classified = { category: 'mobile', query: 'mobile', score: 0 };
+  for (const { key, embedding: catVec } of categories) {
+    const sim = cosineSim(embedding, catVec);
+    if (sim > best.score) best = { category: key, query: key, score: sim };
+  }
+  return best;
+}
 
 export interface LiveListing {
   title: string;
@@ -63,22 +88,6 @@ export function formatSourceStatus(s: SourceStatus): string {
   return `${part('PriceOye', s.priceoye)} · ${part('Daraz', s.daraz)}`;
 }
 
-export interface Classified {
-  category: string;
-  query: string;
-  score: number;
-}
-
-/** Zero-shot classification: cosine(image embedding, category text embeddings). */
-export function classifyImage(embedding: number[]): Classified {
-  let best: Classified = { category: 'mobile', query: 'mobile', score: 0 };
-  for (const [category, entry] of Object.entries(CATEGORIES)) {
-    const sim = cosineSim(embedding, entry.embedding);
-    if (sim > best.score) best = { category, query: entry.query, score: sim };
-  }
-  return best;
-}
-
 const LIVE_TIMEOUT_MS = 12000;
 const EMBED_TIMEOUT_MS = 30000;
 const MAX_CANDIDATES = 16;
@@ -89,18 +98,10 @@ const MAX_CANDIDATES = 16;
  *   while "mobile" returns bar phones).
  * - Daraz's catalog search is a normal keyword search ("smartphone" → 40 phones).
  */
-const SITE_QUERIES: Record<string, { daraz: string; priceoye: string }> = {
-  mobile: { daraz: 'smartphone', priceoye: '5g mobile' },
-  shoes: { daraz: 'shoes', priceoye: 'shoes' },
-  watch: { daraz: 'watch', priceoye: 'watch' },
-  handbag: { daraz: 'handbag', priceoye: 'handbag' },
-  earbuds: { daraz: 'earbuds', priceoye: 'earbuds' },
-  sunglasses: { daraz: 'sunglasses', priceoye: 'sunglasses' },
-  kurta: { daraz: 'kurta', priceoye: 'kurta' },
-  tshirt: { daraz: 'tshirt', priceoye: 'tshirt' },
-  backpack: { daraz: 'backpack', priceoye: 'backpack' },
-  laptop: { daraz: 'laptop', priceoye: 'laptop' },
-};
+export const SITE_QUERIES: Record<string, { daraz: string; priceoye: string }> =
+  Object.fromEntries(
+    IMAGE_CATEGORIES.map((c) => [c.key, { daraz: c.daraz, priceoye: c.priceoye }]),
+  );
 
 async function fetchWithTimeout(url: string, ms: number): Promise<Response> {
   const ctrl = new AbortController();
@@ -567,9 +568,11 @@ export async function searchLive(
     onProgress?.(typeof f === 'number' ? f * 0.5 : f),
   );
 
-  // 2. understand the image → site search query
+  // 2. understand the image → site search query. Category text embeddings are
+  // encoded once with the in-browser CLIP text tower (preloaded on home idle).
   onProgress?.({ stage: 'classify' });
-  const cls = classifyImage(queryVec);
+  const categoryEmbeddings = await getCategoryEmbeddings(IMAGE_CATEGORIES);
+  const cls = classifyImage(queryVec, categoryEmbeddings);
 
   // 3. live listings from the sites
   onProgress?.({ stage: 'fetch' });
