@@ -276,3 +276,67 @@ describe('D2-3 noun cap refinement and ordering', () => {
     expect(out.map((r) => r.l.price)).toEqual([100, 5000]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// D2-4: price sanity — raw fields kept, "Price unavailable" rule
+// ---------------------------------------------------------------------------
+
+import { toInt, formatPriceOrUnavailable } from '../lib/liveNormalize';
+
+describe('D2-4 price sanity', () => {
+  test('PriceOye item keeps its raw lowest_price next to the parsed value', () => {
+    const n = normalizePriceOyeItem(PO_REAL);
+    expect(n.price).toBe(7649);
+    expect(n.rawPrice).toEqual({ lowest_price: '7,649' });
+  });
+
+  test('Daraz Toms item: raw fields preserved (discounted item)', () => {
+    const n = normalizeDarazItem(DARAZ_REAL_TOMS);
+    expect(n.price).toBe(189);
+    expect(n.rawPrice).toEqual({
+      price: '189',
+      priceShow: 'Rs. 189',
+      originalPrice: '999',
+      discount: '81% Off',
+    });
+  });
+
+  test('Daraz decimal-string price parses to rupees, not garbage', () => {
+    // Real item: price '1967.87', priceShow 'Rs. 1,968', originalPrice '3499'.
+    // The old parseInt-after-strip would have read 196787.
+    const n = normalizeDarazItem({
+      name: 'Black Camel Sneakers for Men All Season Knit',
+      price: '1967.87',
+      priceShow: 'Rs. 1,968',
+      originalPrice: '3499',
+      discount: '44% Off',
+      image: 'https://static-01.daraz.pk/p/abc.jpg',
+      itemUrl: '//www.daraz.pk/products/black-camel-sneakers-i999.html',
+    });
+    expect(n.price).toBe(1968);
+    expect(n.rawPrice).toMatchObject({ originalPrice: '3499', discount: '44% Off' });
+  });
+
+  test('toInt handles currency text, commas and decimals', () => {
+    expect(toInt('Rs. 1,968')).toBe(1968);
+    expect(toInt('12,149')).toBe(12149);
+    expect(toInt('1967.87')).toBe(1968);
+    expect(toInt('')).toBe(0);
+    expect(toInt(null)).toBe(0);
+  });
+
+  test('"Price unavailable" rule: missing, sub-Rs-50, or currency-less', () => {
+    expect(formatPriceOrUnavailable(0)).toBeNull();
+    expect(formatPriceOrUnavailable(-5, 'Rs. 10')).toBeNull();
+    expect(formatPriceOrUnavailable(29, 'Rs. 29')).toBeNull();
+    expect(formatPriceOrUnavailable(49.99, 'Rs. 49.99')).toBeNull();
+    // Source text with no currency marker -> unavailable even at valid amounts.
+    expect(formatPriceOrUnavailable(189, '189')).toBeNull();
+    expect(formatPriceOrUnavailable(189, 'USD 189')).toBeNull();
+    // Normal cases still format.
+    expect(formatPriceOrUnavailable(189, 'Rs. 189')).toBe('Rs. 189');
+    expect(formatPriceOrUnavailable(1968, 'Rs. 1,968')).toBe('Rs. 1,968');
+    expect(formatPriceOrUnavailable(7649)).toBe('Rs. 7,649');
+    expect(formatPriceOrUnavailable(50, 'Rs. 50')).toBe('Rs. 50');
+  });
+});

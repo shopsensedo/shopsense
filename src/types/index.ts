@@ -35,6 +35,13 @@ export interface Product {
    *  the query in context (brand-mismatch cap). Set only for live text search;
    *  when absent the card falls back to the plain score-band label. */
   textLabel?: TextSimilarityLabel;
+  /** Raw price field(s) from the source JSON (live items only), kept next to
+   *  the parsed price for auditability — e.g. Daraz's {price, priceShow,
+   *  originalPrice, discount}. */
+  rawPrice?: unknown;
+  /** The source's own price text, e.g. "Rs. 1,968" (live items only). Used
+   *  for the "Price unavailable" display rule. */
+  priceText?: string;
   rating: number;
   reviewsCount: number;
   deliveryTime: string;

@@ -3,6 +3,7 @@ import { Heart, ExternalLink, Star, Check } from 'lucide-react';
 import { Product } from '../../types';
 import { SourceBadge } from './SourceBadge';
 import { formatPKR } from './PriceTag';
+import { formatPriceOrUnavailable } from '../../lib/liveNormalize';
 import { handleImageError } from '../../utils/imageFallback';
 import { similarityLabel, textSimilarityLabel } from '../../lib/liveSearch';
 
@@ -105,11 +106,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           )}
         </div>
 
-        {/* Price */}
+        {/* Price — "Price unavailable" when the parsed price is missing,
+            below Rs 50, or the source text carries no currency marker */}
         <div className="flex items-baseline gap-2 mb-1">
-          <span className="text-xl font-bold text-void dark:text-bone tracking-tight tabular-nums font-heading">
-            {formatPKR(product.price)}
-          </span>
+          {(() => {
+            const priceStr = formatPriceOrUnavailable(product.price, product.priceText);
+            return priceStr ? (
+              <span className="text-xl font-bold text-void dark:text-bone tracking-tight tabular-nums font-heading">
+                {priceStr}
+              </span>
+            ) : (
+              <span className="text-sm font-semibold text-smoke dark:text-fog">
+                Price unavailable
+              </span>
+            );
+          })()}
           {hasDiscount && (
             <span className="text-sm line-through text-smoke dark:text-fog tabular-nums">
               {formatPKR(product.originalPrice!)}

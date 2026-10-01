@@ -8,6 +8,7 @@ import { PriceChart } from '../ui/PriceChart';
 import { useToast } from '../ui/Toast';
 import { handleImageError } from '../../utils/imageFallback';
 import { similarityLabel } from '../../lib/liveSearch';
+import { formatPriceOrUnavailable } from '../../lib/liveNormalize';
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -138,11 +139,21 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </div>
             )}
 
-            {/* Price */}
+            {/* Price — "Price unavailable" when the parsed price is missing,
+                below Rs 50, or the source text carries no currency marker */}
             <div className="flex items-baseline gap-3 mb-5">
-              <span className="text-3xl md:text-4xl font-bold text-void dark:text-bone font-heading tracking-tight tabular-nums">
-                {formatPKR(product.price)}
-              </span>
+              {(() => {
+                const priceStr = formatPriceOrUnavailable(product.price, product.priceText);
+                return priceStr ? (
+                  <span className="text-3xl md:text-4xl font-bold text-void dark:text-bone font-heading tracking-tight tabular-nums">
+                    {priceStr}
+                  </span>
+                ) : (
+                  <span className="text-lg font-semibold text-smoke dark:text-fog">
+                    Price unavailable
+                  </span>
+                );
+              })()}
               {hasDiscount && (
                 <>
                   <span className="text-lg line-through text-smoke dark:text-fog tabular-nums">

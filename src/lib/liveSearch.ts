@@ -231,6 +231,8 @@ function toLiveProduct(l: LiveListing, score: number, textLabel?: TextSimilarity
     price: l.price,
     originalPrice: l.price,
     currency: 'PKR',
+    rawPrice: l.rawPrice, // raw source JSON price fields, next to the parsed value
+    priceText: l.priceText, // source's own price text ("Rs. 1,968") for display rules
     platform,
     platformUrl: l.url, // REAL product page
     imageUrl: l.image, // REAL product image (<img> needs no CORS)

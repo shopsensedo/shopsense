@@ -52,10 +52,14 @@ export function sourceForUrl(url: string, feedSource: FeedSource): FeedSource {
 /**
  * Parse a price value that may be a number or a string with commas,
  * decimals or currency text: 'Rs. 1,968' -> 1968, '1967.87' -> 1968,
- * '12,149' -> 12149, '' -> 0.
+ * '12,149' -> 12149, '' -> 0. Commas are always thousand separators in
+ * these feeds; the first decimal number wins.
  */
 export function toInt(s: unknown): number {
-  const n = Number(String(s ?? '').replace(/[^0-9.]/g, ''));
+  const t = String(s ?? '').replace(/,/g, '');
+  const m = t.match(/\d+(?:\.\d+)?/);
+  if (!m) return 0;
+  const n = Number(m[0]);
   return Number.isFinite(n) ? Math.round(n) : 0;
 }
 
