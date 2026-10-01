@@ -150,7 +150,7 @@ export async function fetchLiveListings(
   };
 }
 
-function toLiveProduct(l: LiveListing, score: number): Product {
+function toLiveProduct(l: LiveListing, score: number, textLabel?: TextSimilarityLabel): Product {
   const platform = (l.source === 'Daraz' ? 'daraz' : 'priceoye') as PlatformType;
   return {
     id: `live-${l.source}-${encodeURIComponent(l.url).slice(-24)}`,
@@ -164,6 +164,7 @@ function toLiveProduct(l: LiveListing, score: number): Product {
     imageUrl: l.image, // REAL product image (<img> needs no CORS)
     similarityScore: Math.max(1, Math.round(score * 100)),
     cosineSimilarity: score, // raw CLIP cosine, shown only in the detail modal
+    textLabel, // brand-aware text label (text search only)
     rating: 0,
     reviewsCount: 0,
     deliveryTime: '',
@@ -219,6 +220,46 @@ export function textSimilarityLabel(score01: number): TextSimilarityLabel {
   return 'Possible match';
 }
 
+/**
+ * Brand/colour awareness — TEXT SEARCH ONLY.
+ *
+ * If a brand or colour word from the query appears in the result title, the
+ * score gets a small +0.02 boost. The boost is deliberately less than half
+ * the 0.04 gap between text label tiers (Strong ≥0.28, Good ≥0.24): it can
+ * settle near-ties in favour of brand/colour matches, but it can never
+ * promote a result across a full label tier on its own — CLIP's judgment
+ * stays primary.
+ *
+ * If the query names a brand the title does not contain, the label is capped
+ * at "Possible match" no matter how high the score: asking for "nike" and
+ * getting a no-name shoe is a brand miss, not a strong match.
+ */
+export const BRAND_COLOUR_BOOST = 0.02;
+
+export function brandColourBoostedScore(
+  score: number,
+  title: string,
+  rawQuery: string,
+  keywords: string[],
+): number {
+  const t = title.toLowerCase();
+  const words = [...brandsInQuery(rawQuery, keywords), ...coloursInKeywords(keywords)];
+  return words.some((w) => t.includes(w)) ? score + BRAND_COLOUR_BOOST : score;
+}
+
+export function brandAwareTextLabel(
+  score: number,
+  title: string,
+  rawQuery: string,
+  keywords: string[],
+): TextSimilarityLabel {
+  const brands = brandsInQuery(rawQuery, keywords);
+  if (brands.length > 0 && !brands.some((b) => title.toLowerCase().includes(b))) {
+    return 'Possible match';
+  }
+  return textSimilarityLabel(score);
+}
+
 export type LiveProgress =
   | { stage: 'classify' }
   | { stage: 'fetch' }
@@ -232,14 +273,13 @@ export type LiveProgress =
  * cheap irrelevant listing can never outrank a relevant one.
  */
 export function applyRelevanceThenSort(
-  scored: { l: LiveListing; score: number }[],
+  scored: { l: LiveListing; score: number; label: TextSimilarityLabel }[],
   priceIntent: PriceIntent,
-): { l: LiveListing; score: number }[] {
+): { l: LiveListing; score: number; label: TextSimilarityLabel }[] {
   const ranked = [...scored].sort((a, b) => b.score - a.score);
-  const relevant = ranked.filter((r) => {
-    const lbl = textSimilarityLabel(r.score);
-    return lbl === 'Strong match' || lbl === 'Good match';
-  });
+  const relevant = ranked.filter(
+    (r) => r.label === 'Strong match' || r.label === 'Good match',
+  );
   const pool = (relevant.length >= 5 ? relevant : ranked.slice(0, 8)).slice(0, 12);
   if (priceIntent === 'asc') return [...pool].sort((a, b) => a.l.price - b.l.price);
   if (priceIntent === 'desc') return [...pool].sort((a, b) => b.l.price - a.l.price);
@@ -421,9 +461,22 @@ export async function searchLiveText(
   const scored = await scoreThumbnails(listings, queryVec, onProgress);
   if (scored.length === 0) return empty; // thumbnails failed — honest empty, not fake
 
-  // 6. relevance first, then an optional price sort over the relevant set only
-  const pool = applyRelevanceThenSort(scored, priceIntent);
-  const products = pool.map(({ l, score }) => toLiveProduct(l, score));
+  // 5b. brand/colour awareness (text search only): a brand or colour word from
+  // the query that appears in the title earns a small score boost; the label
+  // is computed with the brand-mismatch cap.
+  const aware = scored.map(({ l, score }) => {
+    const boosted = brandColourBoostedScore(score, l.title, rawQuery, keywords);
+    return {
+      l,
+      score: boosted,
+      label: brandAwareTextLabel(boosted, l.title, rawQuery, keywords),
+    };
+  });
+
+  // 6. relevance first (on the brand-aware label), then an optional price
+  // sort over the relevant set only
+  const pool = applyRelevanceThenSort(aware, priceIntent);
+  const products = pool.map(({ l, score, label }) => toLiveProduct(l, score, label));
   return {
     products,
     mappedQuery: english,

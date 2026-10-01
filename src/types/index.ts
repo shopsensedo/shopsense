@@ -1,3 +1,5 @@
+import type { TextSimilarityLabel } from '../lib/liveSearch';
+
 export type PlatformType = 'daraz' | 'telemart' | 'bagallery' | 'priceoye' | 'elo' | 'shophive' | 'gulahmed';
 
 export interface PlatformInfo {
@@ -29,6 +31,10 @@ export interface Product {
    *  CLIP measurement (live search); mock/demo-heuristic products leave it undefined
    *  so the UI never presents a fabricated cosine value. */
   cosineSimilarity?: number;
+  /** Brand-aware text-search label (Strong/Good/Possible match), computed with
+   *  the query in context (brand-mismatch cap). Set only for live text search;
+   *  when absent the card falls back to the plain score-band label. */
+  textLabel?: TextSimilarityLabel;
   rating: number;
   reviewsCount: number;
   deliveryTime: string;
