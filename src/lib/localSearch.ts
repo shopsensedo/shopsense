@@ -12,6 +12,7 @@ import { cosineSim, embedQueryImage } from './clipEmbed';
 import seedEmbeddings from '../data/seed_embeddings.json';
 import seedProducts from '../data/seed_products.json';
 import romanUrduMapRaw from '../data/roman_urdu_map.json';
+import stopwordsRaw from '../data/stopwords.json';
 
 interface SeedProduct {
   id: string;
@@ -96,10 +97,20 @@ export async function searchByImageLocal(
 // Text search (Roman Urdu keyword map — mirrors backend normalize_query)
 // ---------------------------------------------------------------------------
 
+const STOPWORDS: Set<string> = new Set(
+  (stopwordsRaw as { words: string[] }).words,
+);
+
 export function normalizeQueryLocal(query: string): string[] {
-  // Pad so phrase matching is word-boundary safe: short keys like "ac" or
-  // "tv" must not match inside longer words ("black", "watch").
-  let q = ` ${query.trim().toLowerCase().replace(/\s+/g, ' ')} `;
+  // Strip filler/stopwords first ("mujhe kala joota chahiye" -> "kala joota"),
+  // then map. Padding keeps phrase matching word-boundary safe: short keys
+  // like "ac" or "tv" must not match inside longer words ("black", "watch").
+  const tokens = query
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((t) => t && !STOPWORDS.has(t));
+  let q = ` ${tokens.join(' ')} `;
   if (!q.trim()) return [];
   const keywords: string[] = [];
   const push = (kws: string[]) => {
