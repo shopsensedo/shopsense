@@ -134,7 +134,10 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
     platforms: ['daraz', 'telemart', 'bagallery', 'priceoye', 'elo', 'shophive', 'gulahmed'],
     minSimilarity: defaultMinSimilarity,
     inStockOnly: false,
-    sortBy: 'relevance',
+    // A price-intent query arrives already relevance-then-price sorted; default
+    // the dropdown to match so the grid doesn't re-sort by similarity behind
+    // the "Best matches, sorted by … price" chip.
+    sortBy: priceSort === 'asc' ? 'price_low' : priceSort === 'desc' ? 'price_high' : 'relevance',
   });
 
   const allPlatforms: PlatformType[] = ['daraz', 'telemart', 'bagallery', 'priceoye', 'elo', 'shophive', 'gulahmed'];
@@ -174,7 +177,9 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
         break;
       case 'relevance':
       default:
-        list.sort((a, b) => b.similarityScore - a.similarityScore);
+        // No price intent: rank by similarity. With a price intent the search
+        // already returned relevance-then-price order — keep it, don't re-sort.
+        if (!priceSort) list.sort((a, b) => b.similarityScore - a.similarityScore);
         break;
     }
 
@@ -198,7 +203,7 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
       platforms: allPlatforms,
       minSimilarity: defaultMinSimilarity,
       inStockOnly: false,
-      sortBy: 'relevance',
+      sortBy: priceSort === 'asc' ? 'price_low' : priceSort === 'desc' ? 'price_high' : 'relevance',
     });
     setActiveCategory(null);
   };

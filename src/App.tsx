@@ -285,6 +285,7 @@ function ShopSenseApp() {
 
     setSearchError(null);
     setCurrentProducts(matchedProducts);
+    setLastSearch({ type: 'image', dataUrl: croppedDataUrl });
     if (!demoMode) {
       try {
         await setCached({
@@ -473,6 +474,7 @@ function ShopSenseApp() {
       category: cat,
     };
     setSearchHistory((prev) => [historyItem, ...prev]);
+    setLastSearch({ type: 'text', query });
 
     setSearchReady(true);
   };
