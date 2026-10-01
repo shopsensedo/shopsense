@@ -69,7 +69,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Match pill — bottom-right, subtle */}
         <span
-          data-testid="match-pill"
+          data-testid="match-label-pill"
           className="absolute bottom-3 right-3 bg-white/10 backdrop-blur-sm px-2 py-0.5 rounded-full text-[11px] font-semibold text-white/90 tabular-nums"
         >
           {labelKind === 'text'
