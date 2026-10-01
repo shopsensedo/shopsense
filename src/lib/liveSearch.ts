@@ -49,6 +49,25 @@ const LIVE_TIMEOUT_MS = 12000;
 const EMBED_TIMEOUT_MS = 30000;
 const MAX_CANDIDATES = 16;
 
+/**
+ * Per-site search phrasing, tuned against the real APIs:
+ * - PriceOye's suggest endpoint matches product names ("5g mobile" → smartphones,
+ *   while "mobile" returns bar phones).
+ * - Daraz's catalog search is a normal keyword search ("smartphone" → 40 phones).
+ */
+const SITE_QUERIES: Record<string, { daraz: string; priceoye: string }> = {
+  mobile: { daraz: 'smartphone', priceoye: '5g mobile' },
+  shoes: { daraz: 'shoes', priceoye: 'shoes' },
+  watch: { daraz: 'watch', priceoye: 'watch' },
+  handbag: { daraz: 'handbag', priceoye: 'handbag' },
+  earbuds: { daraz: 'earbuds', priceoye: 'earbuds' },
+  sunglasses: { daraz: 'sunglasses', priceoye: 'sunglasses' },
+  kurta: { daraz: 'kurta', priceoye: 'kurta' },
+  tshirt: { daraz: 'tshirt', priceoye: 'tshirt' },
+  backpack: { daraz: 'backpack', priceoye: 'backpack' },
+  laptop: { daraz: 'laptop', priceoye: 'laptop' },
+};
+
 async function fetchWithTimeout(url: string, ms: number): Promise<Response> {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), ms);
@@ -60,8 +79,12 @@ async function fetchWithTimeout(url: string, ms: number): Promise<Response> {
 }
 
 /** Real listings from /api/live-search (PriceOye + Daraz, fetched live). */
-export async function fetchLiveListings(query: string): Promise<LiveListing[]> {
-  const r = await fetchWithTimeout(`/api/live-search?q=${encodeURIComponent(query)}`, LIVE_TIMEOUT_MS);
+export async function fetchLiveListings(category: string, fallbackQuery: string): Promise<LiveListing[]> {
+  const sq = SITE_QUERIES[category] ?? { daraz: fallbackQuery, priceoye: fallbackQuery };
+  const r = await fetchWithTimeout(
+    `/api/live-search?q=${encodeURIComponent(sq.daraz)}&pq=${encodeURIComponent(sq.priceoye)}`,
+    LIVE_TIMEOUT_MS,
+  );
   if (!r.ok) throw new Error(`live-search ${r.status}`);
   const d = await r.json();
   const results = Array.isArray(d?.results) ? d.results : [];
@@ -117,7 +140,7 @@ export async function searchLive(
 
   // 3. live listings from the sites
   onProgress?.({ stage: 'fetch' });
-  const listings = await fetchLiveListings(cls.query);
+  const listings = await fetchLiveListings(cls.category, cls.query);
   if (listings.length === 0) throw new Error('no live listings');
 
   // 4+5. embed each product image (via proxy) and rank by visual similarity

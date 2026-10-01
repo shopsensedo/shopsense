@@ -69,12 +69,15 @@ export default async function handler(req: any, res: any) {
   res.setHeader('Cache-Control', 'public, max-age=120');
 
   const q = String(req.query?.q ?? '').trim().slice(0, 60);
+  // PriceOye's suggest API responds better to different phrasing than Daraz;
+  // `pq` lets the client tune each site separately (defaults to `q`).
+  const pq = String(req.query?.pq ?? '').trim().slice(0, 60) || q;
   if (!q) {
     res.status(400).json({ error: 'missing q' });
     return;
   }
 
-  const [po, dz] = await Promise.allSettled([fetchPriceOye(q), fetchDaraz(q)]);
+  const [po, dz] = await Promise.allSettled([fetchPriceOye(pq), fetchDaraz(q)]);
   const results: LiveItem[] = [
     ...(po.status === 'fulfilled' ? po.value : []),
     ...(dz.status === 'fulfilled' ? dz.value : []),
