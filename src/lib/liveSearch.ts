@@ -26,6 +26,7 @@ import brandsRaw from '../data/brands.json';
 import coloursRaw from '../data/colours.json';
 import categorySourcesRaw from '../data/categorySources.json';
 import nounSynonymsRaw from '../data/nounSynonyms.json';
+import { buildFilterFunnel, type FilterFunnel } from './liveNormalize';
 
 /** Category keys (IMAGE_CATEGORIES keys) that PriceOye actually sells:
 // electronics and appliances only. Everything else is Daraz-only. */
@@ -183,7 +184,7 @@ export async function fetchLiveListings(
   fallbackQuery: string,
   siteQuery?: string,
   skipSource?: 'priceoye' | 'daraz',
-): Promise<{ listings: LiveListing[]; sources: SourceStatus }> {
+): Promise<{ listings: LiveListing[]; sources: SourceStatus; returned: number }> {
   const sq = siteQuery
     ? { daraz: siteQuery, priceoye: siteQuery }
     : (SITE_QUERIES[category] ?? { daraz: fallbackQuery, priceoye: fallbackQuery });
@@ -198,11 +199,14 @@ export async function fetchLiveListings(
     d = await r.json();
   } catch {
     // The function itself failed — both sources are unknown/unavailable.
-    return { listings: [], sources: EMPTY_SOURCES };
+    return { listings: [], sources: EMPTY_SOURCES, returned: 0 };
   }
-  const results = dedupeListings(
+  // `returned` = listings from the sources after URL dedupe, BEFORE the
+  // thumbnail cap — this is the honest "M" in "Showing N of M".
+  const deduped = dedupeListings(
     (Array.isArray(d?.results) ? d.results : []) as LiveListing[],
-  ).slice(0, MAX_CANDIDATES);
+  );
+  const results = deduped.slice(0, MAX_CANDIDATES);
   // /api/live-search reports per-source outcomes as count | 'error' | 'skipped'.
   const src = d?.sources ?? {};
   const toStatus = (v: unknown): SourceState =>
@@ -214,6 +218,7 @@ export async function fetchLiveListings(
   return {
     listings: results,
     sources: { priceoye: toStatus(src.priceoye), daraz: toStatus(src.daraz) },
+    returned: deduped.length,
   };
 }
 
@@ -687,8 +692,10 @@ export async function searchLiveText(
   query: string;
   sources: SourceStatus;
   priceSort: PriceIntent;
-  /** Candidates scored before the relevance floor — the "M" in "Showing N of M". */
+  /** Results returned by the sources after URL dedupe — the "M" in "Showing N of M". */
   totalCandidates: number;
+  /** Honest per-stage drop counts; null when the pipeline produced nothing. */
+  funnel: FilterFunnel | null;
 }> {
   // 1. Roman Urdu → English (word-boundary safe, mixed-language passthrough).
   // Price-intent words ("sasta", "mehnga") are stripped from the mapped query
@@ -707,7 +714,7 @@ export async function searchLiveText(
   const skipSource = priceOyeSellsCategory(categoryKeyForText(keywords))
     ? undefined
     : 'priceoye';
-  const { listings, sources } = await fetchLiveListings(
+  const { listings, sources, returned } = await fetchLiveListings(
     category,
     english,
     marketplaceQuery,
@@ -722,6 +729,7 @@ export async function searchLiveText(
     sources,
     priceSort: priceIntent,
     totalCandidates: 0,
+    funnel: null as FilterFunnel | null,
   };
   if (listings.length === 0) return empty;
 
@@ -770,7 +778,18 @@ export async function searchLiveText(
     query: english,
     sources,
     priceSort: priceIntent,
-    totalCandidates: scored.length,
+    // M = what the sources returned after URL dedupe — NOT the thumbnail
+    // survivors. The funnel below accounts for every later drop.
+    totalCandidates: returned,
+    funnel: buildFilterFunnel({
+      returned,
+      cap: MAX_CANDIDATES,
+      attempted: listings.length,
+      usable: scored.length,
+      floored: floored.length,
+      pooled: pool.length,
+      shown: products.length,
+    }),
   };
 }
 /**

@@ -13,6 +13,7 @@ import { ToastProvider, useToast } from './components/ui/Toast';
 import { searchByImage, searchByText } from './lib/api';
 import { searchByImageLocal, searchByTextLocal, parseQuery } from './lib/localSearch';
 import { searchLive, searchLiveText, SourceStatus } from './lib/liveSearch';
+import type { FilterFunnel } from './lib/liveNormalize';
 import { preloadClipModels, isClipPreloaded, onPreloadProgress } from './lib/clipEmbed';
 import { isDemoMode } from './lib/demoMode';
 import { getCached, setCached, cacheKeyForText, cacheKeyForImage } from './lib/searchCache';
@@ -52,8 +53,10 @@ function ShopSenseApp() {
   const [marketplaceQuery, setMarketplaceQuery] = useState<string | null>(null);
   const [priceSort, setPriceSort] = useState<'asc' | 'desc' | null>(null);
   const [cacheInfo, setCacheInfo] = useState<{ at: number } | null>(null);
-  /** Pre-relevance-floor candidate count for text search — the "M" in "Showing N of M". */
+  /** Results returned by the sources after URL dedupe — the "M" in "Showing N of M". */
   const [totalResults, setTotalResults] = useState<number | null>(null);
+  /** Honest per-stage drop counts for the "How results were filtered" line (text search). */
+  const [filterFunnel, setFilterFunnel] = useState<FilterFunnel | null>(null);
   const [lastSearch, setLastSearch] = useState<
     { type: 'image'; dataUrl: string } | { type: 'text'; query: string } | null
   >(null);
@@ -226,6 +229,7 @@ function ShopSenseApp() {
     setCurrentScreen('search_loading');
     setCacheInfo(null);
     setTotalResults(null); // image search has no relevance floor — M = shown
+    setFilterFunnel(null); // image search has no text funnel
 
     // Served-from-cache path: key is the SHA-256 of the downscaled image.
     if (!demoMode && !forceRefresh) {
@@ -392,6 +396,7 @@ function ShopSenseApp() {
     setCurrentScreen('search_loading');
     setCacheInfo(null);
     setTotalResults(null);
+    setFilterFunnel(null);
 
     // Served-from-cache path: skip the live pipeline entirely.
     if (!demoMode && !forceRefresh) {
@@ -405,6 +410,7 @@ function ShopSenseApp() {
         setMarketplaceQuery(hit.marketplaceQuery ?? null);
         setPriceSort(hit.priceSort ?? null);
         setTotalResults(hit.totalCandidates ?? hit.products.length);
+        setFilterFunnel(hit.funnel ?? null);
         setCacheInfo({ at: hit.at });
         setLastSearch({ type: 'text', query });
         setSearchReady(true);
@@ -458,6 +464,7 @@ function ShopSenseApp() {
         setMarketplaceQuery(live.marketplaceQuery);
         setPriceSort(live.priceSort);
         setTotalResults(live.totalCandidates);
+        setFilterFunnel(live.funnel);
         if (live.products.length > 0) {
           matched = live.products;
           cat = live.category || 'General';
@@ -474,6 +481,7 @@ function ShopSenseApp() {
               category: live.category,
               sources: live.sources,
               totalCandidates: live.totalCandidates,
+              funnel: live.funnel,
             });
           }
         } else {
@@ -729,6 +737,7 @@ function ShopSenseApp() {
               searchKind={lastSearch?.type === 'text' ? 'text' : 'image'}
               cacheAt={cacheInfo?.at ?? null}
               totalResults={totalResults}
+              filterFunnel={filterFunnel}
               onRefresh={() => {
                 if (lastSearch?.type === 'text') handleTextSearch(lastSearch.query, true);
                 else if (lastSearch?.type === 'image')

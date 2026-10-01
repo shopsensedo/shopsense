@@ -111,3 +111,71 @@ export function normalizeDarazItem(it: any): LiveItem {
     url,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Honest result funnel (D2-2): every dropped listing is counted somewhere.
+// ---------------------------------------------------------------------------
+
+/** Raw stage counts observed while running the text-search pipeline. */
+export interface FunnelStages {
+  /** Listings returned by the sources after URL dedupe — the "M". */
+  returned: number;
+  /** Thumbnail cap (16): at most this many listings are compared. */
+  cap: number;
+  /** Thumbnails actually attempted (= min(returned, cap)). */
+  attempted: number;
+  /** Thumbnails that embedded OK and entered ranking. */
+  usable: number;
+  /** Survivors of the relevance floor. */
+  floored: number;
+  /** Survivors of the relevance shortlist (top-8 / 12-cap). */
+  pooled: number;
+  /** Final products handed to the UI. */
+  shown: number;
+}
+
+/** Per-stage drop counts derived from the raw stages. */
+export interface FilterFunnel {
+  returned: number;
+  capDropped: number;
+  compared: number;
+  usableImage: number;
+  belowFloor: number;
+  shortlistDropped: number;
+  shown: number;
+}
+
+export function buildFilterFunnel(s: FunnelStages): FilterFunnel {
+  return {
+    returned: s.returned,
+    capDropped: Math.max(0, s.returned - s.cap),
+    compared: s.attempted,
+    usableImage: s.usable,
+    belowFloor: Math.max(0, s.usable - s.floored),
+    shortlistDropped: Math.max(0, s.floored - s.pooled),
+    shown: s.shown,
+  };
+}
+
+/**
+ * "How results were filtered": returned X, usable image Y, compared Z,
+ * below relevance floor W, shown N — plus a parenthetical naming every
+ * other drop (16-thumbnail cap, failed thumbnails, relevance shortlist).
+ * Nothing is dropped without being counted.
+ */
+export function formatFilterFunnel(f: FilterFunnel): string {
+  const parts = [
+    `returned ${f.returned}`,
+    `usable image ${f.usableImage}`,
+    `compared ${f.compared}`,
+    `below relevance floor ${f.belowFloor}`,
+    `shown ${f.shown}`,
+  ];
+  const notes: string[] = [];
+  if (f.capDropped > 0) notes.push(`16-thumbnail cap dropped ${f.capDropped}`);
+  const thumbFailed = f.compared - f.usableImage;
+  if (thumbFailed > 0)
+    notes.push(`${thumbFailed} thumbnail${thumbFailed === 1 ? '' : 's'} failed to load`);
+  if (f.shortlistDropped > 0) notes.push(`relevance shortlist dropped ${f.shortlistDropped}`);
+  return notes.length > 0 ? `${parts.join(', ')} (${notes.join('; ')})` : parts.join(', ');
+}

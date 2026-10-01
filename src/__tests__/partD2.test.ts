@@ -10,6 +10,8 @@ import {
   sourceForUrl,
   normalizePriceOyeItem,
   normalizeDarazItem,
+  buildFilterFunnel,
+  formatFilterFunnel,
 } from '../lib/liveNormalize';
 
 // ---------------------------------------------------------------------------
@@ -107,5 +109,83 @@ describe('D2-1 source/host agreement', () => {
       const expected = s.source === 'Daraz' ? 'daraz' : 'priceoye';
       expect(host, `url ${s.url}`).toContain(expected);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// D2-2: honest result funnel — nothing dropped without being counted
+// ---------------------------------------------------------------------------
+
+describe('D2-2 filter funnel', () => {
+  test('M is the deduped returned count, not the thumbnail survivors', () => {
+    // The real "nike white sneakers" case: Daraz returned 12, only 6
+    // thumbnails embedded, 1 fell below the floor, 5 shown.
+    const f = buildFilterFunnel({
+      returned: 12,
+      cap: 16,
+      attempted: 12,
+      usable: 6,
+      floored: 5,
+      pooled: 5,
+      shown: 5,
+    });
+    expect(f.returned).toBe(12);
+    expect(f.capDropped).toBe(0);
+    expect(f.compared).toBe(12);
+    expect(f.usableImage).toBe(6);
+    expect(f.belowFloor).toBe(1);
+    expect(f.shortlistDropped).toBe(0);
+    expect(f.shown).toBe(5);
+  });
+
+  test('16-thumbnail cap drops are counted and named', () => {
+    const f = buildFilterFunnel({
+      returned: 24,
+      cap: 16,
+      attempted: 16,
+      usable: 14,
+      floored: 12,
+      pooled: 8,
+      shown: 8,
+    });
+    expect(f.capDropped).toBe(8);
+    expect(f.shortlistDropped).toBe(4);
+    const text = formatFilterFunnel(f);
+    expect(text).toContain('returned 24');
+    expect(text).toContain('usable image 14');
+    expect(text).toContain('compared 16');
+    expect(text).toContain('below relevance floor 2');
+    expect(text).toContain('shown 8');
+    expect(text).toContain('16-thumbnail cap dropped 8');
+    expect(text).toContain('2 thumbnails failed to load');
+    expect(text).toContain('relevance shortlist dropped 4');
+  });
+
+  test('clean run has no parenthetical notes', () => {
+    const f = buildFilterFunnel({
+      returned: 5,
+      cap: 16,
+      attempted: 5,
+      usable: 5,
+      floored: 5,
+      pooled: 5,
+      shown: 5,
+    });
+    expect(formatFilterFunnel(f)).toBe(
+      'returned 5, usable image 5, compared 5, below relevance floor 0, shown 5',
+    );
+  });
+
+  test('drop counts never go negative on odd inputs', () => {
+    const f = buildFilterFunnel({
+      returned: 0,
+      cap: 16,
+      attempted: 0,
+      usable: 0,
+      floored: 0,
+      pooled: 0,
+      shown: 0,
+    });
+    expect(Object.values(f).every((v) => v >= 0)).toBe(true);
   });
 });

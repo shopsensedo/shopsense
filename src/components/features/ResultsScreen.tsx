@@ -8,6 +8,7 @@ import { Modal } from '../ui/Modal';
 import { formatPKR } from '../ui/PriceTag';
 import { handleImageError } from '../../utils/imageFallback';
 import { SourceStatus, formatSourceStatus, textSimilarityLabel } from '../../lib/liveSearch';
+import { formatFilterFunnel, type FilterFunnel } from '../../lib/liveNormalize';
 
 interface ResultsScreenProps {
   products: Product[];
@@ -34,8 +35,10 @@ interface ResultsScreenProps {
   searchKind?: 'image' | 'text';
   /** Epoch ms when the shown results were cached (null = fresh live results). */
   cacheAt?: number | null;
-  /** Pre-relevance-floor candidate count (text search) — the "M" in "Showing N of M". */
+  /** Results returned by the sources after URL dedupe (text search) — the "M" in "Showing N of M". */
   totalResults?: number | null;
+  /** Honest per-stage drop counts for the "How results were filtered" line (text search). */
+  filterFunnel?: FilterFunnel | null;
   /** Re-run the search bypassing the cache. */
   onRefresh?: () => void;
 }
@@ -67,6 +70,7 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
   searchKind = 'image',
   cacheAt = null,
   totalResults = null,
+  filterFunnel = null,
   onRefresh,
 }) => {
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
@@ -431,6 +435,19 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
         >
           {formatSourceStatus(sourceStatus)}
         </p>
+      )}
+
+      {/* Honest result funnel — every dropped listing is counted somewhere */}
+      {filterFunnel && (
+        <details
+          className="text-xs text-smoke dark:text-fog mb-6 tabular-nums"
+          data-testid="filter-funnel"
+        >
+          <summary className="cursor-pointer underline underline-offset-2 decoration-dotted">
+            How results were filtered
+          </summary>
+          <p className="mt-1">{formatFilterFunnel(filterFunnel)}</p>
+        </details>
       )}
 
       {/* Category pills — like the reference tabs */}

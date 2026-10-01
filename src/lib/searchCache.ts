@@ -11,6 +11,7 @@
  */
 import type { Product } from '../types';
 import type { SourceStatus } from './liveSearch';
+import type { FilterFunnel } from './liveNormalize';
 
 const DB_NAME = 'shopsense-cache';
 const STORE = 'results';
@@ -25,8 +26,10 @@ export interface CachedSearch {
   priceSort?: 'asc' | 'desc' | null;
   category?: string;
   sources?: SourceStatus | null;
-  /** Pre-relevance-floor candidate count — the "M" in "Showing N of M". */
+  /** Results returned by the sources after URL dedupe — the "M" in "Showing N of M". */
   totalCandidates?: number;
+  /** Honest per-stage drop counts for the "How results were filtered" line. */
+  funnel?: FilterFunnel | null;
 }
 
 /** "text:black shoes sneakers|sort:asc" — the normalized query plus sort. */
