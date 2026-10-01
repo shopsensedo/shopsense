@@ -12,7 +12,7 @@
  */
 import type { PlatformType, Product } from '../types';
 import { embedQueryImage, embedImageUrl, embedTextQuery, cosineSim } from './clipEmbed';
-import { normalizeQueryLocal } from './localSearch';
+import { parseQuery, type PriceIntent } from './localSearch';
 import categoryEmbeddingsRaw from '../data/category_embeddings.json';
 
 interface CategoryEntry {
@@ -257,16 +257,26 @@ export async function searchLiveText(
   category: string;
   query: string;
   sources: SourceStatus;
+  priceSort: PriceIntent;
 }> {
-  // 1. Roman Urdu → English (word-boundary safe, mixed-language passthrough)
-  const keywords = normalizeQueryLocal(rawQuery);
+  // 1. Roman Urdu → English (word-boundary safe, mixed-language passthrough).
+  // Price-intent words ("sasta", "mehnga") are stripped from the mapped query
+  // here and applied as a result sort instead.
+  const { keywords, priceIntent } = parseQuery(rawQuery);
   const english = keywords.join(' ');
   const category = categorizeKeywords(keywords);
 
   // 2. live listings from the sites (mapped query when no category matched)
   onProgress?.({ stage: 'fetch' });
   const { listings, sources } = await fetchLiveListings(category, english);
-  const empty = { products: [] as Product[], mappedQuery: english, category, query: english, sources };
+  const empty = {
+    products: [] as Product[],
+    mappedQuery: english,
+    category,
+    query: english,
+    sources,
+    priceSort: priceIntent,
+  };
   if (listings.length === 0) return empty;
 
   // 3. embed the English query with CLIP's text tower (downloads on first use)
@@ -278,14 +288,18 @@ export async function searchLiveText(
   const scored = await scoreThumbnails(listings, queryVec, onProgress);
   if (scored.length === 0) return empty; // thumbnails failed — honest empty, not fake
 
-  // 6. rank
+  // 6. rank; a price intent ("sasta"/"mehnga") overrides CLIP order with a price sort
   scored.sort((a, b) => b.score - a.score);
+  let products = scored.slice(0, 12).map(({ l, score }) => toLiveProduct(l, score));
+  if (priceIntent === 'asc') products = [...products].sort((a, b) => a.price - b.price);
+  else if (priceIntent === 'desc') products = [...products].sort((a, b) => b.price - a.price);
   return {
-    products: scored.slice(0, 12).map(({ l, score }) => toLiveProduct(l, score)),
+    products,
     mappedQuery: english,
     category,
     query: english,
     sources,
+    priceSort: priceIntent,
   };
 }
 /**

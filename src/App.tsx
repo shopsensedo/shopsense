@@ -47,6 +47,7 @@ function ShopSenseApp() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [sourceStatus, setSourceStatus] = useState<SourceStatus | null>(null);
   const [mappedQuery, setMappedQuery] = useState<string | null>(null);
+  const [priceSort, setPriceSort] = useState<'asc' | 'desc' | null>(null);
   const [lastSearch, setLastSearch] = useState<
     { type: 'image'; dataUrl: string } | { type: 'text'; query: string } | null
   >(null);
@@ -250,6 +251,7 @@ function ShopSenseApp() {
     setSearchError(null);
     setSourceStatus(null);
     setMappedQuery(null);
+    setPriceSort(null);
     setCurrentScreen('search_loading');
 
     let matched: Product[] | null = null;
@@ -294,6 +296,7 @@ function ShopSenseApp() {
         // Always surface what each source did — even when it failed.
         setSourceStatus(live.sources);
         setMappedQuery(live.mappedQuery);
+        setPriceSort(live.priceSort);
         if (live.products.length > 0) {
           matched = live.products;
           cat = live.category || 'General';
@@ -544,6 +547,7 @@ function ShopSenseApp() {
               onRetry={handleRetrySearch}
               sourceStatus={sourceStatus}
               mappedQuery={mappedQuery}
+              priceSort={priceSort}
             />
           )}
 

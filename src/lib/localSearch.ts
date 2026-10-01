@@ -101,15 +101,45 @@ const STOPWORDS: Set<string> = new Set(
   (stopwordsRaw as { words: string[] }).words,
 );
 
+// Price-intent words are NOT search keywords: they never enter the mapped
+// query. Instead they set the result sort order (detected by
+// detectPriceIntent). Discount/sale are stripped but change nothing.
+const PRICE_ASC = new Set([
+  'sasta',
+  'saste',
+  'sastay',
+  'sasti',
+  'cheap',
+  'cheapest',
+  'affordable',
+]);
+const PRICE_DESC = new Set(['mehnga', 'mehanga', 'mehngay', 'expensive']);
+const PRICE_NEUTRAL = new Set(['discount', 'sale']);
+
+export type PriceIntent = 'asc' | 'desc' | null;
+
+export function isPriceWord(token: string): boolean {
+  return PRICE_ASC.has(token) || PRICE_DESC.has(token) || PRICE_NEUTRAL.has(token);
+}
+
+/** "sasta mobile" -> 'asc', "mehnga watch" -> 'desc', "discount shoes" -> null. */
+export function detectPriceIntent(rawTokens: string[]): PriceIntent {
+  const t = rawTokens.map((x) => x.toLowerCase());
+  if (t.some((x) => PRICE_DESC.has(x))) return 'desc';
+  if (t.some((x) => PRICE_ASC.has(x))) return 'asc';
+  return null;
+}
+
 export function normalizeQueryLocal(query: string): string[] {
-  // Strip filler/stopwords first ("mujhe kala joota chahiye" -> "kala joota"),
-  // then map. Padding keeps phrase matching word-boundary safe: short keys
+  // Strip filler/stopwords AND price-intent words first
+  // ("sasta smartwatch dikhao" -> "smartwatch"), then map.
+  // Padding keeps phrase matching word-boundary safe: short keys
   // like "ac" or "tv" must not match inside longer words ("black", "watch").
   const tokens = query
     .trim()
     .toLowerCase()
     .split(/\s+/)
-    .filter((t) => t && !STOPWORDS.has(t));
+    .filter((t) => t && !STOPWORDS.has(t) && !isPriceWord(t));
   let q = ` ${tokens.join(' ')} `;
   if (!q.trim()) return [];
   const keywords: string[] = [];
@@ -132,6 +162,16 @@ export function normalizeQueryLocal(query: string): string[] {
     else if (word && !keywords.includes(word)) keywords.push(word); // mixed English passthrough
   }
   return keywords;
+}
+
+/** Full query analysis: mapped keywords plus any price sort intent. */
+export function parseQuery(query: string): { keywords: string[]; priceIntent: PriceIntent } {
+  const rawTokens = query
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean);
+  return { keywords: normalizeQueryLocal(query), priceIntent: detectPriceIntent(rawTokens) };
 }
 
 export function searchByTextLocal(query: string, topK = 7): Product[] {
