@@ -34,6 +34,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   return (
     <div
+      data-testid="product-card"
       onClick={() => onSelect?.(product)}
       className={`group relative flex flex-col bg-white dark:bg-carbon rounded-[20px] border border-[#E5E5E1] dark:border-graphite overflow-hidden card-lift cursor-pointer ${className}`}
     >
@@ -67,7 +68,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </div>
 
         {/* Match pill — bottom-right, subtle */}
-        <span className="absolute bottom-3 right-3 bg-white/10 backdrop-blur-sm px-2 py-0.5 rounded-full text-[11px] font-semibold text-white/90 tabular-nums">
+        <span
+          data-testid="match-pill"
+          className="absolute bottom-3 right-3 bg-white/10 backdrop-blur-sm px-2 py-0.5 rounded-full text-[11px] font-semibold text-white/90 tabular-nums"
+        >
           {labelKind === 'text'
             ? (product.textLabel ?? textSimilarityLabel((product.cosineSimilarity ?? product.similarityScore / 100)))
             : similarityLabel(product.similarityScore)}
