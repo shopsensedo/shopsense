@@ -37,7 +37,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 md:py-14 animate-fade-up">
       {/* Hero Section — Protech style */}
       <section className="text-center max-w-3xl mx-auto mb-10 md:mb-14">
-        <div className="text-[11px] md:text-xs font-bold text-olive dark:text-lime display-wide uppercase mb-4 flex items-center justify-center gap-2">
+        <div className="text-[11px] md:text-xs font-bold text-olive dark:text-lime display-wide uppercase mb-4 flex flex-wrap items-center justify-center gap-2 text-center px-2">
           <Sparkles className="w-3.5 h-3.5" />
           <span>{isUrduMode ? 'Pakistan ka Pehla AI Price Scanner' : "Pakistan's AI Visual Price Comparison"}</span>
         </div>
