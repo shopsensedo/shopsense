@@ -4,7 +4,7 @@ import { Product } from '../../types';
 import { SourceBadge } from './SourceBadge';
 import { formatPKR } from './PriceTag';
 import { handleImageError } from '../../utils/imageFallback';
-import { similarityLabel } from '../../lib/liveSearch';
+import { similarityLabel, textSimilarityLabel } from '../../lib/liveSearch';
 
 interface ProductCardProps {
   product: Product;
@@ -13,6 +13,8 @@ interface ProductCardProps {
   onSelect?: (product: Product) => void;
   onCompare?: (product: Product) => void;
   className?: string;
+  /** 'text' uses the text-to-image label band (Strong/Good/Possible match). */
+  labelKind?: 'image' | 'text';
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
@@ -22,6 +24,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onSelect,
   onCompare,
   className = '',
+  labelKind = 'image',
 }) => {
   const hasDiscount = product.originalPrice && product.originalPrice > product.price;
   const discountPercent = hasDiscount
@@ -64,7 +67,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Match pill — bottom-right, subtle */}
         <span className="absolute bottom-3 right-3 bg-white/10 backdrop-blur-sm px-2 py-0.5 rounded-full text-[11px] font-semibold text-white/90 tabular-nums">
-          {similarityLabel(product.similarityScore)}
+          {labelKind === 'text'
+            ? textSimilarityLabel((product.cosineSimilarity ?? product.similarityScore / 100))
+            : similarityLabel(product.similarityScore)}
         </span>
 
         {/* Heart — circular, top-right */}

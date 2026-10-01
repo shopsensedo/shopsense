@@ -182,6 +182,27 @@ export function similarityLabel(scorePercent: number): SimilarityLabel {
   return 'Loosely similar';
 }
 
+/**
+ * Labels for TEXT searches. Text-to-image CLIP scores live in a much lower
+ * band than image-to-image scores, so the image thresholds would mislabel
+ * correct text results as "Loosely similar". Thresholds are calibrated on the
+ * real text-to-image distribution measured 2026-10-02 over live Daraz/PriceOye
+ * thumbnails (Xenova/clip-vit-base-patch32, same weights as the browser q8):
+ * relevant text-image pairs scored 0.24-0.32 (e.g. "black shoes sneakers
+ * footwear" -> Black Camel Sneakers 0.300, "watch smartwatch" -> Oraimo Watch
+ * Nova 0.302, "leather handbag bag bags" -> Richlook Handbag 0.308),
+ * irrelevant pairs <= 0.22. So: >= 0.28 Strong (top of the relevant band),
+ * >= 0.24 Good (bottom of the relevant band, clear of the <= 0.22 irrelevant
+ * ceiling), below that Possible.
+ */
+export type TextSimilarityLabel = 'Strong match' | 'Good match' | 'Possible match';
+
+export function textSimilarityLabel(score01: number): TextSimilarityLabel {
+  if (score01 >= 0.28) return 'Strong match';
+  if (score01 >= 0.24) return 'Good match';
+  return 'Possible match';
+}
+
 export type LiveProgress =
   | { stage: 'classify' }
   | { stage: 'fetch' }

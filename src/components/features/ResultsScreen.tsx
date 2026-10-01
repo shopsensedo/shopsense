@@ -28,6 +28,8 @@ interface ResultsScreenProps {
   mappedQuery?: string | null;
   /** Price sort applied from a price-intent query ("sasta" → low-to-high). */
   priceSort?: 'asc' | 'desc' | null;
+  /** Which label band the match pills use: image search or text search. */
+  searchKind?: 'image' | 'text';
 }
 
 const SORT_OPTIONS = [
@@ -53,6 +55,7 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
   sourceStatus = null,
   mappedQuery = null,
   priceSort = null,
+  searchKind = 'image',
 }) => {
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -489,6 +492,7 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
                     onToggleSave={onToggleSave}
                     onSelect={onSelectProduct}
                     onCompare={onCompareProduct}
+                    labelKind={searchKind}
                   />
                 </div>
               ))}

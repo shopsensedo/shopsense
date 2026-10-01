@@ -548,6 +548,7 @@ function ShopSenseApp() {
               sourceStatus={sourceStatus}
               mappedQuery={mappedQuery}
               priceSort={priceSort}
+              searchKind={lastSearch?.type === 'text' ? 'text' : 'image'}
             />
           )}
 
