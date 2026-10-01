@@ -49,7 +49,32 @@ function ShopSenseApp() {
   const [selectedProductForAlert, setSelectedProductForAlert] = useState<Product | null>(null);
 
   // Saved Items, Alerts & History State
-  const [savedItems, setSavedItems] = useState<SavedItem[]>(INITIAL_SAVED_ITEMS);
+  // Saved items persist across reloads via localStorage (mock seed on first run).
+  const [savedItems, setSavedItems] = useState<SavedItem[]>(() => {
+    try {
+      const raw = localStorage.getItem('shopsense_saved_items_v1');
+      if (raw) {
+        const parsed: unknown = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          const valid = parsed.filter(
+            (s): s is SavedItem =>
+              !!s && typeof s === 'object' && !!(s as SavedItem).product && typeof (s as SavedItem).product.id === 'string'
+          );
+          if (valid.length > 0 || parsed.length === 0) return valid;
+        }
+      }
+    } catch {
+      // corrupted storage or private mode — fall through to seed data
+    }
+    return INITIAL_SAVED_ITEMS;
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('shopsense_saved_items_v1', JSON.stringify(savedItems));
+    } catch {
+      // storage unavailable — session-only behavior, non-fatal
+    }
+  }, [savedItems]);
   const [priceAlerts, setPriceAlerts] = useState<PriceAlert[]>(INITIAL_PRICE_ALERTS);
   const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>(INITIAL_SEARCH_HISTORY);
 

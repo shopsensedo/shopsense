@@ -43,7 +43,11 @@ export const PriceAlertModal: React.FC<PriceAlertModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const priceNum = Number(targetPrice) || suggestedTarget;
+    const raw = targetPrice.trim();
+    // Empty field falls back to the suggested target; an explicit zero or
+    // negative value must be rejected (Number('0') is falsy, so a plain
+    // `|| suggestedTarget` would silently accept 0 — that was the bug).
+    const priceNum = raw === '' ? suggestedTarget : Number(raw);
     if (!Number.isFinite(priceNum) || priceNum <= 0) {
       showToast('Please enter a valid target price greater than zero', 'warning');
       return;
