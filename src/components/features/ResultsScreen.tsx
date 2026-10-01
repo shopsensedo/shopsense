@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { SlidersHorizontal, Sparkles, Layers, X, Filter, ChevronDown } from 'lucide-react';
+import { SlidersHorizontal, Sparkles, Layers, X, Filter, ChevronDown, RefreshCw, AlertTriangle } from 'lucide-react';
 import { Product, PlatformType, FilterOptions } from '../../types';
 import { ProductCard } from '../ui/ProductCard';
 import { SourceBadge } from '../ui/SourceBadge';
@@ -7,6 +7,7 @@ import { EmptyState } from '../ui/EmptyState';
 import { Modal } from '../ui/Modal';
 import { formatPKR } from '../ui/PriceTag';
 import { handleImageError } from '../../utils/imageFallback';
+import { SourceStatus, formatSourceStatus } from '../../lib/liveSearch';
 
 interface ResultsScreenProps {
   products: Product[];
@@ -18,6 +19,11 @@ interface ResultsScreenProps {
   onCompareProduct: (product: Product) => void;
   onNewSearch: () => void;
   isUrduMode?: boolean;
+  /** Honest failure state: shown instead of results, with a Retry button. */
+  searchError?: string | null;
+  onRetry?: () => void;
+  /** Per-source outcome of the live fetch — shown after every search. */
+  sourceStatus?: SourceStatus | null;
 }
 
 const SORT_OPTIONS = [
@@ -38,9 +44,55 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
   onCompareProduct,
   onNewSearch,
   isUrduMode = false,
+  searchError = null,
+  onRetry,
+  sourceStatus = null,
 }) => {
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+
+  // Honest failure state: live search failed and there is no fake data to
+  // show. The per-source line explains WHICH source failed, if known.
+  // (Computed as a variable — not an early return — so hook order stays stable.)
+  const searchErrorPanel = searchError ? (
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-16 animate-fade-up text-center">
+        <div className="bg-white dark:bg-carbon rounded-[20px] border border-[#E5E5E1] dark:border-graphite p-8 md:p-10">
+          <div className="w-14 h-14 rounded-2xl bg-red-50 dark:bg-red-950/40 text-red-500 flex items-center justify-center mx-auto mb-4">
+            <AlertTriangle className="w-7 h-7" />
+          </div>
+          <h1 className="text-2xl md:text-3xl font-bold text-void dark:text-bone font-heading mb-2">
+            {searchError}
+          </h1>
+          <p className="text-sm text-smoke dark:text-fog mb-2">
+            {isUrduMode
+              ? 'Apna internet check karein aur dobara koshish karein.'
+              : 'Check your connection and try again.'}
+          </p>
+          {sourceStatus && (
+            <p className="text-xs text-smoke dark:text-fog mb-6 tabular-nums" data-testid="source-status">
+              {formatSourceStatus(sourceStatus)}
+            </p>
+          )}
+          <div className="flex items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={onRetry}
+              className="h-12 px-8 rounded-full bg-void dark:bg-lime text-white dark:text-void text-sm font-bold flex items-center gap-2 transition-colors cursor-pointer"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span>{isUrduMode ? 'Dobara Koshish' : 'Retry'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={onNewSearch}
+              className="h-12 px-6 rounded-full border border-[#E5E5E1] dark:border-ash hover:border-lime text-void dark:text-bone text-sm font-bold transition-colors cursor-pointer"
+            >
+              {isUrduMode ? 'Nayi Talash' : 'New Search'}
+            </button>
+          </div>
+        </div>
+      </div>
+    ) : null;
 
   // Live results (PriceOye/Daraz) carry real PKR prices far above the old
   // mock-catalog range, so the price ceiling adapts to the actual result set.
@@ -233,6 +285,9 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
     </div>
   );
 
+  // The error panel replaces the whole results view — after all hooks.
+  if (searchErrorPanel) return searchErrorPanel;
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-10 animate-fade-up">
       {/* Breadcrumb */}
@@ -278,6 +333,16 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
           <ChevronDown className="w-4 h-4 text-smoke dark:text-fog absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
         </div>
       </div>
+
+      {/* Per-source status — shown after EVERY search, never skipping a failed source */}
+      {sourceStatus && (
+        <p
+          className="text-xs text-smoke dark:text-fog mb-6 tabular-nums"
+          data-testid="source-status"
+        >
+          {formatSourceStatus(sourceStatus)}
+        </p>
+      )}
 
       {/* Category pills — like the reference tabs */}
       <div className="flex items-center gap-2 mb-6 overflow-x-auto no-scrollbar pb-1">

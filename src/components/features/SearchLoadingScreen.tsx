@@ -24,13 +24,13 @@ export const SearchLoadingScreen: React.FC<SearchLoadingScreenProps> = ({
 
   const messagesEn = [
     'Analyzing screenshot visual attributes & contours...',
-    'Scanning Daraz, PriceOye, Telemart & local fashion stores...',
+    'Scanning PriceOye & Daraz for live listings...',
     'Extracting prices and calculating PKR savings...',
   ];
 
   const messagesUr = [
     'Screenshot ki tasweeri jaanch ho rahi hai...',
-    'Daraz, PriceOye, Telemart se live stock check kiya ja raha hai...',
+    'PriceOye aur Daraz se live listings check ho rahi hain...',
     'PKR mein sab se sasti qeemat tayar ki ja rahi hai...',
   ];
 

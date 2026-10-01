@@ -12,7 +12,8 @@ import {
 import { ToastProvider, useToast } from './components/ui/Toast';
 import { searchByImage, searchByText } from './lib/api';
 import { searchByImageLocal, searchByTextLocal } from './lib/localSearch';
-import { searchLive } from './lib/liveSearch';
+import { searchLive, SourceStatus } from './lib/liveSearch';
+import { isDemoMode } from './lib/demoMode';
 import { ThemeProvider, useTheme } from './lib/theme';
 import { Navbar } from './components/ui/Navbar';
 import { BottomNav } from './components/ui/BottomNav';
@@ -38,8 +39,23 @@ function ShopSenseApp() {
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('home');
   const [isUrduMode, setIsUrduMode] = useState<boolean>(false);
 
-  // User State
-  const [user, setUser] = useState<User | null>(MOCK_USER);
+  // Demo mode: ?demo=1 or VITE_DEMO_MODE=true. Seed/mock data is ONLY
+  // allowed here — production shows live listings or an honest error.
+  const [demoMode] = useState<boolean>(() => isDemoMode());
+
+  // Search failure state (production): honest error + retry, never fake data.
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [sourceStatus, setSourceStatus] = useState<SourceStatus | null>(null);
+  const [lastSearch, setLastSearch] = useState<
+    { type: 'image'; dataUrl: string } | { type: 'text'; query: string } | null
+  >(null);
+
+  // User State — production starts as Guest; the fake MOCK_USER is demo-only.
+  const [user, setUser] = useState<User | null>(() =>
+    demoMode
+      ? MOCK_USER
+      : { id: 'guest', name: 'Guest', email: '', isGuest: true, preferredLanguage: 'en' },
+  );
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // Search & Products State
@@ -49,13 +65,13 @@ function ShopSenseApp() {
   const [clipProgressLabel, setClipProgressLabel] = useState<string | undefined>(undefined);
   const [searchReady, setSearchReady] = useState(true);
   const [searchQueryText, setSearchQueryText] = useState<string>('');
-  const [currentProducts, setCurrentProducts] = useState<Product[]>(SAMPLE_PRODUCTS);
+  const [currentProducts, setCurrentProducts] = useState<Product[]>([]);
   const [selectedProductForDetail, setSelectedProductForDetail] = useState<Product | null>(null);
   const [selectedProductForComparison, setSelectedProductForComparison] = useState<Product | null>(null);
   const [selectedProductForAlert, setSelectedProductForAlert] = useState<Product | null>(null);
 
   // Saved Items, Alerts & History State
-  // Saved items persist across reloads via localStorage (mock seed on first run).
+  // Saved items persist across reloads via localStorage (demo seed on first run in demo mode).
   const [savedItems, setSavedItems] = useState<SavedItem[]>(() => {
     try {
       const raw = localStorage.getItem('shopsense_saved_items_v1');
@@ -72,7 +88,7 @@ function ShopSenseApp() {
     } catch {
       // corrupted storage or private mode — fall through to seed data
     }
-    return INITIAL_SAVED_ITEMS;
+    return demoMode ? INITIAL_SAVED_ITEMS : [];
   });
   useEffect(() => {
     try {
@@ -81,8 +97,13 @@ function ShopSenseApp() {
       // storage unavailable — session-only behavior, non-fatal
     }
   }, [savedItems]);
-  const [priceAlerts, setPriceAlerts] = useState<PriceAlert[]>(INITIAL_PRICE_ALERTS);
-  const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>(INITIAL_SEARCH_HISTORY);
+  // Fake seed alerts/history are demo-only; production starts empty.
+  const [priceAlerts, setPriceAlerts] = useState<PriceAlert[]>(() =>
+    demoMode ? INITIAL_PRICE_ALERTS : [],
+  );
+  const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>(() =>
+    demoMode ? INITIAL_SEARCH_HISTORY : [],
+  );
 
   // Handle image selected for upload
   const handleImageSelected = (imageDataUrl: string, sourceName?: string) => {
@@ -91,10 +112,15 @@ function ShopSenseApp() {
     setIsCropModalOpen(true);
   };
 
-  // Confirm crop and execute visual search — backend first, mock fallback when offline
+  // Confirm crop and execute visual search.
+  // Production: backend (local dev) → LIVE pipeline. Any failure shows an
+  // honest error — NEVER sample/seed/mock data. Demo mode (?demo=1) additionally
+  // falls back to the seed catalog and then the mock catalog, under a banner.
   const handleConfirmCrop = async (croppedDataUrl: string) => {
     setIsCropModalOpen(false);
     setSearchReady(false);
+    setSearchError(null);
+    setSourceStatus(null);
     setCurrentScreen('search_loading');
 
     let matchedProducts: Product[] | null = null;
@@ -104,14 +130,14 @@ function ShopSenseApp() {
       matchedProducts = await searchByImage(croppedDataUrl, 7);
       if (matchedProducts.length > 0) detectedCat = matchedProducts[0].category || 'Footwear';
     } catch {
-      matchedProducts = null; // backend unreachable — try in-browser CLIP
+      matchedProducts = null; // backend unreachable — try the live pipeline
     }
 
     if (!matchedProducts) {
       try {
         // LIVE pipeline: understand the photo → fetch REAL listings from
         // PriceOye + Daraz → CLIP-embed product images → visual rank.
-        // No mock data in this path; throws on any upstream failure.
+        // No mock data in this path; source failures are reported, not hidden.
         setLocalClipProgress(0);
         const live = await searchLive(croppedDataUrl, (p) => {
           if (typeof p === 'number') {
@@ -131,23 +157,25 @@ function ShopSenseApp() {
             );
           }
         });
-        if (live.products.length >= 3) {
+        // Always surface what each source did — even when it failed.
+        setSourceStatus(live.sources);
+        if (live.products.length > 0) {
           matchedProducts = live.products;
           detectedCat = live.category;
         } else {
           matchedProducts = null;
         }
       } catch {
-        matchedProducts = null; // live failed — try the offline seed catalog
+        matchedProducts = null; // live failed (e.g. model load) — honest error below
       } finally {
         setLocalClipProgress(null);
         setClipProgressLabel(undefined);
       }
     }
 
-    if (!matchedProducts) {
+    if (!matchedProducts && demoMode) {
       try {
-        // In-browser CLIP (same model as the backend) — no server needed.
+        // DEMO ONLY: in-browser CLIP against the bundled 7 seed products.
         // First run downloads the quantized model once (~90MB, cached after).
         setLocalClipProgress(0);
         matchedProducts = await searchByImageLocal(croppedDataUrl, 7, (f) =>
@@ -162,8 +190,8 @@ function ShopSenseApp() {
       }
     }
 
-    if (!matchedProducts) {
-      // Offline fallback: determine relevant products based on uploaded image / prompt
+    if (!matchedProducts && demoMode) {
+      // DEMO ONLY: offline fallback to the hardcoded mock catalog.
       let fallback = SAMPLE_PRODUCTS;
 
       if (croppedDataUrl.includes('kurta') || searchQueryText.toLowerCase().includes('kurta') || searchQueryText.toLowerCase().includes('suit')) {
@@ -181,6 +209,18 @@ function ShopSenseApp() {
       matchedProducts = fallback;
     }
 
+    if (!matchedProducts) {
+      // Production failure: honest state, no fake data.
+      setSearchError(
+        isUrduMode ? 'Live search abhi dastyab nahi hai' : 'Live search is unavailable right now',
+      );
+      setLastSearch({ type: 'image', dataUrl: croppedDataUrl });
+      setCurrentProducts([]);
+      setSearchReady(true);
+      return;
+    }
+
+    setSearchError(null);
     setCurrentProducts(matchedProducts);
 
     // Add to search history
@@ -198,10 +238,15 @@ function ShopSenseApp() {
     setSearchReady(true);
   };
 
-  // Handle text-based search (supports Roman Urdu e.g. "kala joota") — backend first, mock fallback
+  // Handle text-based search (supports Roman Urdu e.g. "kala joota").
+  // Production: backend (local dev) only — no live text pipeline yet, and
+  // NEVER seed/mock fallbacks. Any failure shows an honest error.
+  // Demo mode (?demo=1) keeps the seed + mock fallbacks, under a banner.
   const handleTextSearch = async (query: string) => {
     setSearchQueryText(query);
     setSearchReady(false);
+    setSearchError(null);
+    setSourceStatus(null);
     setCurrentScreen('search_loading');
 
     let matched: Product[] | null = null;
@@ -215,11 +260,11 @@ function ShopSenseApp() {
         queryImage = matched[0].imageUrl;
       }
     } catch {
-      matched = null; // backend unreachable — try in-browser text search
+      matched = null; // backend unreachable
     }
 
-    if (!matched) {
-      // Local Roman Urdu keyword search over the seed catalog (no server needed)
+    if (!matched && demoMode) {
+      // DEMO ONLY: local Roman Urdu keyword search over the seed catalog.
       const local = searchByTextLocal(query, 7);
       if (local.length > 0) {
         matched = local;
@@ -228,7 +273,7 @@ function ShopSenseApp() {
       }
     }
 
-    if (!matched) {
+    if (!matched && demoMode) {
       const qLower = query.toLowerCase();
       matched = SAMPLE_PRODUCTS;
 
@@ -249,6 +294,18 @@ function ShopSenseApp() {
       }
     }
 
+    if (!matched) {
+      // Production failure: honest state, no fake data.
+      setSearchError(
+        isUrduMode ? 'Live search abhi dastyab nahi hai' : 'Live search is unavailable right now',
+      );
+      setLastSearch({ type: 'text', query });
+      setCurrentProducts([]);
+      setSearchReady(true);
+      return;
+    }
+
+    setSearchError(null);
     setCurrentProducts(matched);
 
     const historyItem: SearchHistoryItem = {
@@ -264,22 +321,25 @@ function ShopSenseApp() {
     setSearchReady(true);
   };
 
-  // Re-run an item from search history
+  // Re-run an item from search history — re-executes the real search
+  // (live in production, seed/mock fallbacks only in demo mode).
   const handleRerunHistory = (item: SearchHistoryItem) => {
-    if (item.queryImage) {
-      setUploadedImage(item.queryImage);
-    }
     setSearchQueryText(item.queryText || '');
-    if (item.category === 'Footwear') {
-      setCurrentProducts(SAMPLE_PRODUCTS.filter((p) => p.category === 'Footwear'));
-    } else if (item.category === 'Ethnic Wear') {
-      setCurrentProducts(SAMPLE_PRODUCTS.filter((p) => p.category === 'Ethnic Wear'));
-    } else if (item.category === 'Smartwatches') {
-      setCurrentProducts(SAMPLE_PRODUCTS.filter((p) => p.category === 'Smartwatches'));
-    } else {
-      setCurrentProducts(SAMPLE_PRODUCTS);
+    if (item.queryImage) {
+      handleConfirmCrop(item.queryImage);
+    } else if (item.queryText) {
+      handleTextSearch(item.queryText);
     }
-    setCurrentScreen('search_loading');
+  };
+
+  // Retry the last failed search from the honest error state.
+  const handleRetrySearch = () => {
+    if (!lastSearch) return;
+    if (lastSearch.type === 'image') {
+      handleConfirmCrop(lastSearch.dataUrl);
+    } else {
+      handleTextSearch(lastSearch.query);
+    }
   };
 
   // Toggle saving an item
@@ -388,6 +448,19 @@ function ShopSenseApp() {
         </div>
       )}
 
+      {/* Demo banner — shown on EVERY screen while demo mode is on, because
+          demo mode is the only place sample/seed/mock data can appear. */}
+      {demoMode && (
+        <div
+          role="note"
+          className="bg-amber-300 dark:bg-amber-400 text-black px-4 py-2 text-xs font-bold text-center tracking-wide uppercase"
+        >
+          {isUrduMode
+            ? 'Demo data — ye namoonay ki ashya hain, asal listings nahi'
+            : 'Demo data — sample products shown, not real listings'}
+        </div>
+      )}
+
       {/* Dynamic Screen Content */}
       <main className="flex-1 pb-20 md:pb-8">
           {currentScreen === 'home' && (
@@ -421,6 +494,9 @@ function ShopSenseApp() {
               onCompareProduct={handleCompareProduct}
               onNewSearch={() => setCurrentScreen('home')}
               isUrduMode={isUrduMode}
+              searchError={searchError}
+              onRetry={handleRetrySearch}
+              sourceStatus={sourceStatus}
             />
           )}
 

@@ -78,17 +78,19 @@ export default async function handler(req: any, res: any) {
   }
 
   const [po, dz] = await Promise.allSettled([fetchPriceOye(pq), fetchDaraz(q)]);
-  const results: LiveItem[] = [
-    ...(po.status === 'fulfilled' ? po.value : []),
-    ...(dz.status === 'fulfilled' ? dz.value : []),
-  ].filter((r) => r.title && r.price > 0 && r.image && r.url);
+  // Counts reflect VALID normalized listings (title, price, image, URL all
+  // present), so the client's status line never claims results it won't show.
+  const isValid = (r: LiveItem) => !!(r.title && r.price > 0 && r.image && r.url);
+  const poItems = (po.status === 'fulfilled' ? po.value : []).filter(isValid);
+  const dzItems = (dz.status === 'fulfilled' ? dz.value : []).filter(isValid);
+  const results: LiveItem[] = [...poItems, ...dzItems];
 
   res.status(200).json({
     query: q,
     count: results.length,
     sources: {
-      priceoye: po.status === 'fulfilled' ? po.value.length : `error`,
-      daraz: dz.status === 'fulfilled' ? dz.value.length : `error`,
+      priceoye: po.status === 'fulfilled' ? poItems.length : `error`,
+      daraz: dz.status === 'fulfilled' ? dzItems.length : `error`,
     },
     fetchedAt: new Date().toISOString(),
     results,

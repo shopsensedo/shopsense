@@ -29,6 +29,29 @@ export interface LiveListing {
   source: 'PriceOye' | 'Daraz';
 }
 
+/**
+ * Per-source outcome of a live fetch. A failed source is never skipped
+ * silently — the UI shows it as "unavailable (blocked or timed out)".
+ */
+export interface SourceStatus {
+  priceoye: { ok: true; count: number } | { ok: false };
+  daraz: { ok: true; count: number } | { ok: false };
+}
+
+export const EMPTY_SOURCES: SourceStatus = {
+  priceoye: { ok: false },
+  daraz: { ok: false },
+};
+
+/** "PriceOye: 8 results · Daraz: unavailable (blocked or timed out)" */
+export function formatSourceStatus(s: SourceStatus): string {
+  const part = (name: string, st: { ok: true; count: number } | { ok: false }) =>
+    st.ok
+      ? `${name}: ${st.count} result${st.count === 1 ? '' : 's'}`
+      : `${name}: unavailable (blocked or timed out)`;
+  return `${part('PriceOye', s.priceoye)} · ${part('Daraz', s.daraz)}`;
+}
+
 export interface Classified {
   category: string;
   query: string;
@@ -79,16 +102,35 @@ async function fetchWithTimeout(url: string, ms: number): Promise<Response> {
 }
 
 /** Real listings from /api/live-search (PriceOye + Daraz, fetched live). */
-export async function fetchLiveListings(category: string, fallbackQuery: string): Promise<LiveListing[]> {
+export async function fetchLiveListings(
+  category: string,
+  fallbackQuery: string,
+): Promise<{ listings: LiveListing[]; sources: SourceStatus }> {
   const sq = SITE_QUERIES[category] ?? { daraz: fallbackQuery, priceoye: fallbackQuery };
-  const r = await fetchWithTimeout(
-    `/api/live-search?q=${encodeURIComponent(sq.daraz)}&pq=${encodeURIComponent(sq.priceoye)}`,
-    LIVE_TIMEOUT_MS,
-  );
-  if (!r.ok) throw new Error(`live-search ${r.status}`);
-  const d = await r.json();
-  const results = Array.isArray(d?.results) ? d.results : [];
-  return results.slice(0, MAX_CANDIDATES) as LiveListing[];
+  let d: any;
+  try {
+    const r = await fetchWithTimeout(
+      `/api/live-search?q=${encodeURIComponent(sq.daraz)}&pq=${encodeURIComponent(sq.priceoye)}`,
+      LIVE_TIMEOUT_MS,
+    );
+    if (!r.ok) throw new Error(`live-search ${r.status}`);
+    d = await r.json();
+  } catch {
+    // The function itself failed — both sources are unknown/unavailable.
+    return { listings: [], sources: EMPTY_SOURCES };
+  }
+  const results = (Array.isArray(d?.results) ? d.results : []).slice(
+    0,
+    MAX_CANDIDATES,
+  ) as LiveListing[];
+  // /api/live-search reports per-source outcomes as count | 'error'.
+  const src = d?.sources ?? {};
+  const toStatus = (v: unknown): { ok: true; count: number } | { ok: false } =>
+    typeof v === 'number' ? { ok: true, count: v } : { ok: false };
+  return {
+    listings: results,
+    sources: { priceoye: toStatus(src.priceoye), daraz: toStatus(src.daraz) },
+  };
 }
 
 function toLiveProduct(l: LiveListing, score: number): Product {
@@ -122,13 +164,15 @@ export type LiveProgress =
   | { stage: 'match'; done: number; total: number };
 
 /**
- * Full live pipeline. Throws when anything upstream fails so the caller can
- * fall back to the seed catalog — never show fake "live" results.
+ * Full live pipeline. Never throws for upstream source problems — it returns
+ * whatever it got (possibly zero products) together with the per-source
+ * status, so the caller can show an honest error instead of fake results.
+ * Only a broken query-image embedding (model load failure) still throws.
  */
 export async function searchLive(
   dataUrl: string,
   onProgress?: (p: LiveProgress | number) => void,
-): Promise<{ products: Product[]; category: string; query: string }> {
+): Promise<{ products: Product[]; category: string; query: string; sources: SourceStatus }> {
   // 1. embed the user's photo (downloads the CLIP model on first use)
   const queryVec = await embedQueryImage(dataUrl, (f) =>
     onProgress?.(typeof f === 'number' ? f * 0.5 : f),
@@ -140,8 +184,9 @@ export async function searchLive(
 
   // 3. live listings from the sites
   onProgress?.({ stage: 'fetch' });
-  const listings = await fetchLiveListings(cls.category, cls.query);
-  if (listings.length === 0) throw new Error('no live listings');
+  const { listings, sources } = await fetchLiveListings(cls.category, cls.query);
+  const empty = { products: [] as Product[], category: cls.category, query: cls.query, sources };
+  if (listings.length === 0) return empty;
 
   // 4+5. embed each product image (via proxy) and rank by visual similarity
   const deadline = Date.now() + EMBED_TIMEOUT_MS;
@@ -162,7 +207,7 @@ export async function searchLive(
     }
   });
   await Promise.all(workers);
-  if (scored.length === 0) throw new Error('no product images could be embedded');
+  if (scored.length === 0) return empty; // thumbnails failed — honest empty, not fake
 
   // 6. rank
   scored.sort((a, b) => b.score - a.score);
@@ -170,5 +215,6 @@ export async function searchLive(
     products: scored.slice(0, 12).map(({ l, score }) => toLiveProduct(l, score)),
     category: cls.category,
     query: cls.query,
+    sources,
   };
 }
