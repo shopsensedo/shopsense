@@ -47,12 +47,12 @@ export const PriceChart: React.FC<PriceChartProps> = ({
   const savingsAmount = maxPrice - minPrice;
 
   return (
-    <div className={`bg-white dark:bg-[#131B2E] rounded-xl border border-slate-200 dark:border-[#1E293B] p-4 transition-colors ${className}`}>
+    <div className={`bg-white dark:bg-[#1A1A1A] rounded-xl border border-slate-200 dark:border-[#262626] p-4 transition-colors ${className}`}>
       {/* Chart Header */}
       <div className="flex items-center justify-between mb-3">
         <div>
-          <h4 className="text-xs font-semibold text-[#0F172A] dark:text-[#F8FAFC]">Price History (Last 30 Days)</h4>
-          <p className="text-[11px] text-[#64748B] dark:text-[#94A3B8]">All prices in PKR across Pakistani sellers</p>
+          <h4 className="text-xs font-semibold text-[#0C0C0C] dark:text-[#F5F5F5]">Price History (Last 30 Days)</h4>
+          <p className="text-[11px] text-[#5F5F60] dark:text-[#9C9C9D]">All prices in PKR across Pakistani sellers</p>
         </div>
 
         {savingsAmount > 0 && (
@@ -71,8 +71,8 @@ export const PriceChart: React.FC<PriceChartProps> = ({
         >
           <defs>
             <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#4F46E5" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="#4F46E5" stopOpacity="0.0" />
+              <stop offset="0%" stopColor="#B9C006" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="#B9C006" stopOpacity="0.0" />
             </linearGradient>
           </defs>
 
@@ -82,7 +82,7 @@ export const PriceChart: React.FC<PriceChartProps> = ({
             y1={getY(minPrice)}
             x2={width - paddingX}
             y2={getY(minPrice)}
-            className="stroke-slate-200 dark:stroke-[#283548]"
+            className="stroke-slate-200 dark:stroke-[#333333]"
             strokeDasharray="4 4"
             strokeWidth="1"
           />
@@ -91,7 +91,7 @@ export const PriceChart: React.FC<PriceChartProps> = ({
             y1={getY(maxPrice)}
             x2={width - paddingX}
             y2={getY(maxPrice)}
-            className="stroke-slate-200 dark:stroke-[#283548]"
+            className="stroke-slate-200 dark:stroke-[#333333]"
             strokeDasharray="4 4"
             strokeWidth="1"
           />
@@ -102,12 +102,12 @@ export const PriceChart: React.FC<PriceChartProps> = ({
           {/* Stroke Line */}
           <polyline
             fill="none"
-            stroke="#4F46E5"
+            stroke="#B9C006"
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
             points={points}
-            className="stroke-[#4F46E5] dark:stroke-[#818CF8]"
+            className="stroke-[#0C0C0C] dark:stroke-[#B9C006]"
           />
 
           {/* Data Points */}
@@ -123,10 +123,10 @@ export const PriceChart: React.FC<PriceChartProps> = ({
                   cx={cx}
                   cy={cy}
                   r={isHovered ? 6 : isLowest ? 4.5 : 3.5}
-                  fill={isLowest ? '#16A34A' : '#4F46E5'}
+                  fill={isLowest ? '#16A34A' : '#B9C006'}
                   strokeWidth="2"
-                  className={`transition-all duration-150 stroke-white dark:stroke-[#131B2E] ${
-                    isLowest ? 'fill-[#16A34A] dark:fill-[#22C55E]' : 'fill-[#4F46E5] dark:fill-[#818CF8]'
+                  className={`transition-all duration-150 stroke-white dark:stroke-[#1A1A1A] ${
+                    isLowest ? 'fill-[#16A34A] dark:fill-[#22C55E]' : 'fill-[#0C0C0C] dark:fill-[#B9C006]'
                   }`}
                   onMouseEnter={() => setHoveredIndex(i)}
                   onMouseLeave={() => setHoveredIndex(null)}
@@ -151,7 +151,7 @@ export const PriceChart: React.FC<PriceChartProps> = ({
         {/* Hover Tooltip Overlay */}
         {hoveredIndex !== null && (
           <div
-            className="absolute -top-1 pointer-events-none transform -translate-x-1/2 bg-[#0F172A] dark:bg-[#1E293B] text-white text-[11px] font-semibold py-1 px-2.5 rounded-md shadow-lg border border-slate-700 dark:border-slate-600"
+            className="absolute -top-1 pointer-events-none transform -translate-x-1/2 bg-[#0C0C0C] dark:bg-[#262626] text-white text-[11px] font-semibold py-1 px-2.5 rounded-md shadow-lg border border-slate-700 dark:border-slate-600"
             style={{
               left: `${(getX(hoveredIndex) / width) * 100}%`,
             }}
@@ -163,10 +163,10 @@ export const PriceChart: React.FC<PriceChartProps> = ({
       </div>
 
       {/* Footer Metrics */}
-      <div className="mt-2 pt-2 border-t border-slate-100 dark:border-[#1E293B] flex items-center justify-between text-xs text-[#64748B] dark:text-[#94A3B8]">
+      <div className="mt-2 pt-2 border-t border-slate-100 dark:border-[#262626] flex items-center justify-between text-xs text-[#5F5F60] dark:text-[#9C9C9D]">
         <span>Lowest: <strong className="text-[#16A34A] dark:text-[#4ADE80]">{formatPKR(minPrice)}</strong></span>
         <span>Highest: <strong className="text-slate-700 dark:text-slate-300">{formatPKR(maxPrice)}</strong></span>
-        <span>Current: <strong className="text-[#4F46E5] dark:text-[#818CF8]">{formatPKR(currentPrice)}</strong></span>
+        <span>Current: <strong className="text-[#0C0C0C] dark:text-[#B9C006]">{formatPKR(currentPrice)}</strong></span>
       </div>
     </div>
   );

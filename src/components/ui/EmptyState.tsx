@@ -38,7 +38,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
     }
   > = {
     no_results: {
-      icon: <SearchX className="w-10 h-10 text-[#4F46E5] dark:text-[#818CF8]" />,
+      icon: <SearchX className="w-10 h-10 text-[#0C0C0C] dark:text-[#B9C006]" />,
       defaultTitle: 'No exact visual matches found',
       defaultDesc: 'Try adjusting the crop frame closer to the product, or search using Roman Urdu text (e.g. "kala joota", "lawn suit").',
       defaultAction: 'Try New Search',
@@ -50,7 +50,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       defaultAction: 'Retry Upload',
     },
     offline: {
-      icon: <WifiOff className="w-10 h-10 text-[#F59E0B] dark:text-[#FBBF24]" />,
+      icon: <WifiOff className="w-10 h-10 text-[#F59E0B] dark:text-[#CDD835]" />,
       defaultTitle: 'You are currently offline',
       defaultDesc: 'Please check your internet connection in Pakistan (PTCL, Nayatel, Jazz, Zong).',
       defaultAction: 'Check Connection',
@@ -62,19 +62,19 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       defaultAction: 'Select Image',
     },
     empty_saved: {
-      icon: <Bookmark className="w-10 h-10 text-[#4F46E5] dark:text-[#818CF8]" />,
+      icon: <Bookmark className="w-10 h-10 text-[#0C0C0C] dark:text-[#B9C006]" />,
       defaultTitle: 'No saved items yet',
       defaultDesc: 'Tap the heart icon on any product in your search results to keep track of prices here.',
       defaultAction: 'Explore Products',
     },
     empty_tracking: {
-      icon: <Bell className="w-10 h-10 text-[#F97316] dark:text-[#FB923C]" />,
+      icon: <Bell className="w-10 h-10 text-[#B9C006] dark:text-[#CDD835]" />,
       defaultTitle: 'No active price alerts',
       defaultDesc: 'Set a target price in PKR on any product to get alerted as soon as the price drops on Daraz or other stores.',
       defaultAction: 'Find Products to Track',
     },
     empty_history: {
-      icon: <History className="w-10 h-10 text-[#64748B] dark:text-[#94A3B8]" />,
+      icon: <History className="w-10 h-10 text-[#5F5F60] dark:text-[#9C9C9D]" />,
       defaultTitle: 'No search history yet',
       defaultDesc: 'Screenshots and queries you search will appear here for fast 1-tap re-checks.',
       defaultAction: 'Start First Search',
@@ -85,17 +85,17 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
 
   return (
     <div
-      className={`flex flex-col items-center justify-center text-center p-8 max-w-md mx-auto bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200 dark:border-[#1E293B] shadow-xs ${className}`}
+      className={`flex flex-col items-center justify-center text-center p-8 max-w-md mx-auto bg-white dark:bg-[#1A1A1A] rounded-2xl border border-slate-200 dark:border-[#262626] shadow-xs ${className}`}
     >
-      <div className="w-16 h-16 rounded-2xl bg-slate-50 dark:bg-[#1E293B] flex items-center justify-center mb-4 border border-slate-100 dark:border-slate-800">
+      <div className="w-16 h-16 rounded-2xl bg-slate-50 dark:bg-[#262626] flex items-center justify-center mb-4 border border-slate-100 dark:border-slate-800">
         {config.icon}
       </div>
 
-      <h3 className="text-base md:text-lg font-bold text-[#0F172A] dark:text-[#F8FAFC] font-heading mb-1.5">
+      <h3 className="text-base md:text-lg font-bold text-[#0C0C0C] dark:text-[#F5F5F5] font-heading mb-1.5">
         {title || config.defaultTitle}
       </h3>
 
-      <p className="text-xs md:text-sm text-[#64748B] dark:text-[#94A3B8] mb-6 leading-relaxed">
+      <p className="text-xs md:text-sm text-[#5F5F60] dark:text-[#9C9C9D] mb-6 leading-relaxed">
         {description || config.defaultDesc}
       </p>
 

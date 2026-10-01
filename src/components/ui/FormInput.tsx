@@ -27,7 +27,7 @@ export const FormInput: React.FC<FormInputProps> = ({
     <div className={`w-full flex flex-col gap-1.5 ${className}`}>
       <label
         htmlFor={inputId}
-        className="text-xs font-semibold text-[#0F172A] dark:text-[#F8FAFC] flex items-center justify-between"
+        className="text-xs font-semibold text-[#0C0C0C] dark:text-[#F5F5F5] flex items-center justify-between"
       >
         <span>{label}</span>
       </label>
@@ -42,12 +42,12 @@ export const FormInput: React.FC<FormInputProps> = ({
         <input
           id={inputId}
           type={inputType}
-          className={`w-full h-11 rounded-xl border bg-white dark:bg-[#0B0F19] text-sm text-[#0F172A] dark:text-[#F8FAFC] placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors duration-150 focus:outline-none focus:ring-2 min-h-[44px] ${
+          className={`w-full h-11 rounded-xl border bg-white dark:bg-[#0C0C0C] text-sm text-[#0C0C0C] dark:text-[#F5F5F5] placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors duration-150 focus:outline-none focus:ring-2 min-h-[44px] ${
             leftIcon ? 'pl-10' : 'pl-3.5'
           } ${isPassword ? 'pr-11' : 'pr-3.5'} ${
             error
               ? 'border-[#DC2626] focus:border-[#DC2626] focus:ring-[#DC2626]/20'
-              : 'border-[#CBD5E1] dark:border-[#283548] focus:border-[#4F46E5] dark:focus:border-[#6366F1] focus:ring-[#4F46E5]/20 hover:border-slate-400 dark:hover:border-slate-600'
+              : 'border-[#D8D8D2] dark:border-[#333333] focus:border-[#0C0C0C] dark:focus:border-[#B9C006] focus:ring-[#0C0C0C]/20 hover:border-slate-400 dark:hover:border-slate-600'
           }`}
           {...props}
         />
@@ -65,7 +65,7 @@ export const FormInput: React.FC<FormInputProps> = ({
       </div>
 
       {hint && !error && (
-        <span className="text-[11px] text-[#64748B] dark:text-[#94A3B8]">{hint}</span>
+        <span className="text-[11px] text-[#5F5F60] dark:text-[#9C9C9D]">{hint}</span>
       )}
 
       {error && (

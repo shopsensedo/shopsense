@@ -30,15 +30,15 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 animate-in fade-in duration-150">
       {/* Account Info Header */}
-      <div className="bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200 dark:border-[#1E293B] p-5 sm:p-6 mb-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-slate-200 dark:border-[#262626] p-5 sm:p-6 mb-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-[#4F46E5] text-white flex items-center justify-center text-xl font-bold font-heading shadow-xs">
+          <div className="w-16 h-16 rounded-2xl bg-[#0C0C0C] text-white flex items-center justify-center text-xl font-bold font-heading shadow-xs">
             {user && !user.isGuest ? user.name.charAt(0) : 'G'}
           </div>
 
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold text-[#0F172A] dark:text-[#F8FAFC] font-heading">
+              <h2 className="text-lg font-bold text-[#0C0C0C] dark:text-[#F5F5F5] font-heading">
                 {user && !user.isGuest ? user.name : 'Guest Shopper'}
               </h2>
               {user && !user.isGuest ? (
@@ -52,7 +52,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               )}
             </div>
 
-            <p className="text-xs text-[#64748B] dark:text-[#94A3B8] mt-0.5">
+            <p className="text-xs text-[#5F5F60] dark:text-[#9C9C9D] mt-0.5">
               {user && !user.isGuest ? user.email || user.phone : 'Sign in to save items across mobile & web'}
             </p>
           </div>
@@ -81,22 +81,22 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       {/* Settings Sections */}
       <div className="space-y-4">
         {/* Theme Preference */}
-        <div className="bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200 dark:border-[#1E293B] p-5 shadow-xs">
+        <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-slate-200 dark:border-[#262626] p-5 shadow-xs">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-[#431407] text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-[#2B2F0C] text-amber-600 dark:text-amber-400 flex items-center justify-center">
                 {isDarkMode ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
               </div>
               <div>
-                <h3 className="text-sm font-bold text-[#0F172A] dark:text-[#F8FAFC]">Theme Appearance</h3>
-                <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">Switch between Crisp Light (#F8FAFC) & Midnight Dark (#0B0F19)</p>
+                <h3 className="text-sm font-bold text-[#0C0C0C] dark:text-[#F5F5F5]">Theme Appearance</h3>
+                <p className="text-xs text-[#5F5F60] dark:text-[#9C9C9D]">Switch between Pearl Light (#F5F5F5) & Void Dark (#0C0C0C) — lime accent</p>
               </div>
             </div>
 
             <button
               type="button"
               onClick={onToggleTheme}
-              className="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-[#283548] hover:border-slate-300 dark:hover:border-slate-600 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-[#1E293B] transition-colors cursor-pointer flex items-center gap-1.5"
+              className="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-[#333333] hover:border-slate-300 dark:hover:border-slate-600 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-[#262626] transition-colors cursor-pointer flex items-center gap-1.5"
             >
               {isDarkMode ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-indigo-500" />}
               <span>{isDarkMode ? 'Dark Mode' : 'Light Mode'}</span>
@@ -105,22 +105,22 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </div>
 
         {/* Language Selection Card */}
-        <div className="bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200 dark:border-[#1E293B] p-5 shadow-xs">
+        <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-slate-200 dark:border-[#262626] p-5 shadow-xs">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-[#EEF2FF] dark:bg-[#1E1B4B] text-[#4F46E5] dark:text-[#818CF8] flex items-center justify-center">
+              <div className="w-9 h-9 rounded-xl bg-[#F2F4D6] dark:bg-[#2B2F0C] text-[#0C0C0C] dark:text-[#B9C006] flex items-center justify-center">
                 <Globe className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-[#0F172A] dark:text-[#F8FAFC]">Display Language</h3>
-                <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">Switch UI labels between English and Roman Urdu</p>
+                <h3 className="text-sm font-bold text-[#0C0C0C] dark:text-[#F5F5F5]">Display Language</h3>
+                <p className="text-xs text-[#5F5F60] dark:text-[#9C9C9D]">Switch UI labels between English and Roman Urdu</p>
               </div>
             </div>
 
             <button
               type="button"
               onClick={onToggleLanguage}
-              className="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-[#283548] hover:border-[#4F46E5] text-xs font-semibold text-[#4F46E5] dark:text-[#A5B4FC] bg-[#EEF2FF] dark:bg-[#1E1B4B] transition-colors cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-[#333333] hover:border-[#0C0C0C] text-xs font-semibold text-[#0C0C0C] dark:text-[#CDD835] bg-[#F2F4D6] dark:bg-[#2B2F0C] transition-colors cursor-pointer"
             >
               {isUrduMode ? 'Roman Urdu (اردو)' : 'English (Default)'}
             </button>
@@ -128,21 +128,21 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </div>
 
         {/* Notifications & WhatsApp Alerts */}
-        <div className="bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200 dark:border-[#1E293B] p-5 shadow-xs space-y-4">
+        <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-slate-200 dark:border-[#262626] p-5 shadow-xs space-y-4">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-[#052E16] text-emerald-600 dark:text-[#4ADE80] flex items-center justify-center">
               <MessageSquare className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-[#0F172A] dark:text-[#F8FAFC]">Price Drop Notifications</h3>
-              <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">How you receive alerts when tracked items drop in PKR</p>
+              <h3 className="text-sm font-bold text-[#0C0C0C] dark:text-[#F5F5F5]">Price Drop Notifications</h3>
+              <p className="text-xs text-[#5F5F60] dark:text-[#9C9C9D]">How you receive alerts when tracked items drop in PKR</p>
             </div>
           </div>
 
-          <div className="flex items-center justify-between py-2 border-t border-slate-100 dark:border-[#1E293B]">
+          <div className="flex items-center justify-between py-2 border-t border-slate-100 dark:border-[#262626]">
             <div>
-              <span className="text-xs font-semibold text-[#0F172A] dark:text-[#F8FAFC] block">WhatsApp Price Drop Alerts</span>
-              <span className="text-[11px] text-[#64748B] dark:text-[#94A3B8]">Receive instant WhatsApp message when price drops</span>
+              <span className="text-xs font-semibold text-[#0C0C0C] dark:text-[#F5F5F5] block">WhatsApp Price Drop Alerts</span>
+              <span className="text-[11px] text-[#5F5F60] dark:text-[#9C9C9D]">Receive instant WhatsApp message when price drops</span>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -155,10 +155,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             </label>
           </div>
 
-          <div className="flex items-center justify-between py-2 border-t border-slate-100 dark:border-[#1E293B]">
+          <div className="flex items-center justify-between py-2 border-t border-slate-100 dark:border-[#262626]">
             <div>
-              <span className="text-xs font-semibold text-[#0F172A] dark:text-[#F8FAFC] block">Daily Pakistani Deals Digest</span>
-              <span className="text-[11px] text-[#64748B] dark:text-[#94A3B8]">Top 5 discounts on Daraz & Telemart every morning</span>
+              <span className="text-xs font-semibold text-[#0C0C0C] dark:text-[#F5F5F5] block">Daily Pakistani Deals Digest</span>
+              <span className="text-[11px] text-[#5F5F60] dark:text-[#9C9C9D]">Top 5 discounts on Daraz & Telemart every morning</span>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -167,14 +167,14 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 onChange={() => setDailyDigest(!dailyDigest)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4F46E5]" />
+              <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0C0C0C]" />
             </label>
           </div>
         </div>
 
         {/* Support & Privacy */}
-        <div className="p-4 rounded-xl bg-slate-50 dark:bg-[#131B2E] border border-slate-200 dark:border-[#1E293B] text-xs text-[#64748B] dark:text-[#94A3B8] flex items-center gap-3">
-          <Shield className="w-5 h-5 text-[#4F46E5] dark:text-[#818CF8] shrink-0" />
+        <div className="p-4 rounded-xl bg-slate-50 dark:bg-[#1A1A1A] border border-slate-200 dark:border-[#262626] text-xs text-[#5F5F60] dark:text-[#9C9C9D] flex items-center gap-3">
+          <Shield className="w-5 h-5 text-[#0C0C0C] dark:text-[#B9C006] shrink-0" />
           <p>
             ShopSense Pakistan respects your privacy. We do not store your private WhatsApp chats. Uploaded screenshots are processed strictly for visual product comparison.
           </p>

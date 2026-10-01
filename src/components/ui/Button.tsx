@@ -24,28 +24,35 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
-  // Base classes with touch target >= 44px on mobile
+  // Base classes with touch target >= 44px on mobile — pill shaped, Protech style
   const baseClasses =
-    'inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#131B2E] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none select-none cursor-pointer whitespace-nowrap';
+    'inline-flex items-center justify-center font-semibold rounded-full transition-all duration-200 ' +
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 ' +
+    'dark:focus-visible:ring-offset-void active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none ' +
+    'select-none cursor-pointer whitespace-nowrap';
 
   const sizeClasses = {
-    sm: 'h-9 px-3 text-xs gap-1.5 min-w-[36px]',
-    md: 'h-11 px-4 text-sm gap-2 min-h-[44px]', // Mobile friendly min-h 44px
-    lg: 'h-13 px-6 text-base gap-2.5 min-h-[48px]',
+    sm: 'h-9 px-4 text-xs gap-1.5 min-w-[36px]',
+    md: 'h-11 px-6 text-sm gap-2 min-h-[44px]', // Mobile friendly min-h 44px
+    lg: 'h-13 px-8 text-sm gap-2.5 min-h-[48px]',
     icon: 'h-11 w-11 p-2 text-sm min-h-[44px] min-w-[44px]',
   };
 
   const variantClasses = {
+    // Protech primary: lime pill w/ dark text in dark mode, near-black pill in light mode
     primary:
-      'bg-[#4F46E5] hover:bg-[#3730A3] dark:bg-[#6366F1] dark:hover:bg-[#4F46E5] text-white focus-visible:ring-[#4F46E5] dark:focus-visible:ring-[#6366F1] shadow-xs',
+      'bg-void text-white hover:bg-graphite dark:bg-lime dark:hover:bg-limedeep dark:text-void ' +
+      'shadow-[0_8px_24px_-10px_rgba(185,192,6,0.55)]',
     secondary:
-      'bg-[#EEF2FF] hover:bg-[#E0E7FF] dark:bg-[#1E1B4B] dark:hover:bg-[#2E286E] text-[#4F46E5] dark:text-[#A5B4FC] focus-visible:ring-[#4F46E5]',
+      'bg-limetint text-void hover:bg-[#E7EAB8] dark:bg-limedim dark:hover:bg-[#33330A] dark:text-limebright',
     outline:
-      'border border-[#CBD5E1] dark:border-[#283548] bg-white dark:bg-[#131B2E] text-[#0F172A] dark:text-[#F8FAFC] hover:bg-[#F8FAFC] dark:hover:bg-[#1E293B] hover:border-[#94A3B8] dark:hover:border-slate-500 focus-visible:ring-[#4F46E5] dark:focus-visible:ring-[#6366F1] shadow-2xs',
+      'border border-[#D8D8D2] dark:border-ash bg-white dark:bg-carbon text-void dark:text-bone ' +
+      'hover:border-void dark:hover:border-lime hover:bg-black/[0.03] dark:hover:bg-white/[0.04]',
     text:
-      'bg-transparent text-[#64748B] hover:text-[#0F172A] dark:text-[#94A3B8] dark:hover:text-[#F8FAFC] hover:bg-slate-100 dark:hover:bg-[#1E293B] focus-visible:ring-slate-400',
+      'bg-transparent text-smoke hover:text-void dark:text-fog dark:hover:text-bone ' +
+      'hover:bg-black/[0.04] dark:hover:bg-white/[0.06]',
     danger:
-      'bg-[#DC2626] hover:bg-[#B91C1C] dark:bg-[#EF4444] dark:hover:bg-[#DC2626] text-white focus-visible:ring-[#DC2626] shadow-xs',
+      'bg-[#DC2626] hover:bg-[#B91C1C] dark:bg-[#EF4444] dark:hover:bg-[#DC2626] text-white dark:text-void',
   };
 
   return (

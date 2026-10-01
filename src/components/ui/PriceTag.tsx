@@ -52,12 +52,12 @@ export const PriceTag: React.FC<PriceTagProps> = ({
 
   return (
     <div className={`flex items-baseline flex-wrap gap-2 ${className}`}>
-      <span className={`${sizeStyles[size].price} text-[#0F172A] dark:text-[#F8FAFC] tracking-tight tabular-nums`}>
+      <span className={`${sizeStyles[size].price} text-[#0C0C0C] dark:text-[#F5F5F5] tracking-tight tabular-nums`}>
         {formatPKR(price)}
       </span>
 
       {hasDiscount && (
-        <span className={`${sizeStyles[size].original} line-through text-[#64748B] dark:text-[#94A3B8] tabular-nums`}>
+        <span className={`${sizeStyles[size].original} line-through text-[#5F5F60] dark:text-[#9C9C9D] tabular-nums`}>
           {formatPKR(originalPrice)}
         </span>
       )}

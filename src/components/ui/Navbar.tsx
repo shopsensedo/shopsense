@@ -1,5 +1,5 @@
-import React from 'react';
-import { Camera, Heart, Bell, History, User as UserIcon, Globe, Sun, Moon } from 'lucide-react';
+import React, { useState } from 'react';
+import { Camera, Heart, Globe, Sun, Moon, Menu, X, LayoutGrid } from 'lucide-react';
 import { AppScreen, User } from '../../types';
 
 interface NavbarProps {
@@ -27,119 +27,137 @@ export const Navbar: React.FC<NavbarProps> = ({
   isDarkMode = false,
   onToggleTheme,
 }) => {
-  return (
-    <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#131B2E]/95 backdrop-blur-md border-b border-[#E2E8F0] dark:border-[#1E293B] shadow-2xs transition-colors">
-      {/* Strict Top Bar Contract: 3 zones */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-        {/* Zone 1: Single text element wordmark */}
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => onNavigate('home')}
-            className="flex items-center gap-2 cursor-pointer text-left group"
-          >
-            <div className="w-9 h-9 rounded-xl bg-[#4F46E5] flex items-center justify-center text-white shadow-xs">
-              <Camera className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold tracking-tight text-[#0F172A] dark:text-[#F8FAFC] font-heading group-hover:text-[#4F46E5] dark:group-hover:text-[#818CF8] transition-colors">
-              ShopSense
-            </span>
-          </button>
-        </div>
+  const [menuOpen, setMenuOpen] = useState(false);
 
-        {/* Zone 2: 4-6 clean text navigation links */}
-        <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-[#64748B] dark:text-[#94A3B8]">
+  const isExploreActive = currentScreen === 'home' || currentScreen === 'results' || currentScreen === 'comparison';
+
+  const linkCls = (active: boolean) =>
+    `transition-colors py-1 text-sm font-medium cursor-pointer ${
+      active
+        ? 'text-void dark:text-lime font-semibold'
+        : 'text-smoke dark:text-fog hover:text-void dark:hover:text-bone'
+    }`;
+
+  const mobileLinks: { id: AppScreen; label: string }[] = [
+    { id: 'home', label: isUrduMode ? 'Home' : 'Explore' },
+    { id: 'saved', label: isUrduMode ? 'Mehfooz' : 'Saved' },
+    { id: 'tracking', label: isUrduMode ? 'Qeemat Alerts' : 'Price Alerts' },
+    { id: 'history', label: isUrduMode ? 'Tareekh' : 'History' },
+  ];
+
+  return (
+    <header className="sticky top-0 z-40 bg-white/90 dark:bg-void/90 backdrop-blur-md border-b border-[#E5E5E1] dark:border-graphite transition-colors">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 md:h-[72px] flex items-center justify-between gap-3">
+        {/* Brand */}
+        <button
+          type="button"
+          onClick={() => onNavigate('home')}
+          className="flex items-center gap-2.5 cursor-pointer text-left group shrink-0"
+        >
+          <div className="w-9 h-9 rounded-xl bg-lime flex items-center justify-center shadow-[0_4px_16px_-4px_rgba(185,192,6,0.6)] group-hover:scale-105 transition-transform">
+            <Camera className="w-5 h-5 text-void" strokeWidth={2.25} />
+          </div>
+          <span className="text-xl font-bold tracking-wide text-void dark:text-bone font-heading">
+            ShopSense
+          </span>
+        </button>
+
+        {/* Desktop nav — Protech style: Catalog pill + text links */}
+        <nav className="hidden md:flex items-center gap-7">
           <button
             type="button"
             onClick={() => onNavigate('home')}
-            className={`hover:text-[#0F172A] dark:hover:text-[#F8FAFC] transition-colors py-1 relative ${
-              currentScreen === 'home' || currentScreen === 'results' || currentScreen === 'comparison'
-                ? 'text-[#4F46E5] dark:text-[#818CF8] font-semibold'
-                : ''
+            className={`h-10 px-5 rounded-full text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+              isExploreActive
+                ? 'bg-lime text-void shadow-[0_4px_16px_-4px_rgba(185,192,6,0.6)]'
+                : 'bg-void text-white hover:bg-graphite dark:bg-lime dark:text-void dark:hover:bg-limedeep'
             }`}
           >
-            {isUrduMode ? 'Home' : 'Explore'}
+            <LayoutGrid className="w-4 h-4" />
+            {isUrduMode ? 'Catalog' : 'Catalog'}
           </button>
 
+          <button type="button" onClick={() => onNavigate('saved')} className={linkCls(currentScreen === 'saved')}>
+            <span className="flex items-center gap-1.5">
+              {isUrduMode ? 'Mehfooz' : 'Saved'}
+              {savedCount > 0 && (
+                <span className="text-[11px] font-bold px-1.5 py-px rounded-full bg-lime text-void">
+                  {savedCount}
+                </span>
+              )}
+            </span>
+          </button>
+
+          <button type="button" onClick={() => onNavigate('tracking')} className={linkCls(currentScreen === 'tracking')}>
+            <span className="flex items-center gap-1.5">
+              {isUrduMode ? 'Qeemat Alerts' : 'Price Alerts'}
+              {trackingCount > 0 && (
+                <span className="text-[11px] font-bold px-1.5 py-px rounded-full bg-lime text-void">
+                  {trackingCount}
+                </span>
+              )}
+            </span>
+          </button>
+
+          <button type="button" onClick={() => onNavigate('history')} className={linkCls(currentScreen === 'history')}>
+            {isUrduMode ? 'Tareekh' : 'History'}
+          </button>
+        </nav>
+
+        {/* Actions */}
+        <div className="flex items-center gap-2">
+          {/* Saved shortcut */}
           <button
             type="button"
             onClick={() => onNavigate('saved')}
-            className={`hover:text-[#0F172A] dark:hover:text-[#F8FAFC] transition-colors py-1 flex items-center gap-1.5 ${
-              currentScreen === 'saved' ? 'text-[#4F46E5] dark:text-[#818CF8] font-semibold' : ''
-            }`}
+            className="relative h-10 w-10 rounded-full border border-[#E5E5E1] dark:border-ash hover:border-void dark:hover:border-lime text-void dark:text-bone flex items-center justify-center transition-colors cursor-pointer"
+            title={isUrduMode ? 'Mehfooz ashya' : 'Saved items'}
+            aria-label="Saved items"
           >
-            <span>{isUrduMode ? 'Mehfooz' : 'Saved'}</span>
+            <Heart className="w-[18px] h-[18px]" />
             {savedCount > 0 && (
-              <span className="text-[11px] font-bold px-1.5 py-0.2 rounded-full bg-[#EEF2FF] dark:bg-[#1E1B4B] text-[#4F46E5] dark:text-[#A5B4FC]">
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-lime text-void text-[10px] font-bold flex items-center justify-center">
                 {savedCount}
               </span>
             )}
           </button>
 
-          <button
-            type="button"
-            onClick={() => onNavigate('tracking')}
-            className={`hover:text-[#0F172A] dark:hover:text-[#F8FAFC] transition-colors py-1 flex items-center gap-1.5 ${
-              currentScreen === 'tracking' ? 'text-[#4F46E5] dark:text-[#818CF8] font-semibold' : ''
-            }`}
-          >
-            <span>{isUrduMode ? 'Qeemat Alerts' : 'Price Alerts'}</span>
-            {trackingCount > 0 && (
-              <span className="text-[11px] font-bold px-1.5 py-0.2 rounded-full bg-[#FFF7ED] dark:bg-[#431407] text-[#F97316] dark:text-[#FB923C]">
-                {trackingCount}
-              </span>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onNavigate('history')}
-            className={`hover:text-[#0F172A] dark:hover:text-[#F8FAFC] transition-colors py-1 ${
-              currentScreen === 'history' ? 'text-[#4F46E5] dark:text-[#818CF8] font-semibold' : ''
-            }`}
-          >
-            {isUrduMode ? 'Tareekh' : 'History'}
-          </button>
-        </nav>
-
-        {/* Zone 3: 1-2 primary actions + theme & language toggles */}
-        <div className="flex items-center gap-2">
-          {/* Theme Toggle (Light / Dark) */}
+          {/* Theme toggle */}
           {onToggleTheme && (
             <button
               type="button"
               onClick={onToggleTheme}
-              className="h-9 w-9 rounded-lg border border-slate-200 dark:border-[#283548] hover:border-slate-300 dark:hover:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1E293B] flex items-center justify-center transition-colors cursor-pointer"
+              className="h-10 w-10 rounded-full border border-[#E5E5E1] dark:border-ash hover:border-void dark:hover:border-lime text-void dark:text-bone flex items-center justify-center transition-colors cursor-pointer"
               title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              aria-label="Toggle Theme"
+              aria-label="Toggle theme"
             >
-              {isDarkMode ? <Sun className="w-4 h-4 text-[#F59E0B]" /> : <Moon className="w-4 h-4 text-[#4F46E5]" />}
+              {isDarkMode ? <Sun className="w-[18px] h-[18px] text-lime" /> : <Moon className="w-[18px] h-[18px]" />}
             </button>
           )}
 
-          {/* Language Toggle: English <-> Roman Urdu */}
+          {/* Language toggle */}
           <button
             type="button"
             onClick={onToggleLanguage}
-            className="h-9 px-3 rounded-lg border border-slate-200 dark:border-[#283548] hover:border-slate-300 dark:hover:border-slate-600 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#1E293B] flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="h-10 px-3.5 rounded-full border border-[#E5E5E1] dark:border-ash hover:border-void dark:hover:border-lime text-xs font-semibold text-void dark:text-bone flex items-center gap-1.5 transition-colors cursor-pointer"
             title="Toggle between English and Roman Urdu"
           >
-            <Globe className="w-3.5 h-3.5 text-[#4F46E5] dark:text-[#818CF8]" />
+            <Globe className="w-3.5 h-3.5 text-olive dark:text-lime" />
             <span className="hidden sm:inline">{isUrduMode ? 'Roman Urdu' : 'English'}</span>
             <span className="sm:hidden">{isUrduMode ? 'اردو' : 'EN'}</span>
           </button>
 
-          {/* User Account / Profile */}
+          {/* Auth */}
           {user && !user.isGuest ? (
             <button
               type="button"
               onClick={() => onNavigate('profile')}
-              className="flex items-center gap-2 p-1 pl-2 rounded-xl hover:bg-slate-100 dark:hover:bg-[#1E293B] transition-colors cursor-pointer"
+              className="hidden sm:flex items-center gap-2 h-10 pl-3 pr-1.5 rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
             >
-              <span className="hidden sm:inline text-xs font-semibold text-[#0F172A] dark:text-[#F8FAFC] truncate max-w-[100px]">
+              <span className="text-xs font-semibold text-void dark:text-bone truncate max-w-[90px]">
                 {user.name.split(' ')[0]}
               </span>
-              <div className="w-8 h-8 rounded-full bg-[#4F46E5] text-white flex items-center justify-center text-xs font-bold shadow-2xs">
+              <div className="w-8 h-8 rounded-full bg-lime text-void flex items-center justify-center text-xs font-bold">
                 {user.name.charAt(0)}
               </div>
             </button>
@@ -147,15 +165,58 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={onOpenAuth}
-              className="h-9 px-3.5 rounded-lg bg-[#4F46E5] hover:bg-[#3730A3] text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs min-h-[36px]"
+              className="hidden sm:inline-flex h-10 px-5 rounded-full bg-void hover:bg-graphite dark:bg-lime dark:hover:bg-limedeep text-white dark:text-void text-xs font-bold items-center transition-colors cursor-pointer"
             >
-              <UserIcon className="w-3.5 h-3.5" />
-              <span>{isUrduMode ? 'Dakhil Hon' : 'Sign In'}</span>
+              {isUrduMode ? 'Dakhil Hon' : 'Sign In'}
             </button>
           )}
+
+          {/* Mobile menu */}
+          <button
+            type="button"
+            onClick={() => setMenuOpen((v) => !v)}
+            className="md:hidden h-10 w-10 rounded-full border border-[#E5E5E1] dark:border-ash text-void dark:text-bone flex items-center justify-center cursor-pointer"
+            aria-label="Menu"
+          >
+            {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
         </div>
       </div>
+
+      {/* Mobile dropdown */}
+      {menuOpen && (
+        <nav className="md:hidden border-t border-[#E5E5E1] dark:border-graphite bg-white dark:bg-void px-4 py-3 flex flex-col gap-1 animate-fade-in">
+          {mobileLinks.map((l) => (
+            <button
+              key={l.id}
+              type="button"
+              onClick={() => {
+                onNavigate(l.id);
+                setMenuOpen(false);
+              }}
+              className={`text-left px-4 py-2.5 rounded-full text-sm font-medium cursor-pointer ${
+                currentScreen === l.id
+                  ? 'bg-lime text-void font-semibold'
+                  : 'text-smoke dark:text-fog hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
+              }`}
+            >
+              {l.label}
+            </button>
+          ))}
+          {!user || user.isGuest ? (
+            <button
+              type="button"
+              onClick={() => {
+                onOpenAuth();
+                setMenuOpen(false);
+              }}
+              className="sm:hidden mt-1 h-11 rounded-full bg-void dark:bg-lime text-white dark:text-void text-sm font-bold cursor-pointer"
+            >
+              {isUrduMode ? 'Dakhil Hon' : 'Sign In'}
+            </button>
+          ) : null}
+        </nav>
+      )}
     </header>
   );
 };
-

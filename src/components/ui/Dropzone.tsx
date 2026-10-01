@@ -93,10 +93,10 @@ export const Dropzone: React.FC<DropzoneProps> = ({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
-        className={`relative group border-2 border-dashed rounded-2xl p-6 md:p-8 text-center transition-all duration-200 cursor-pointer bg-white dark:bg-[#131B2E] ${
+        className={`relative group border-2 border-dashed rounded-[24px] p-6 md:p-8 text-center transition-all duration-200 cursor-pointer bg-white dark:bg-[#1A1A1A] ${
           isDragging
-            ? 'border-[#4F46E5] bg-[#EEF2FF]/60 dark:bg-[#1E1B4B]/60 scale-[1.01]'
-            : 'border-slate-300 dark:border-[#283548] hover:border-[#4F46E5] dark:hover:border-[#6366F1] hover:bg-slate-50/60 dark:hover:bg-[#1E293B]/60 shadow-xs'
+            ? 'border-[#0C0C0C] bg-[#F2F4D6]/60 dark:bg-[#2B2F0C]/60 scale-[1.01]'
+            : 'border-slate-300 dark:border-[#333333] hover:border-[#0C0C0C] dark:hover:border-[#B9C006] hover:bg-slate-50/60 dark:hover:bg-[#262626]/60 shadow-xs'
         }`}
       >
         <input
@@ -112,28 +112,28 @@ export const Dropzone: React.FC<DropzoneProps> = ({
         />
 
         {/* Center Upload Graphic */}
-        <div className="mx-auto w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-[#EEF2FF] dark:bg-[#1E1B4B] text-[#4F46E5] dark:text-[#818CF8] flex items-center justify-center mb-4 group-hover:scale-105 transition-transform shadow-xs">
-          <UploadCloud className="w-8 h-8 md:w-10 md:h-10 text-[#4F46E5] dark:text-[#818CF8]" />
+        <div className="mx-auto w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-[#F2F4D6] dark:bg-[#2B2F0C] text-[#0C0C0C] dark:text-[#B9C006] flex items-center justify-center mb-4 group-hover:scale-105 transition-transform shadow-xs">
+          <UploadCloud className="w-8 h-8 md:w-10 md:h-10 text-[#0C0C0C] dark:text-[#B9C006]" />
         </div>
 
         {/* Primary Action Heading */}
-        <h3 className="text-base md:text-lg font-bold text-[#0F172A] dark:text-[#F8FAFC] mb-1 font-heading">
+        <h3 className="text-base md:text-lg font-bold text-[#0C0C0C] dark:text-[#F5F5F5] mb-1 font-heading">
           {isUrduMode
             ? 'Screenshot ya Tasweer yahan Dalein'
             : 'Upload a screenshot, find the lowest price'}
         </h3>
 
         {/* Descriptive Guidance */}
-        <p className="text-xs md:text-sm text-[#64748B] dark:text-[#94A3B8] max-w-md mx-auto mb-4">
+        <p className="text-xs md:text-sm text-[#5F5F60] dark:text-[#9C9C9D] max-w-md mx-auto mb-4">
           {isUrduMode
             ? 'Instagram ya TikTok se screenshot drag karein, gallery se chunein ya Ctrl+V se paste karein.'
             : 'Drag & drop an image, click to browse gallery, or paste directly from clipboard (Ctrl+V).'}
         </p>
 
         {/* Action Button Pills */}
-        <div className="inline-flex items-center gap-2 p-1.5 bg-slate-100 dark:bg-[#1E293B] rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300">
-          <span className="flex items-center gap-1 px-3 py-1.5 bg-white dark:bg-[#131B2E] rounded-lg shadow-2xs text-[#4F46E5] dark:text-[#818CF8]">
-            <Camera className="w-3.5 h-3.5 text-[#F97316]" />
+        <div className="inline-flex items-center gap-2 p-1.5 bg-slate-100 dark:bg-[#262626] rounded-full text-xs font-semibold text-slate-700 dark:text-slate-300">
+          <span className="flex items-center gap-1 px-4 py-2 bg-white dark:bg-[#1A1A1A] rounded-full shadow-2xs text-[#0C0C0C] dark:text-[#B9C006]">
+            <Camera className="w-3.5 h-3.5 text-[#B9C006]" />
             {isUrduMode ? 'Tasweer Chunein' : 'Select Photo'}
           </span>
           <span className="hidden sm:flex items-center gap-1 px-2.5 py-1 text-slate-500 dark:text-slate-400">
@@ -152,8 +152,8 @@ export const Dropzone: React.FC<DropzoneProps> = ({
 
       {/* Quick Test Samples */}
       <div className="mt-4">
-        <div className="text-xs font-medium text-[#64748B] dark:text-[#94A3B8] mb-2 flex items-center gap-1.5">
-          <ImageIcon className="w-3.5 h-3.5 text-[#4F46E5] dark:text-[#818CF8]" />
+        <div className="text-xs font-medium text-[#5F5F60] dark:text-[#9C9C9D] mb-2 flex items-center gap-1.5">
+          <ImageIcon className="w-3.5 h-3.5 text-[#0C0C0C] dark:text-[#B9C006]" />
           <span>
             {isUrduMode
               ? 'Mashhoor screenshots se test karein:'
@@ -167,7 +167,7 @@ export const Dropzone: React.FC<DropzoneProps> = ({
               key={idx}
               type="button"
               onClick={() => onImageSelected(item.image, item.label)}
-              className="flex items-center gap-2 p-2 rounded-xl bg-white dark:bg-[#131B2E] border border-slate-200 dark:border-[#283548] hover:border-[#4F46E5] dark:hover:border-[#6366F1] hover:bg-[#EEF2FF]/40 dark:hover:bg-[#1E1B4B]/40 text-left transition-all duration-150 cursor-pointer group shadow-2xs"
+              className="flex items-center gap-2 p-2 rounded-xl bg-white dark:bg-[#1A1A1A] border border-slate-200 dark:border-[#333333] hover:border-[#0C0C0C] dark:hover:border-[#B9C006] hover:bg-[#F2F4D6]/40 dark:hover:bg-[#2B2F0C]/40 text-left transition-all duration-150 cursor-pointer group shadow-2xs"
             >
               <img
                 src={item.image}
@@ -175,10 +175,10 @@ export const Dropzone: React.FC<DropzoneProps> = ({
                 className="w-10 h-10 rounded-lg object-cover bg-slate-100 dark:bg-slate-800 shrink-0 border border-slate-200 dark:border-slate-700"
               />
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-[#0F172A] dark:text-[#F8FAFC] truncate group-hover:text-[#4F46E5] dark:group-hover:text-[#818CF8]">
+                <p className="text-xs font-semibold text-[#0C0C0C] dark:text-[#F5F5F5] truncate group-hover:text-[#0C0C0C] dark:group-hover:text-[#B9C006]">
                   {isUrduMode ? item.labelUrdu : item.label}
                 </p>
-                <span className="text-[10px] text-[#64748B] dark:text-[#94A3B8] block truncate">
+                <span className="text-[10px] text-[#5F5F60] dark:text-[#9C9C9D] block truncate">
                   {item.category}
                 </span>
               </div>

@@ -40,11 +40,11 @@ export const SearchHistoryScreen: React.FC<SearchHistoryScreenProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-[#0F172A] dark:text-[#F8FAFC] font-heading flex items-center gap-2">
-            <History className="w-6 h-6 text-[#4F46E5] dark:text-[#818CF8]" />
+          <h2 className="text-xl sm:text-2xl font-bold text-[#0C0C0C] dark:text-[#F5F5F5] font-heading flex items-center gap-2">
+            <History className="w-6 h-6 text-[#0C0C0C] dark:text-[#B9C006]" />
             <span>{isUrduMode ? 'Haaliyah Talash ki Tareekh' : 'Search History'}</span>
           </h2>
-          <p className="text-xs sm:text-sm text-[#64748B] dark:text-[#94A3B8] mt-1">
+          <p className="text-xs sm:text-sm text-[#5F5F60] dark:text-[#9C9C9D] mt-1">
             Tap any past search to re-scan prices across Pakistani stores.
           </p>
         </div>
@@ -64,7 +64,7 @@ export const SearchHistoryScreen: React.FC<SearchHistoryScreenProps> = ({
           <div
             key={item.id}
             onClick={() => onRerunSearch(item)}
-            className="bg-white dark:bg-[#131B2E] rounded-2xl border border-slate-200 dark:border-[#1E293B] p-3.5 sm:p-4 hover:border-[#4F46E5] dark:hover:border-[#6366F1] hover:shadow-xs transition-all duration-150 flex items-center justify-between gap-4 cursor-pointer group"
+            className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-slate-200 dark:border-[#262626] p-3.5 sm:p-4 hover:border-[#0C0C0C] dark:hover:border-[#B9C006] hover:shadow-xs transition-all duration-150 flex items-center justify-between gap-4 cursor-pointer group"
           >
             {/* Visual Thumbnail & Metadata */}
             <div className="flex items-center gap-3.5 min-w-0">
@@ -78,24 +78,24 @@ export const SearchHistoryScreen: React.FC<SearchHistoryScreenProps> = ({
                 ) : (
                   <Search className="w-6 h-6 text-slate-400 dark:text-slate-500" />
                 )}
-                <span className="absolute bottom-0 right-0 bg-[#4F46E5] text-white p-0.5 rounded-tl-md">
+                <span className="absolute bottom-0 right-0 bg-[#0C0C0C] text-white p-0.5 rounded-tl-md">
                   <Sparkles className="w-2.5 h-2.5" />
                 </span>
               </div>
 
               <div className="min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-xs font-semibold text-[#4F46E5] dark:text-[#818CF8] bg-[#EEF2FF] dark:bg-[#1E1B4B] px-2 py-0.2 rounded-md">
+                  <span className="text-xs font-semibold text-[#0C0C0C] dark:text-[#B9C006] bg-[#F2F4D6] dark:bg-[#2B2F0C] px-2 py-0.2 rounded-md">
                     {item.category}
                   </span>
-                  <span className="text-[11px] text-[#64748B] dark:text-[#94A3B8]">{item.timestamp}</span>
+                  <span className="text-[11px] text-[#5F5F60] dark:text-[#9C9C9D]">{item.timestamp}</span>
                 </div>
 
-                <h3 className="text-sm font-semibold text-[#0F172A] dark:text-[#F8FAFC] truncate group-hover:text-[#4F46E5] dark:group-hover:text-[#818CF8] transition-colors">
+                <h3 className="text-sm font-semibold text-[#0C0C0C] dark:text-[#F5F5F5] truncate group-hover:text-[#0C0C0C] dark:group-hover:text-[#B9C006] transition-colors">
                   {item.queryText || 'Screenshot Visual Search'}
                 </h3>
 
-                <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">
+                <p className="text-xs text-[#5F5F60] dark:text-[#9C9C9D]">
                   {item.resultsCount} products found
                 </p>
               </div>
@@ -109,7 +109,7 @@ export const SearchHistoryScreen: React.FC<SearchHistoryScreenProps> = ({
                   e.stopPropagation();
                   onRerunSearch(item);
                 }}
-                className="h-9 px-3 rounded-lg bg-[#EEF2FF] dark:bg-[#1E1B4B] group-hover:bg-[#4F46E5] dark:group-hover:bg-[#6366F1] text-[#4F46E5] dark:text-[#A5B4FC] group-hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="h-9 px-4 rounded-full bg-[#F2F4D6] dark:bg-[#2B2F0C] group-hover:bg-[#0C0C0C] dark:group-hover:bg-[#B9C006] text-[#0C0C0C] dark:text-[#CDD835] group-hover:text-white dark:group-hover:text-[#0C0C0C] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <span>Re-run</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -121,7 +121,7 @@ export const SearchHistoryScreen: React.FC<SearchHistoryScreenProps> = ({
                   e.stopPropagation();
                   onDeleteItem(item.id);
                 }}
-                className="w-9 h-9 rounded-lg hover:bg-slate-100 dark:hover:bg-[#1E293B] text-slate-400 hover:text-[#DC2626] dark:hover:text-[#EF4444] flex items-center justify-center transition-colors cursor-pointer"
+                className="w-9 h-9 rounded-lg hover:bg-slate-100 dark:hover:bg-[#262626] text-slate-400 hover:text-[#DC2626] dark:hover:text-[#EF4444] flex items-center justify-center transition-colors cursor-pointer"
                 title="Delete from history"
               >
                 <Trash2 className="w-4 h-4" />

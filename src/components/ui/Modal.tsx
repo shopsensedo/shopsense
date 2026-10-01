@@ -53,10 +53,10 @@ export const Modal: React.FC<ModalProps> = ({
 
       {/* Modal / Bottom Sheet Card */}
       <div
-        className={`relative w-full bg-white dark:bg-[#131B2E] shadow-2xl z-10 overflow-hidden flex flex-col max-h-[90vh] ${maxWidthClasses[maxWidth]} ${
+        className={`relative w-full bg-white dark:bg-[#1A1A1A] shadow-2xl z-10 overflow-hidden flex flex-col max-h-[90vh] ${maxWidthClasses[maxWidth]} ${
           isBottomSheetOnMobile
-            ? 'rounded-t-3xl sm:rounded-2xl border-t sm:border border-slate-200 dark:border-[#1E293B] animate-in slide-in-from-bottom sm:zoom-in-95 duration-200'
-            : 'rounded-2xl border border-slate-200 dark:border-[#1E293B] animate-in zoom-in-95 duration-200'
+            ? 'rounded-t-3xl sm:rounded-2xl border-t sm:border border-slate-200 dark:border-[#262626] animate-in slide-in-from-bottom sm:zoom-in-95 duration-200'
+            : 'rounded-2xl border border-slate-200 dark:border-[#262626] animate-in zoom-in-95 duration-200'
         }`}
       >
         {/* Mobile Drag Handle */}
@@ -68,16 +68,16 @@ export const Modal: React.FC<ModalProps> = ({
 
         {/* Modal Header */}
         {(title || subtitle) && (
-          <div className="px-5 py-4 border-b border-slate-100 dark:border-[#1E293B] flex items-center justify-between">
+          <div className="px-5 py-4 border-b border-slate-100 dark:border-[#262626] flex items-center justify-between">
             <div>
-              {title && <h3 className="text-lg font-bold text-[#0F172A] dark:text-[#F8FAFC] font-heading">{title}</h3>}
-              {subtitle && <p className="text-xs text-[#64748B] dark:text-[#94A3B8] mt-0.5">{subtitle}</p>}
+              {title && <h3 className="text-lg font-bold text-[#0C0C0C] dark:text-[#F5F5F5] font-heading">{title}</h3>}
+              {subtitle && <p className="text-xs text-[#5F5F60] dark:text-[#9C9C9D] mt-0.5">{subtitle}</p>}
             </div>
 
             <button
               type="button"
               onClick={onClose}
-              className="w-9 h-9 rounded-full hover:bg-slate-100 dark:hover:bg-[#1E293B] text-slate-400 hover:text-[#0F172A] dark:hover:text-white flex items-center justify-center transition-colors min-h-[36px] min-w-[36px] cursor-pointer"
+              className="w-9 h-9 rounded-full hover:bg-slate-100 dark:hover:bg-[#262626] text-slate-400 hover:text-[#0C0C0C] dark:hover:text-white flex items-center justify-center transition-colors min-h-[36px] min-w-[36px] cursor-pointer"
               aria-label="Close dialog"
             >
               <X className="w-5 h-5" />
