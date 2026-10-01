@@ -64,6 +64,54 @@ export async function embedImageUrl(
   return l2normalize(output.data as ArrayLike<number>);
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let textModelPromise: Promise<{ tokenizer: any; model: any }> | null = null;
+
+/**
+ * Embed an English text query with CLIP's text tower
+ * (Xenova/clip-vit-base-patch32, q8). Shares the joint 512-dim space with the
+ * vision tower above, so cosine(queryVec, imageVec) ranks thumbnails by
+ * text-to-image similarity. Lazy-loaded separately from the vision model.
+ */
+export async function embedTextQuery(
+  text: string,
+  onProgress?: (fraction: number) => void,
+): Promise<number[]> {
+  if (!textModelPromise) {
+    textModelPromise = (async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const tfjs: any = await import('@huggingface/transformers');
+      const tokenizer = await tfjs.AutoTokenizer.from_pretrained(MODEL_ID);
+      const model = await tfjs.CLIPTextModelWithProjection.from_pretrained(MODEL_ID, {
+        dtype: 'q8', // -> text_model_quantized.onnx; same weights as the torch backend
+        device: 'wasm',
+        progress_callback: (info: { status?: string; progress?: number }) => {
+          if (!onProgress) return;
+          if (info.status === 'progress' && typeof info.progress === 'number') {
+            onProgress(Math.min(0.95, Math.max(0, info.progress / 100)));
+          } else if (info.status === 'ready') {
+            onProgress(1);
+          }
+        },
+      });
+      return { tokenizer, model };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    })().catch((err: unknown) => {
+      textModelPromise = null;
+      throw err;
+    });
+  } else if (onProgress) {
+    onProgress(1);
+  }
+  const { tokenizer, model } = await textModelPromise;
+  const inputs = await tokenizer([text], { padding: true, truncation: true });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const output: any = await model(inputs);
+  const embeds = output.text_embeds ?? output[0];
+  if (!embeds?.data) throw new Error('CLIP text model returned no embeddings');
+  return l2normalize(embeds.data as ArrayLike<number>);
+}
+
 /** Embed the user's uploaded photo (data URL). Thin wrapper for clarity. */
 export async function embedQueryImage(
   dataUrl: string,

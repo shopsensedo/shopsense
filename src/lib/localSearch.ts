@@ -61,6 +61,7 @@ function toProduct(p: SeedProduct, score: number): Product {
     platformUrl: p.purchase_link,
     imageUrl: seedImageFor(p),
     similarityScore: Math.round(score * 100),
+    cosineSimilarity: score, // real CLIP cosine vs the bundled seed embeddings
     rating: 4.3,
     reviewsCount: 120,
     deliveryTime: '2-4 days',
@@ -96,19 +97,28 @@ export async function searchByImageLocal(
 // ---------------------------------------------------------------------------
 
 export function normalizeQueryLocal(query: string): string[] {
-  let q = query.trim().toLowerCase();
-  if (!q) return [];
+  // Pad so phrase matching is word-boundary safe: short keys like "ac" or
+  // "tv" must not match inside longer words ("black", "watch").
+  let q = ` ${query.trim().toLowerCase().replace(/\s+/g, ' ')} `;
+  if (!q.trim()) return [];
   const keywords: string[] = [];
-  for (const phrase of Object.keys(romanUrduMap).sort((a, b) => b.length - a.length)) {
-    if (q.includes(phrase)) {
-      for (const kw of romanUrduMap[phrase]) {
-        if (!keywords.includes(kw)) keywords.push(kw);
-      }
+  const push = (kws: string[]) => {
+    for (const kw of kws) if (!keywords.includes(kw)) keywords.push(kw);
+  };
+  // Multi-word phrases first, longest wins ("lawn suit" beats "suit").
+  const phrases = Object.keys(romanUrduMap)
+    .filter((k) => k.includes(' '))
+    .sort((a, b) => b.length - a.length);
+  for (const phrase of phrases) {
+    if (q.includes(` ${phrase} `)) {
+      push(romanUrduMap[phrase]);
       q = q.split(phrase).join(' ');
     }
   }
-  for (const word of q.split(/\s+/)) {
-    if (word && !keywords.includes(word)) keywords.push(word);
+  // Single words: exact token match only (word boundaries).
+  for (const word of q.trim().split(/\s+/)) {
+    if (romanUrduMap[word]) push(romanUrduMap[word]);
+    else if (word && !keywords.includes(word)) keywords.push(word); // mixed English passthrough
   }
   return keywords;
 }

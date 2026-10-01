@@ -11,7 +11,8 @@
  * site API seconds before it is shown.
  */
 import type { PlatformType, Product } from '../types';
-import { embedQueryImage, embedImageUrl, cosineSim } from './clipEmbed';
+import { embedQueryImage, embedImageUrl, embedTextQuery, cosineSim } from './clipEmbed';
+import { normalizeQueryLocal } from './localSearch';
 import categoryEmbeddingsRaw from '../data/category_embeddings.json';
 
 interface CategoryEntry {
@@ -146,6 +147,7 @@ function toLiveProduct(l: LiveListing, score: number): Product {
     platformUrl: l.url, // REAL product page
     imageUrl: l.image, // REAL product image (<img> needs no CORS)
     similarityScore: Math.max(1, Math.round(score * 100)),
+    cosineSimilarity: score, // raw CLIP cosine, shown only in the detail modal
     rating: 0,
     reviewsCount: 0,
     deliveryTime: '',
@@ -158,13 +160,136 @@ function toLiveProduct(l: LiveListing, score: number): Product {
   };
 }
 
+/**
+ * Human-readable similarity label replacing the old "NN% match".
+ *
+ * Thresholds are calibrated on the real CLIP (openai/clip-vit-base-patch32)
+ * cosine distribution measured 2026-10-02 over product photos:
+ * - image-image: self 1.00, same style/different colourway 0.87,
+ *   same category 0.54-0.70, unrelated 0.47-0.57
+ * - text-image: relevant matches 0.24-0.29 ("black shoes" -> black shoe 0.285,
+ *   "handbag bag bags" -> handbag 0.27-0.29, "watch smartwatch" -> watch 0.256),
+ *   irrelevant <= 0.22
+ * So >= 0.75 means a near-duplicate visual match, >= 0.55 a same-category
+ * visual match; cross-modal text matches honestly land in "Loosely similar"
+ * (0.2-0.3 band) even when they are the best available result.
+ */
+export type SimilarityLabel = 'Very similar' | 'Similar' | 'Loosely similar';
+
+export function similarityLabel(scorePercent: number): SimilarityLabel {
+  if (scorePercent >= 75) return 'Very similar';
+  if (scorePercent >= 55) return 'Similar';
+  return 'Loosely similar';
+}
+
 export type LiveProgress =
   | { stage: 'classify' }
   | { stage: 'fetch' }
   | { stage: 'match'; done: number; total: number };
 
 /**
- * Full live pipeline. Never throws for upstream source problems — it returns
+ * Embed every candidate thumbnail (via the /api/img proxy) and cosine-score
+ * it against the query vector. Shared by the visual and the text pipelines —
+ * only the query vector differs (photo vs CLIP text embedding).
+ */
+async function scoreThumbnails(
+  listings: LiveListing[],
+  queryVec: number[],
+  onProgress?: (p: LiveProgress | number) => void,
+): Promise<{ l: LiveListing; score: number }[]> {
+  const deadline = Date.now() + EMBED_TIMEOUT_MS;
+  const scored: { l: LiveListing; score: number }[] = [];
+  let done = 0;
+  const queue = listings.slice();
+  const workers = Array.from({ length: 4 }, async () => {
+    while (queue.length > 0 && Date.now() < deadline) {
+      const l = queue.shift()!;
+      try {
+        const vec = await embedImageUrl(`/api/img?url=${encodeURIComponent(l.image)}`);
+        if (vec.length === queryVec.length) {
+          scored.push({ l, score: cosineSim(queryVec, vec) });
+        }
+      } catch {
+        // one bad image must not kill the search
+      }
+      done++;
+      onProgress?.({ stage: 'match', done, total: listings.length });
+    }
+  });
+  await Promise.all(workers);
+  return scored;
+}
+
+/**
+ * Guess a site-query category from mapped English keywords. Returns a
+ * SITE_QUERIES key, or '' when nothing matches — then fetchLiveListings
+ * uses the mapped English query verbatim for both sources.
+ */
+function categorizeKeywords(keywords: string[]): string {
+  const kw = new Set(keywords);
+  const has = (...ws: string[]) => ws.some((w) => kw.has(w));
+  if (has('watch', 'watches', 'smartwatch')) return 'watch';
+  if (has('handbag', 'bag', 'bags', 'purse', 'clutch', 'tote', 'briefcase')) return 'handbag';
+  if (has('backpack', 'luggage')) return 'backpack';
+  if (has('earbuds', 'headphones', 'airpods', 'speaker', 'handsfree', 'earphones')) return 'earbuds';
+  if (has('sunglasses', 'shades')) return 'sunglasses';
+  if (has('laptop', 'macbook', 'notebook')) return 'laptop';
+  if (has('kurta', 'shalwar', 'kameez', 'ethnic', 'lawn', 'dupatta', 'abaya', 'saree', 'lehenga', 'sherwani', 'frock')) return 'kurta';
+  if (has('tshirt', 'shirt', 'hoodie', 'jacket', 'jeans', 'denim', 'sweater', 'trouser', 'pants', 'shorts', 'coat')) return 'tshirt';
+  if (has('shoes', 'sneakers', 'footwear', 'boots', 'heels', 'sandals', 'slippers', 'joggers', 'khussa')) return 'shoes';
+  if (has('mobile', 'smartphone', 'phone', 'iphone', 'samsung', 'charger', 'cable', 'tablet', 'ipad')) return 'mobile';
+  return '';
+}
+
+/**
+ * Live text search: Roman Urdu / English / mixed query →
+ * mapped English keywords → /api/live-search on both sources →
+ * CLIP text-to-image ranking over the thumbnails.
+ * Never throws for upstream source problems; only a broken text-embedding
+ * (model load failure) still throws.
+ */
+export async function searchLiveText(
+  rawQuery: string,
+  onProgress?: (p: LiveProgress | number) => void,
+): Promise<{
+  products: Product[];
+  mappedQuery: string;
+  category: string;
+  query: string;
+  sources: SourceStatus;
+}> {
+  // 1. Roman Urdu → English (word-boundary safe, mixed-language passthrough)
+  const keywords = normalizeQueryLocal(rawQuery);
+  const english = keywords.join(' ');
+  const category = categorizeKeywords(keywords);
+
+  // 2. live listings from the sites (mapped query when no category matched)
+  onProgress?.({ stage: 'fetch' });
+  const { listings, sources } = await fetchLiveListings(category, english);
+  const empty = { products: [] as Product[], mappedQuery: english, category, query: english, sources };
+  if (listings.length === 0) return empty;
+
+  // 3. embed the English query with CLIP's text tower (downloads on first use)
+  const queryVec = await embedTextQuery(english, (f) =>
+    onProgress?.(typeof f === 'number' ? f * 0.5 : f),
+  );
+
+  // 4+5. rank thumbnails by text-to-image cosine similarity
+  const scored = await scoreThumbnails(listings, queryVec, onProgress);
+  if (scored.length === 0) return empty; // thumbnails failed — honest empty, not fake
+
+  // 6. rank
+  scored.sort((a, b) => b.score - a.score);
+  return {
+    products: scored.slice(0, 12).map(({ l, score }) => toLiveProduct(l, score)),
+    mappedQuery: english,
+    category,
+    query: english,
+    sources,
+  };
+}
+/**
+ * Full live pipeline (visual). Never throws for upstream source problems — it returns
  * whatever it got (possibly zero products) together with the per-source
  * status, so the caller can show an honest error instead of fake results.
  * Only a broken query-image embedding (model load failure) still throws.
@@ -189,24 +314,7 @@ export async function searchLive(
   if (listings.length === 0) return empty;
 
   // 4+5. embed each product image (via proxy) and rank by visual similarity
-  const deadline = Date.now() + EMBED_TIMEOUT_MS;
-  const scored: { l: LiveListing; score: number }[] = [];
-  let done = 0;
-  const queue = listings.slice();
-  const workers = Array.from({ length: 4 }, async () => {
-    while (queue.length > 0 && Date.now() < deadline) {
-      const l = queue.shift()!;
-      try {
-        const vec = await embedImageUrl(`/api/img?url=${encodeURIComponent(l.image)}`);
-        scored.push({ l, score: cosineSim(queryVec, vec) });
-      } catch {
-        // one bad image must not kill the search
-      }
-      done++;
-      onProgress?.({ stage: 'match', done, total: listings.length });
-    }
-  });
-  await Promise.all(workers);
+  const scored = await scoreThumbnails(listings, queryVec, onProgress);
   if (scored.length === 0) return empty; // thumbnails failed — honest empty, not fake
 
   // 6. rank

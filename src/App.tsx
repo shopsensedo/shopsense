@@ -12,7 +12,7 @@ import {
 import { ToastProvider, useToast } from './components/ui/Toast';
 import { searchByImage, searchByText } from './lib/api';
 import { searchByImageLocal, searchByTextLocal } from './lib/localSearch';
-import { searchLive, SourceStatus } from './lib/liveSearch';
+import { searchLive, searchLiveText, SourceStatus } from './lib/liveSearch';
 import { isDemoMode } from './lib/demoMode';
 import { ThemeProvider, useTheme } from './lib/theme';
 import { Navbar } from './components/ui/Navbar';
@@ -46,6 +46,7 @@ function ShopSenseApp() {
   // Search failure state (production): honest error + retry, never fake data.
   const [searchError, setSearchError] = useState<string | null>(null);
   const [sourceStatus, setSourceStatus] = useState<SourceStatus | null>(null);
+  const [mappedQuery, setMappedQuery] = useState<string | null>(null);
   const [lastSearch, setLastSearch] = useState<
     { type: 'image'; dataUrl: string } | { type: 'text'; query: string } | null
   >(null);
@@ -121,6 +122,7 @@ function ShopSenseApp() {
     setSearchReady(false);
     setSearchError(null);
     setSourceStatus(null);
+    setMappedQuery(null);
     setCurrentScreen('search_loading');
 
     let matchedProducts: Product[] | null = null;
@@ -247,6 +249,7 @@ function ShopSenseApp() {
     setSearchReady(false);
     setSearchError(null);
     setSourceStatus(null);
+    setMappedQuery(null);
     setCurrentScreen('search_loading');
 
     let matched: Product[] | null = null;
@@ -260,7 +263,50 @@ function ShopSenseApp() {
         queryImage = matched[0].imageUrl;
       }
     } catch {
-      matched = null; // backend unreachable
+      matched = null; // backend unreachable — try the live pipeline
+    }
+
+    if (!matched) {
+      try {
+        // LIVE text pipeline: Roman Urdu -> English keywords -> REAL listings
+        // from PriceOye + Daraz -> CLIP text-to-image ranking over thumbnails.
+        // No mock data in this path; source failures are reported, not hidden.
+        setLocalClipProgress(0);
+        setMappedQuery(null);
+        const live = await searchLiveText(query, (p) => {
+          if (typeof p === 'number') {
+            setLocalClipProgress(p * 0.4);
+            setClipProgressLabel(isUrduMode ? 'AI model load ho raha hai…' : 'Loading AI model…');
+          } else if (p.stage === 'fetch') {
+            setLocalClipProgress(0.45);
+            setClipProgressLabel(
+              isUrduMode ? 'Live listings la rahe hain…' : 'Fetching live listings…',
+            );
+          } else if (p.stage === 'match') {
+            setLocalClipProgress(0.5 + 0.5 * (p.done / Math.max(1, p.total)));
+            setClipProgressLabel(
+              isUrduMode
+                ? `Tasveerain match ho rahi hain ${p.done}/${p.total}…`
+                : `Matching photos ${p.done}/${p.total}…`,
+            );
+          }
+        });
+        // Always surface what each source did — even when it failed.
+        setSourceStatus(live.sources);
+        setMappedQuery(live.mappedQuery);
+        if (live.products.length > 0) {
+          matched = live.products;
+          cat = live.category || 'General';
+          queryImage = live.products[0].imageUrl;
+        } else {
+          matched = null;
+        }
+      } catch {
+        matched = null; // live failed (e.g. model load) — demo fallbacks / honest error below
+      } finally {
+        setLocalClipProgress(null);
+        setClipProgressLabel(undefined);
+      }
     }
 
     if (!matched && demoMode) {
@@ -497,6 +543,7 @@ function ShopSenseApp() {
               searchError={searchError}
               onRetry={handleRetrySearch}
               sourceStatus={sourceStatus}
+              mappedQuery={mappedQuery}
             />
           )}
 

@@ -24,6 +24,8 @@ interface ResultsScreenProps {
   onRetry?: () => void;
   /** Per-source outcome of the live fetch — shown after every search. */
   sourceStatus?: SourceStatus | null;
+  /** Mapped English query for live text search ("kala joota" → "black shoes"). */
+  mappedQuery?: string | null;
 }
 
 const SORT_OPTIONS = [
@@ -47,6 +49,7 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
   searchError = null,
   onRetry,
   sourceStatus = null,
+  mappedQuery = null,
 }) => {
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -392,6 +395,12 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
               <p className="text-xs text-smoke dark:text-fog">
                 {isUrduMode ? 'Visual scan mukammal — neeche milti julti ashya' : 'Visual scan complete — matching items below'}
               </p>
+              {mappedQuery && (
+                <p className="text-xs text-smoke dark:text-fog mt-0.5">
+                  {isUrduMode ? 'Talash: ' : 'Searching for: '}
+                  <span className="font-semibold text-void dark:text-bone">{mappedQuery}</span>
+                </p>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
