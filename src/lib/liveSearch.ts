@@ -459,14 +459,20 @@ export function nounBoostedScore(
  * neither the noun nor any synonym appears in the title, the label is capped
  * at "Possible match": a phone is not a strong match for a smartwatch query.
  * Generic nouns ("shoes") are never capped — only boosted.
+ *
+ * The cap is NOT applied when the title contains a brand the user typed:
+ * "Nike Air Force 1" is a sneakers-family product even though the word
+ * "sneakers" never appears in the title.
  */
 export function nounCapTextLabel(
   label: TextSimilarityLabel,
   title: string,
   noun: string,
+  queryBrands: string[] = [],
 ): TextSimilarityLabel {
   if (!noun || !SPECIFIC_NOUNS.has(noun.toLowerCase())) return label;
   const t = title.toLowerCase();
+  if (queryBrands.some((b) => b && t.includes(b.toLowerCase()))) return label;
   if (nounVariants(noun).some((v) => v && t.includes(v))) return label;
   return 'Possible match';
 }
@@ -478,16 +484,24 @@ export type LiveProgress =
 
 /**
  * Relevance first, then price sort (text searches with a price intent).
- * Keeps only results whose text label is "Good match" or better; if fewer
- * than 5 qualify, keeps the top 8 by similarity instead. Only that surviving
- * set — never the whole unfiltered result list — is then price-sorted, so a
- * cheap irrelevant listing can never outrank a relevant one.
+ * Results are ordered by label tier first (Strong, Good, Possible), then by
+ * score within a tier — so a noun-capped "Possible match" can never appear
+ * above a Strong match. Keeps only results whose text label is "Good match"
+ * or better; if fewer than 5 qualify, keeps the top 8 by tier-then-score
+ * instead. Only that surviving set — never the whole unfiltered result
+ * list — is then price-sorted, so a cheap irrelevant listing can never
+ * outrank a relevant one. Price-sorted results are NOT tier-ordered: the
+ * price intent decides their final order.
  */
 export function applyRelevanceThenSort(
   scored: { l: LiveListing; score: number; label: TextSimilarityLabel }[],
   priceIntent: PriceIntent,
 ): { l: LiveListing; score: number; label: TextSimilarityLabel }[] {
-  const ranked = [...scored].sort((a, b) => b.score - a.score);
+  const tier = (label: TextSimilarityLabel): number =>
+    label === 'Strong match' ? 0 : label === 'Good match' ? 1 : 2;
+  const ranked = [...scored].sort(
+    (a, b) => tier(a.label) - tier(b.label) || b.score - a.score,
+  );
   const relevant = ranked.filter(
     (r) => r.label === 'Strong match' || r.label === 'Good match',
   );
@@ -752,6 +766,7 @@ export async function searchLiveText(
   // earns a small score boost; the label is computed with the brand-mismatch
   // and specific-noun caps.
   const noun = extractProductNoun(rawQuery, keywords, category);
+  const queryBrands = brandsInQuery(rawQuery, keywords);
   const aware = floored.map(({ l, score }) => {
     const boosted = nounBoostedScore(
       brandColourBoostedScore(score, l.title, rawQuery, keywords),
@@ -762,6 +777,7 @@ export async function searchLiveText(
       brandAwareTextLabel(boosted, l.title, rawQuery, keywords),
       l.title,
       noun,
+      queryBrands,
     );
     return { l, score: boosted, label };
   });

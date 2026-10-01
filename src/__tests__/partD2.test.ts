@@ -189,3 +189,90 @@ describe('D2-2 filter funnel', () => {
     expect(Object.values(f).every((v) => v >= 0)).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// D2-3: noun-cap brand exception, sneakers synonyms, tier-first ordering
+// ---------------------------------------------------------------------------
+
+import {
+  nounCapTextLabel,
+  nounVariants,
+  nounBoostedScore,
+  applyRelevanceThenSort,
+  brandsInQuery,
+  type LiveListing,
+} from '../lib/liveSearch';
+
+const AF1_TITLE = 'Nike Air Force 1 Low \u201907 \u2013 Triple White';
+
+function mkListing(price: number): LiveListing {
+  return {
+    title: 'x',
+    price,
+    priceText: `Rs. ${price}`,
+    image: 'https://example.com/x.jpg',
+    url: `https://www.daraz.pk/x-${price}.html`,
+    source: 'Daraz',
+  };
+}
+
+describe('D2-3 noun cap refinement and ordering', () => {
+  test('noun cap is skipped when the title contains the typed brand', () => {
+    const brands = brandsInQuery('nike white sneakers', ['nike', 'white', 'sneakers']);
+    expect(brands).toContain('nike');
+    // No "sneakers" word in the title — but Nike is the typed brand.
+    expect(nounCapTextLabel('Strong match', AF1_TITLE, 'sneakers', brands)).toBe(
+      'Strong match',
+    );
+  });
+
+  test('noun cap still applies when the brand is absent from the title', () => {
+    // Socks: no sneakers word, no sneakers synonym, no typed brand.
+    const socks = 'Nike Everyday Cushion Crew Socks 3-Pack';
+    expect(nounCapTextLabel('Strong match', socks, 'sneakers', [])).toBe(
+      'Possible match',
+    );
+    // Unrelated brand does not rescue it either.
+    expect(nounCapTextLabel('Strong match', socks, 'sneakers', ['adidas'])).toBe(
+      'Possible match',
+    );
+  });
+
+  test('"air force" and "kicks" are sneakers synonyms (trainers/running shoes/sports shoes already were)', () => {
+    const v = nounVariants('sneakers');
+    expect(v).toContain('air force');
+    expect(v).toContain('kicks');
+    expect(v).toContain('trainers');
+    expect(v).toContain('running shoes');
+    expect(v).toContain('sports shoes');
+    // "Air Force" in a title now earns the noun boost.
+    expect(nounBoostedScore(0.25, AF1_TITLE, 'sneakers')).toBeGreaterThan(0.25);
+  });
+
+  test('tier first, then score: a capped Possible never outranks a Strong match', () => {
+    const out = applyRelevanceThenSort(
+      [
+        { l: mkListing(100), score: 0.3, label: 'Possible match' },
+        { l: mkListing(200), score: 0.26, label: 'Strong match' },
+        { l: mkListing(300), score: 0.27, label: 'Good match' },
+      ],
+      null,
+    );
+    expect(out.map((r) => r.label)).toEqual([
+      'Strong match',
+      'Good match',
+      'Possible match',
+    ]);
+  });
+
+  test('price-sorted results are NOT tier-ordered', () => {
+    const out = applyRelevanceThenSort(
+      [
+        { l: mkListing(5000), score: 0.29, label: 'Strong match' },
+        { l: mkListing(100), score: 0.25, label: 'Good match' },
+      ],
+      'asc',
+    );
+    expect(out.map((r) => r.l.price)).toEqual([100, 5000]);
+  });
+});
