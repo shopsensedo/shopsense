@@ -86,15 +86,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
       {/* Body */}
       <div className="p-4 flex flex-col flex-1">
-        {/* Brand + rating */}
+        {/* Brand + rating — rating is hidden for live items: it is not scraped */}
         <div className="flex items-center justify-between gap-2 mb-1.5">
           <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-smoke dark:text-fog truncate">
             {product.brand || product.category}
           </span>
-          <span className="flex items-center gap-1 text-xs font-semibold text-void dark:text-bone shrink-0 tabular-nums">
-            <Star className="w-3.5 h-3.5 text-lime fill-lime" />
-            {product.rating}
-          </span>
+          {!product.isLive && (
+            <span className="flex items-center gap-1 text-xs font-semibold text-void dark:text-bone shrink-0 tabular-nums">
+              <Star className="w-3.5 h-3.5 text-lime fill-lime" />
+              {product.rating}
+            </span>
+          )}
         </div>
 
         {/* Price */}
@@ -114,18 +116,20 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           {product.title}
         </h3>
 
-        {/* Delivery */}
-        <div className="text-[11px] text-smoke dark:text-fog flex items-center gap-1 mb-3 whitespace-nowrap overflow-hidden">
-          {product.deliveryCost === 0 ? (
-            <span className="text-[#16A34A] dark:text-[#4ADE80] font-medium flex items-center gap-1 shrink-0">
-              <Check className="w-3 h-3" /> Free delivery
-            </span>
-          ) : (
-            <span className="shrink-0">Rs. {product.deliveryCost} delivery</span>
-          )}
-          <span aria-hidden="true" className="shrink-0">·</span>
-          <span className="truncate">{product.deliveryTime}</span>
-        </div>
+        {/* Delivery — hidden for live items: delivery info is not scraped */}
+        {!product.isLive && (
+          <div className="text-[11px] text-smoke dark:text-fog flex items-center gap-1 mb-3 whitespace-nowrap overflow-hidden">
+            {product.deliveryCost === 0 ? (
+              <span className="text-[#16A34A] dark:text-[#4ADE80] font-medium flex items-center gap-1 shrink-0">
+                <Check className="w-3 h-3" /> Free delivery
+              </span>
+            ) : (
+              <span className="shrink-0">Rs. {product.deliveryCost} delivery</span>
+            )}
+            <span aria-hidden="true" className="shrink-0">·</span>
+            <span className="truncate">{product.deliveryTime}</span>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="mt-auto flex items-center gap-2">

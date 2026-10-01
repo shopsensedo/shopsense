@@ -47,11 +47,13 @@ export function mapBackendProduct(item: BackendProduct): Product {
     platformUrl: item.purchase_link,
     imageUrl: `${API_BASE}/images/${item.image_file}`,
     similarityScore: Math.round(item.score * 100),
-    rating: 4.3,
-    reviewsCount: 120,
-    deliveryTime: '2-4 days',
+    // Not scraped from any store: zero/empty = "not known". The UI hides
+    // these fields for live items rather than showing defaults.
+    rating: 0,
+    reviewsCount: 0,
+    deliveryTime: '',
     deliveryCost: 0,
-    inStock: true,
+    inStock: true, // seed products are demo data; assumed in stock
     seller: platformName(item.platform),
     category: item.category,
     priceHistory: [],

@@ -42,8 +42,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 {user && !user.isGuest ? user.name : 'Guest Shopper'}
               </h2>
               {user && !user.isGuest ? (
-                <span className="text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-                  Verified
+                <span className="text-[11px] font-semibold bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">
+                  Demo account
                 </span>
               ) : (
                 <span className="text-[11px] font-semibold bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">
@@ -55,6 +55,13 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             <p className="text-xs text-[#5F5F60] dark:text-[#9C9C9D] mt-0.5">
               {user && !user.isGuest ? user.email || user.phone : 'Sign in to save items across mobile & web'}
             </p>
+            {user && !user.isGuest && (
+              <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 mt-2">
+                {isUrduMode
+                  ? 'Demo sign-in sirf — asal accounts abhi nahi hain.'
+                  : 'Demo sign-in only. No real accounts yet.'}
+              </p>
+            )}
           </div>
         </div>
 

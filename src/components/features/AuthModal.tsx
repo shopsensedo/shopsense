@@ -79,6 +79,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             ? 'Daraz aur local dukaano se bachat aur WhatsApp price alerts ke liye dakhil hon.'
             : 'Sync saved items and get instant WhatsApp price drop alerts across Daraz & local stores.'}
         </p>
+        <p className="mt-3 text-[11px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl px-3 py-2 max-w-xs mx-auto">
+          {isUrduMode
+            ? 'Demo sign-in sirf — asal accounts abhi nahi hain.'
+            : 'Demo sign-in only. No real accounts yet.'}
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-3.5">

@@ -121,19 +121,21 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               {product.title}
             </h2>
 
-            {/* Rating */}
-            <div className="flex items-center gap-2 mb-4">
-              <div className="flex items-center gap-0.5">
-                {[1, 2, 3, 4, 5].map((s) => (
-                  <Star
-                    key={s}
-                    className={`w-4 h-4 ${s <= Math.round(product.rating) ? 'text-lime fill-lime' : 'text-[#D8D8D2] dark:text-ash'}`}
-                  />
-                ))}
+            {/* Rating — hidden for live items: rating is not scraped */}
+            {!product.isLive && (
+              <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-0.5">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Star
+                      key={s}
+                      className={`w-4 h-4 ${s <= Math.round(product.rating) ? 'text-lime fill-lime' : 'text-[#D8D8D2] dark:text-ash'}`}
+                    />
+                  ))}
+                </div>
+                <span className="text-xs font-bold text-void dark:text-bone tabular-nums">{product.rating}</span>
+                <span className="text-xs text-smoke dark:text-fog tabular-nums">({product.reviewsCount} reviews)</span>
               </div>
-              <span className="text-xs font-bold text-void dark:text-bone tabular-nums">{product.rating}</span>
-              <span className="text-xs text-smoke dark:text-fog tabular-nums">({product.reviewsCount} reviews)</span>
-            </div>
+            )}
 
             {/* Price */}
             <div className="flex items-baseline gap-3 mb-5">
@@ -152,31 +154,34 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               )}
             </div>
 
-            {/* Feature bullets */}
-            <ul className="space-y-2.5 py-4 border-y border-[#E5E5E1] dark:border-graphite text-[13px] text-smoke dark:text-fog mb-5">
-              <li className="flex items-center gap-2.5">
-                <Truck className="w-4 h-4 text-olive dark:text-lime shrink-0" />
-                <span>
-                  Delivery <strong className="text-void dark:text-bone">{product.deliveryTime}</strong>
-                  {' '}· {product.deliveryCost === 0 ? 'Free COD' : formatPKR(product.deliveryCost)}
-                </span>
-              </li>
-              <li className="flex items-center gap-2.5">
-                <ShieldCheck className="w-4 h-4 text-olive dark:text-lime shrink-0" />
-                <span>
-                  Verified seller: <strong className="text-void dark:text-bone">{product.seller || 'Official Store'}</strong>
-                </span>
-              </li>
-              <li className="flex items-center gap-2.5">
-                <Check className="w-4 h-4 text-olive dark:text-lime shrink-0" />
-                <span>
-                  Status:{' '}
-                  <strong className={product.inStock ? 'text-[#16A34A] dark:text-[#4ADE80]' : 'text-[#DC2626] dark:text-[#EF4444]'}>
-                    {product.inStock ? (isUrduMode ? 'Mojood (Pakistan)' : 'In Stock (Pakistan)') : 'Out of Stock'}
-                  </strong>
-                </span>
-              </li>
-            </ul>
+            {/* Feature bullets — hidden for live items: delivery, seller
+                verification and stock status are not scraped */}
+            {!product.isLive && (
+              <ul className="space-y-2.5 py-4 border-y border-[#E5E5E1] dark:border-graphite text-[13px] text-smoke dark:text-fog mb-5">
+                <li className="flex items-center gap-2.5">
+                  <Truck className="w-4 h-4 text-olive dark:text-lime shrink-0" />
+                  <span>
+                    Delivery <strong className="text-void dark:text-bone">{product.deliveryTime}</strong>
+                    {' '}· {product.deliveryCost === 0 ? 'Free COD' : formatPKR(product.deliveryCost)}
+                  </span>
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <ShieldCheck className="w-4 h-4 text-olive dark:text-lime shrink-0" />
+                  <span>
+                    Verified seller: <strong className="text-void dark:text-bone">{product.seller || 'Official Store'}</strong>
+                  </span>
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <Check className="w-4 h-4 text-olive dark:text-lime shrink-0" />
+                  <span>
+                    Status:{' '}
+                    <strong className={product.inStock ? 'text-[#16A34A] dark:text-[#4ADE80]' : 'text-[#DC2626] dark:text-[#EF4444]'}>
+                      {product.inStock ? (isUrduMode ? 'Mojood (Pakistan)' : 'In Stock (Pakistan)') : 'Out of Stock'}
+                    </strong>
+                  </span>
+                </li>
+              </ul>
+            )}
 
             {/* CTAs — Protech Buy Now style */}
             <div className="flex flex-col gap-2.5 mt-auto">
@@ -217,14 +222,18 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           </div>
         </div>
 
-        {/* 30-Day Interactive Price History Chart */}
-        {product.priceHistory && product.priceHistory.length > 0 && (
+        {/* 30-Day Interactive Price History Chart — honest placeholder when empty */}
+        {product.priceHistory && product.priceHistory.length > 0 ? (
           <div>
             <PriceChart
               data={product.priceHistory}
               currentPrice={product.price}
             />
           </div>
+        ) : (
+          <p className="text-xs text-smoke dark:text-fog text-center py-4 border-t border-[#E5E5E1] dark:border-graphite">
+            {isUrduMode ? 'Abhi tak koi price history nahi' : 'No price history yet'}
+          </p>
         )}
       </div>
     </Modal>
