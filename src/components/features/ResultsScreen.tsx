@@ -7,7 +7,7 @@ import { EmptyState } from '../ui/EmptyState';
 import { Modal } from '../ui/Modal';
 import { formatPKR } from '../ui/PriceTag';
 import { handleImageError } from '../../utils/imageFallback';
-import { SourceStatus, formatSourceStatus } from '../../lib/liveSearch';
+import { SourceStatus, formatSourceStatus, textSimilarityLabel } from '../../lib/liveSearch';
 
 interface ResultsScreenProps {
   products: Product[];
@@ -134,6 +134,7 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
     platforms: ['daraz', 'telemart', 'bagallery', 'priceoye', 'elo', 'shophive', 'gulahmed'],
     minSimilarity: defaultMinSimilarity,
     inStockOnly: false,
+    textLabelFilter: 'all',
     // A price-intent query arrives already relevance-then-price sorted; default
     // the dropdown to match so the grid doesn't re-sort by similarity behind
     // the "Best matches, sorted by … price" chip.
@@ -156,7 +157,20 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
     let list = products.filter((p) => {
       if (p.price < filters.minPrice || p.price > filters.maxPrice) return false;
       if (filters.platforms.length > 0 && !filters.platforms.includes(p.platform)) return false;
-      if (p.similarityScore < filters.minSimilarity) return false;
+      if (searchKind === 'text') {
+        // Text-search cosine scores live in the 0.24-0.32 band, so the
+        // image-calibrated percentage floor would hide every result.
+        // Text searches filter by match label instead (default: show all).
+        if (filters.textLabelFilter !== 'all') {
+          const label =
+            p.textLabel ??
+            textSimilarityLabel(p.cosineSimilarity ?? p.similarityScore / 100);
+          if (filters.textLabelFilter === 'strong' && label !== 'Strong match') return false;
+          if (filters.textLabelFilter === 'good' && label === 'Possible match') return false;
+        }
+      } else if (p.similarityScore < filters.minSimilarity) {
+        return false;
+      }
       if (filters.inStockOnly && !p.inStock) return false;
       if (activeCategory && p.category !== activeCategory) return false;
       return true;
@@ -184,7 +198,7 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
     }
 
     return list;
-  }, [products, filters, activeCategory]);
+  }, [products, filters, activeCategory, searchKind, priceSort]);
 
   const togglePlatform = (p: PlatformType) => {
     setFilters((prev) => {
@@ -203,6 +217,7 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
       platforms: allPlatforms,
       minSimilarity: defaultMinSimilarity,
       inStockOnly: false,
+      textLabelFilter: 'all',
       sortBy: priceSort === 'asc' ? 'price_low' : priceSort === 'desc' ? 'price_high' : 'relevance',
     });
     setActiveCategory(null);
@@ -263,26 +278,59 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
         </div>
       </div>
 
-      {/* Minimum Similarity */}
-      <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-smoke dark:text-fog">
-            {isUrduMode ? 'Similarity' : 'Min Visual Match'}
-          </span>
-          <span className="text-xs text-void dark:text-lime font-bold tabular-nums">
-            {filters.minSimilarity}%+
-          </span>
+      {/* Match filter: text searches filter by match label (the percentage
+          floor was calibrated for image-to-image scores and hides every
+          text result); image searches keep the percentage slider. */}
+      {searchKind === 'text' ? (
+        <div>
+          <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-smoke dark:text-fog mb-2">
+            {isUrduMode ? 'Match Quality' : 'Match Quality'}
+          </div>
+          <div className="flex rounded-full border border-[#E5E5E1] dark:border-ash p-1 gap-1" role="group" aria-label="Match quality filter">
+            {(
+              [
+                { value: 'all', label: isUrduMode ? 'Sab' : 'All' },
+                { value: 'good', label: isUrduMode ? 'Good+' : 'Good & better' },
+                { value: 'strong', label: isUrduMode ? 'Strong' : 'Strong only' },
+              ] as const
+            ).map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setFilters({ ...filters, textLabelFilter: opt.value })}
+                aria-pressed={filters.textLabelFilter === opt.value}
+                className={`flex-1 h-9 rounded-full text-xs font-bold transition-colors cursor-pointer ${
+                  filters.textLabelFilter === opt.value
+                    ? 'bg-void dark:bg-lime text-white dark:text-void'
+                    : 'text-smoke dark:text-fog hover:text-void dark:hover:text-bone'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
-        <input
-          type="range"
-          min={hasLive ? 20 : 70}
-          max={98}
-          step={2}
-          value={Math.max(filters.minSimilarity, hasLive ? 20 : 70)}
-          onChange={(e) => setFilters({ ...filters, minSimilarity: Number(e.target.value) })}
-          className="w-full accent-lime cursor-pointer"
-        />
-      </div>
+      ) : (
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-smoke dark:text-fog">
+              {isUrduMode ? 'Similarity' : 'Min Visual Match'}
+            </span>
+            <span className="text-xs text-void dark:text-lime font-bold tabular-nums">
+              {filters.minSimilarity}%+
+            </span>
+          </div>
+          <input
+            type="range"
+            min={hasLive ? 20 : 70}
+            max={98}
+            step={2}
+            value={Math.max(filters.minSimilarity, hasLive ? 20 : 70)}
+            onChange={(e) => setFilters({ ...filters, minSimilarity: Number(e.target.value) })}
+            className="w-full accent-lime cursor-pointer"
+          />
+        </div>
+      )}
 
       {/* In Stock Only — hidden for live results: availability is not verified on scraped listings */}
       {!hasLive && (
@@ -333,8 +381,23 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
               <Sparkles className="w-3 h-3" />
               AI Visual Match
             </span>
-            <span className="tabular-nums font-semibold text-void dark:text-bone">{filteredProducts.length}</span>
-            <span>{isUrduMode ? 'cheezein mili hain' : 'products found'}</span>
+            <span>
+              {isUrduMode ? (
+                <>
+                  <span className="tabular-nums font-semibold text-void dark:text-bone">{filteredProducts.length}</span>
+                  {' / '}
+                  <span className="tabular-nums font-semibold text-void dark:text-bone">{products.length}</span>
+                  {' nataij dikhaye ja rahe hain'}
+                </>
+              ) : (
+                <>
+                  Showing <span className="tabular-nums font-semibold text-void dark:text-bone">{filteredProducts.length}</span>
+                  {' of '}
+                  <span className="tabular-nums font-semibold text-void dark:text-bone">{products.length}</span>
+                  {' results'}
+                </>
+              )}
+            </span>
             {queryText && <span className="truncate max-w-[220px] hidden sm:inline">for “{queryText}”</span>}
           </p>
         </div>

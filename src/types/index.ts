@@ -104,6 +104,12 @@ export interface FilterOptions {
   minSimilarity: number;
   inStockOnly: boolean;
   sortBy: 'relevance' | 'price_low' | 'price_high' | 'similarity' | 'rating';
+  /** Text search only: the 40%-style percentage floor was designed for
+   *  image-to-image cosine scores and hides every text result (text scores
+   *  live in the 0.24-0.32 band), so text searches filter by match label
+   *  instead. 'all' = show all (default), 'good' = Good match and better,
+   *  'strong' = Strong match only. */
+  textLabelFilter: 'all' | 'good' | 'strong';
 }
 
 export type ViewportMode = 'responsive' | 'desktop' | 'tablet' | 'mobile';
