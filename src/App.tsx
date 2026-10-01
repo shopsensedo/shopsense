@@ -10,6 +10,8 @@ import {
   KURTA_IMAGE,
 } from './lib/mockData';
 import { ToastProvider, useToast } from './components/ui/Toast';
+import { searchByImage, searchByText } from './lib/api';
+import { searchByImageLocal, searchByTextLocal } from './lib/localSearch';
 import { ThemeProvider, useTheme } from './lib/theme';
 import { Navbar } from './components/ui/Navbar';
 import { BottomNav } from './components/ui/BottomNav';
@@ -42,6 +44,8 @@ function ShopSenseApp() {
   // Search & Products State
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+  const [localClipProgress, setLocalClipProgress] = useState<number | null>(null);
+  const [searchReady, setSearchReady] = useState(true);
   const [searchQueryText, setSearchQueryText] = useState<string>('');
   const [currentProducts, setCurrentProducts] = useState<Product[]>(SAMPLE_PRODUCTS);
   const [selectedProductForDetail, setSelectedProductForDetail] = useState<Product | null>(null);
@@ -85,25 +89,56 @@ function ShopSenseApp() {
     setIsCropModalOpen(true);
   };
 
-  // Confirm crop and execute visual search
-  const handleConfirmCrop = (croppedDataUrl: string) => {
+  // Confirm crop and execute visual search — backend first, mock fallback when offline
+  const handleConfirmCrop = async (croppedDataUrl: string) => {
     setIsCropModalOpen(false);
+    setSearchReady(false);
+    setCurrentScreen('search_loading');
 
-    // Determine relevant products based on uploaded image / prompt
-    let matchedProducts = SAMPLE_PRODUCTS;
+    let matchedProducts: Product[] | null = null;
     let detectedCat = 'Footwear';
 
-    if (croppedDataUrl.includes('kurta') || searchQueryText.toLowerCase().includes('kurta') || searchQueryText.toLowerCase().includes('suit')) {
-      matchedProducts = SAMPLE_PRODUCTS.filter((p) => p.category === 'Ethnic Wear');
-      detectedCat = 'Ethnic Wear';
-    } else if (croppedDataUrl.includes('smartwatch') || searchQueryText.toLowerCase().includes('watch')) {
-      matchedProducts = SAMPLE_PRODUCTS.filter((p) => p.category === 'Smartwatches');
-      detectedCat = 'Smartwatches';
-    } else if (croppedDataUrl.includes('bag') || searchQueryText.toLowerCase().includes('bag')) {
-      matchedProducts = SAMPLE_PRODUCTS.filter((p) => p.category === 'Bags & Accessories');
-      detectedCat = 'Bags & Accessories';
-    } else {
-      matchedProducts = SAMPLE_PRODUCTS.filter((p) => p.category === 'Footwear');
+    try {
+      matchedProducts = await searchByImage(croppedDataUrl, 7);
+      if (matchedProducts.length > 0) detectedCat = matchedProducts[0].category || 'Footwear';
+    } catch {
+      matchedProducts = null; // backend unreachable — try in-browser CLIP
+    }
+
+    if (!matchedProducts) {
+      try {
+        // In-browser CLIP (same model as the backend) — no server needed.
+        // First run downloads the quantized model once (~90MB, cached after).
+        setLocalClipProgress(0);
+        matchedProducts = await searchByImageLocal(croppedDataUrl, 7, (f) =>
+          setLocalClipProgress(f),
+        );
+        if (matchedProducts.length > 0)
+          detectedCat = matchedProducts[0].category || 'Footwear';
+      } catch {
+        matchedProducts = null; // fall through to mock matching
+      } finally {
+        setLocalClipProgress(null);
+      }
+    }
+
+    if (!matchedProducts) {
+      // Offline fallback: determine relevant products based on uploaded image / prompt
+      let fallback = SAMPLE_PRODUCTS;
+
+      if (croppedDataUrl.includes('kurta') || searchQueryText.toLowerCase().includes('kurta') || searchQueryText.toLowerCase().includes('suit')) {
+        fallback = SAMPLE_PRODUCTS.filter((p) => p.category === 'Ethnic Wear');
+        detectedCat = 'Ethnic Wear';
+      } else if (croppedDataUrl.includes('smartwatch') || searchQueryText.toLowerCase().includes('watch')) {
+        fallback = SAMPLE_PRODUCTS.filter((p) => p.category === 'Smartwatches');
+        detectedCat = 'Smartwatches';
+      } else if (croppedDataUrl.includes('bag') || searchQueryText.toLowerCase().includes('bag')) {
+        fallback = SAMPLE_PRODUCTS.filter((p) => p.category === 'Bags & Accessories');
+        detectedCat = 'Bags & Accessories';
+      } else {
+        fallback = SAMPLE_PRODUCTS.filter((p) => p.category === 'Footwear');
+      }
+      matchedProducts = fallback;
     }
 
     setCurrentProducts(matchedProducts);
@@ -119,39 +154,66 @@ function ShopSenseApp() {
     };
     setSearchHistory((prev) => [historyItem, ...prev]);
 
-    // Go to loading state
-    setCurrentScreen('search_loading');
+    // Products are set; the loading screen (staged animation) hands off to results.
+    setSearchReady(true);
   };
 
-  // Handle text-based search (supports Roman Urdu e.g. "kala joota")
-  const handleTextSearch = (query: string) => {
+  // Handle text-based search (supports Roman Urdu e.g. "kala joota") — backend first, mock fallback
+  const handleTextSearch = async (query: string) => {
     setSearchQueryText(query);
-    const qLower = query.toLowerCase();
+    setSearchReady(false);
+    setCurrentScreen('search_loading');
 
-    let matched = SAMPLE_PRODUCTS;
+    let matched: Product[] | null = null;
     let cat = 'General';
+    let queryImage: string | undefined;
 
-    if (qLower.includes('joota') || qLower.includes('shoe') || qLower.includes('sneaker') || qLower.includes('kala')) {
-      matched = SAMPLE_PRODUCTS.filter((p) => p.category === 'Footwear');
-      cat = 'Footwear';
-      setUploadedImage(SNEAKER_IMAGE);
-    } else if (qLower.includes('suit') || qLower.includes('kurta') || qLower.includes('lal') || qLower.includes('lawn')) {
-      matched = SAMPLE_PRODUCTS.filter((p) => p.category === 'Ethnic Wear');
-      cat = 'Ethnic Wear';
-      setUploadedImage(KURTA_IMAGE);
-    } else if (qLower.includes('watch') || qLower.includes('smartwatch') || qLower.includes('t800')) {
-      matched = SAMPLE_PRODUCTS.filter((p) => p.category === 'Smartwatches');
-      cat = 'Smartwatches';
-    } else if (qLower.includes('bag') || qLower.includes('leather')) {
-      matched = SAMPLE_PRODUCTS.filter((p) => p.category === 'Bags & Accessories');
-      cat = 'Bags & Accessories';
+    try {
+      matched = await searchByText(query, 7);
+      if (matched.length > 0) {
+        cat = matched[0].category || 'General';
+        queryImage = matched[0].imageUrl;
+      }
+    } catch {
+      matched = null; // backend unreachable — try in-browser text search
+    }
+
+    if (!matched) {
+      // Local Roman Urdu keyword search over the seed catalog (no server needed)
+      const local = searchByTextLocal(query, 7);
+      if (local.length > 0) {
+        matched = local;
+        cat = local[0].category || 'General';
+        queryImage = local[0].imageUrl;
+      }
+    }
+
+    if (!matched) {
+      const qLower = query.toLowerCase();
+      matched = SAMPLE_PRODUCTS;
+
+      if (qLower.includes('joota') || qLower.includes('shoe') || qLower.includes('sneaker') || qLower.includes('kala')) {
+        matched = SAMPLE_PRODUCTS.filter((p) => p.category === 'Footwear');
+        cat = 'Footwear';
+        setUploadedImage(SNEAKER_IMAGE);
+      } else if (qLower.includes('suit') || qLower.includes('kurta') || qLower.includes('lal') || qLower.includes('lawn')) {
+        matched = SAMPLE_PRODUCTS.filter((p) => p.category === 'Ethnic Wear');
+        cat = 'Ethnic Wear';
+        setUploadedImage(KURTA_IMAGE);
+      } else if (qLower.includes('watch') || qLower.includes('smartwatch') || qLower.includes('t800')) {
+        matched = SAMPLE_PRODUCTS.filter((p) => p.category === 'Smartwatches');
+        cat = 'Smartwatches';
+      } else if (qLower.includes('bag') || qLower.includes('leather')) {
+        matched = SAMPLE_PRODUCTS.filter((p) => p.category === 'Bags & Accessories');
+        cat = 'Bags & Accessories';
+      }
     }
 
     setCurrentProducts(matched);
 
     const historyItem: SearchHistoryItem = {
       id: `hist-${Date.now()}`,
-      queryImage: uploadedImage || undefined,
+      queryImage: queryImage || uploadedImage || undefined,
       queryText: query,
       timestamp: 'Just now',
       resultsCount: matched.length,
@@ -159,7 +221,7 @@ function ShopSenseApp() {
     };
     setSearchHistory((prev) => [historyItem, ...prev]);
 
-    setCurrentScreen('search_loading');
+    setSearchReady(true);
   };
 
   // Re-run an item from search history
@@ -302,6 +364,8 @@ function ShopSenseApp() {
             <SearchLoadingScreen
               onComplete={() => setCurrentScreen('results')}
               isUrduMode={isUrduMode}
+              progress={localClipProgress}
+              canComplete={searchReady}
             />
           )}
 
