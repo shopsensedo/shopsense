@@ -14,6 +14,16 @@ import type { PlatformType, Product } from '../types';
 import { embedQueryImage, embedImageUrl, embedTextQuery, cosineSim } from './clipEmbed';
 import { parseQuery, type PriceIntent } from './localSearch';
 import categoryEmbeddingsRaw from '../data/category_embeddings.json';
+import brandsRaw from '../data/brands.json';
+import coloursRaw from '../data/colours.json';
+
+/** Brand and colour word lists live in data files (not hardcoded) so they
+ *  can grow without touching logic. Used by the short marketplace query
+ *  builder and by brand/colour-aware ranking. */
+export const BRAND_WORDS: string[] = (brandsRaw as string[]).map((b) => b.toLowerCase());
+const COLOUR_WORDS: Set<string> = new Set(
+  (coloursRaw as string[]).map((c) => c.toLowerCase()),
+);
 
 interface CategoryEntry {
   query: string;
@@ -102,12 +112,18 @@ async function fetchWithTimeout(url: string, ms: number): Promise<Response> {
   }
 }
 
-/** Real listings from /api/live-search (PriceOye + Daraz, fetched live). */
+/** Real listings from /api/live-search (PriceOye + Daraz, fetched live).
+ * When `siteQuery` is given it is sent to BOTH sources verbatim (text search
+ * short query); otherwise the tuned per-category SITE_QUERIES are used
+ * (image search keeps that behaviour). */
 export async function fetchLiveListings(
   category: string,
   fallbackQuery: string,
+  siteQuery?: string,
 ): Promise<{ listings: LiveListing[]; sources: SourceStatus }> {
-  const sq = SITE_QUERIES[category] ?? { daraz: fallbackQuery, priceoye: fallbackQuery };
+  const sq = siteQuery
+    ? { daraz: siteQuery, priceoye: siteQuery }
+    : (SITE_QUERIES[category] ?? { daraz: fallbackQuery, priceoye: fallbackQuery });
   let d: any;
   try {
     const r = await fetchWithTimeout(
@@ -284,6 +300,74 @@ function categorizeKeywords(keywords: string[]): string {
   return '';
 }
 
+/** Product-type nouns, used to pick the "type" word for a short marketplace query. */
+const PRODUCT_NOUNS: Set<string> = new Set(
+  'shoes sneakers footwear boots heels sandals slippers joggers khussa pumps loafers wedges watch watches smartwatch kurta shalwar kameez shirt tshirt hoodie jacket jeans bag bags handbag backpack mobile smartphone phone laptop earbuds headphones sunglasses clothes clothing dress suit frock abaya saree gown skirt maxi'.split(
+    ' ',
+  ),
+);
+
+/** Canonical product noun per site-query category (fallback when the mapped
+ *  keywords contain no product noun). */
+const CATEGORY_NOUN: Record<string, string> = {
+  mobile: 'smartphone',
+  shoes: 'shoes',
+  watch: 'watch',
+  handbag: 'handbag',
+  earbuds: 'earbuds',
+  sunglasses: 'sunglasses',
+  kurta: 'kurta',
+  tshirt: 'shirt',
+  backpack: 'backpack',
+  laptop: 'laptop',
+};
+
+/**
+ * Brands named in a query: single-word brands are found in the mapped
+ * keywords ("nike"), multi-word brands ("gul ahmed", "junaid jamshed") are
+ * matched against the raw query text since mapping splits them into tokens.
+ */
+export function brandsInQuery(rawQuery: string, keywords: string[]): string[] {
+  const found: string[] = [];
+  const raw = rawQuery.toLowerCase();
+  for (const b of BRAND_WORDS) {
+    if (b.includes(' ') ? raw.includes(b) : keywords.includes(b)) found.push(b);
+  }
+  return found;
+}
+
+/** Colour words present in the mapped (English) keywords. */
+export function coloursInKeywords(keywords: string[]): string[] {
+  return keywords.filter((k) => COLOUR_WORDS.has(k));
+}
+
+/**
+ * Short marketplace query: at most 3 words, built from brand + colour +
+ * product type ("nike white sneakers", "black shoes", "watch"). Daraz and
+ * PriceOye do literal keyword matching, so a tight query lands on the right
+ * shelf; the longer expanded keyword string stays as the CLIP ranking text,
+ * which needs the synonyms ("footwear", "sneakers") to score thumbnails.
+ */
+export function buildMarketplaceQuery(
+  rawQuery: string,
+  keywords: string[],
+  category: string,
+): string {
+  const brand = brandsInQuery(rawQuery, keywords)[0];
+  const colour = coloursInKeywords(keywords)[0];
+  const type =
+    keywords.find((k) => PRODUCT_NOUNS.has(k)) ??
+    CATEGORY_NOUN[category] ??
+    keywords[keywords.length - 1] ??
+    '';
+  return [brand, colour, type]
+    .filter(Boolean)
+    .join(' ')
+    .split(/\s+/)
+    .slice(0, 3)
+    .join(' ');
+}
+
 /**
  * Live text search: Roman Urdu / English / mixed query →
  * mapped English keywords → /api/live-search on both sources →
@@ -297,6 +381,8 @@ export async function searchLiveText(
 ): Promise<{
   products: Product[];
   mappedQuery: string;
+  /** Short query actually sent to Daraz/PriceOye (brand + colour + type). */
+  marketplaceQuery: string;
   category: string;
   query: string;
   sources: SourceStatus;
@@ -308,13 +394,17 @@ export async function searchLiveText(
   const { keywords, priceIntent } = parseQuery(rawQuery);
   const english = keywords.join(' ');
   const category = categorizeKeywords(keywords);
+  // Short query for the marketplaces (brand + colour + product type, ≤3 words);
+  // the longer expanded string above stays as the CLIP ranking text.
+  const marketplaceQuery = buildMarketplaceQuery(rawQuery, keywords, category) || english;
 
-  // 2. live listings from the sites (mapped query when no category matched)
+  // 2. live listings from the sites (short query sent to both sources)
   onProgress?.({ stage: 'fetch' });
-  const { listings, sources } = await fetchLiveListings(category, english);
+  const { listings, sources } = await fetchLiveListings(category, english, marketplaceQuery);
   const empty = {
     products: [] as Product[],
     mappedQuery: english,
+    marketplaceQuery,
     category,
     query: english,
     sources,
@@ -337,6 +427,7 @@ export async function searchLiveText(
   return {
     products,
     mappedQuery: english,
+    marketplaceQuery,
     category,
     query: english,
     sources,

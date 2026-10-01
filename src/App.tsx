@@ -47,6 +47,7 @@ function ShopSenseApp() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [sourceStatus, setSourceStatus] = useState<SourceStatus | null>(null);
   const [mappedQuery, setMappedQuery] = useState<string | null>(null);
+  const [marketplaceQuery, setMarketplaceQuery] = useState<string | null>(null);
   const [priceSort, setPriceSort] = useState<'asc' | 'desc' | null>(null);
   const [lastSearch, setLastSearch] = useState<
     { type: 'image'; dataUrl: string } | { type: 'text'; query: string } | null
@@ -124,6 +125,7 @@ function ShopSenseApp() {
     setSearchError(null);
     setSourceStatus(null);
     setMappedQuery(null);
+    setMarketplaceQuery(null);
     setCurrentScreen('search_loading');
 
     let matchedProducts: Product[] | null = null;
@@ -251,6 +253,7 @@ function ShopSenseApp() {
     setSearchError(null);
     setSourceStatus(null);
     setMappedQuery(null);
+    setMarketplaceQuery(null);
     setPriceSort(null);
     setCurrentScreen('search_loading');
 
@@ -296,6 +299,7 @@ function ShopSenseApp() {
         // Always surface what each source did — even when it failed.
         setSourceStatus(live.sources);
         setMappedQuery(live.mappedQuery);
+        setMarketplaceQuery(live.marketplaceQuery);
         setPriceSort(live.priceSort);
         if (live.products.length > 0) {
           matched = live.products;
@@ -547,6 +551,7 @@ function ShopSenseApp() {
               onRetry={handleRetrySearch}
               sourceStatus={sourceStatus}
               mappedQuery={mappedQuery}
+              marketplaceQuery={marketplaceQuery}
               priceSort={priceSort}
               searchKind={lastSearch?.type === 'text' ? 'text' : 'image'}
             />

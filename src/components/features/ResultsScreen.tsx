@@ -26,6 +26,8 @@ interface ResultsScreenProps {
   sourceStatus?: SourceStatus | null;
   /** Mapped English query for live text search ("kala joota" → "black shoes"). */
   mappedQuery?: string | null;
+  /** Short query actually sent to Daraz/PriceOye (brand + colour + type). */
+  marketplaceQuery?: string | null;
   /** Price sort applied from a price-intent query ("sasta" → low-to-high). */
   priceSort?: 'asc' | 'desc' | null;
   /** Which label band the match pills use: image search or text search. */
@@ -54,6 +56,7 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
   onRetry,
   sourceStatus = null,
   mappedQuery = null,
+  marketplaceQuery = null,
   priceSort = null,
   searchKind = 'image',
 }) => {
@@ -405,6 +408,12 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
                 <p className="text-xs text-smoke dark:text-fog mt-0.5">
                   {isUrduMode ? 'Talash: ' : 'Searching for: '}
                   <span className="font-semibold text-void dark:text-bone">{mappedQuery}</span>
+                  {marketplaceQuery && marketplaceQuery !== mappedQuery && (
+                    <span className="block text-[11px] text-smoke dark:text-fog">
+                      {isUrduMode ? 'Markets: ' : 'Sent to marketplaces: '}
+                      <span className="font-semibold">{marketplaceQuery}</span>
+                    </span>
+                  )}
                   {priceSort && (
                     <span className="ml-2 inline-flex items-center rounded-full bg-limetint dark:bg-limedim text-void dark:text-limebright px-2 py-0.5 text-[11px] font-bold">
                       {priceSort === 'asc'
