@@ -75,7 +75,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             className={`h-10 px-5 rounded-full text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer ${
               isExploreActive
                 ? 'bg-lime text-void shadow-[0_4px_16px_-4px_rgba(185,192,6,0.6)]'
-                : 'bg-void text-white hover:bg-graphite dark:bg-lime dark:text-void dark:hover:bg-limedeep'
+                : 'bg-void text-white hover:bg-graphite dark:bg-graphite dark:text-bone dark:hover:bg-ash'
             }`}
           >
             <LayoutGrid className="w-4 h-4" />
