@@ -31,12 +31,17 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const isExploreActive = currentScreen === 'home' || currentScreen === 'results' || currentScreen === 'comparison';
 
-  const linkCls = (active: boolean) =>
-    `transition-colors py-1 text-sm font-medium cursor-pointer ${
+  // Desktop tab pills: the lime "active circle" transfers to whichever tab is active.
+  const tabCls = (active: boolean) =>
+    `h-10 px-5 rounded-full text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer ${
       active
-        ? 'text-void dark:text-lime font-semibold'
+        ? 'bg-lime text-void shadow-[0_4px_16px_-4px_rgba(185,192,6,0.6)]'
         : 'text-smoke dark:text-fog hover:text-void dark:hover:text-bone'
     }`;
+
+  // Count badges must stay readable when their parent pill turns lime.
+  const badgeCls = (active: boolean) =>
+    `text-[11px] font-bold px-1.5 py-px rounded-full ${active ? 'bg-void text-lime' : 'bg-lime text-void'}`;
 
   const mobileLinks: { id: AppScreen; label: string }[] = [
     { id: 'home', label: isUrduMode ? 'Home' : 'Explore' },
@@ -62,8 +67,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           </span>
         </button>
 
-        {/* Desktop nav — Protech style: Catalog pill + text links */}
-        <nav className="hidden md:flex items-center gap-7">
+        {/* Desktop nav — Protech style: pill tabs, lime active pill transfers to the active tab */}
+        <nav className="hidden md:flex items-center gap-2" aria-label="Primary">
           <button
             type="button"
             onClick={() => onNavigate('home')}
@@ -77,29 +82,29 @@ export const Navbar: React.FC<NavbarProps> = ({
             {isUrduMode ? 'Catalog' : 'Catalog'}
           </button>
 
-          <button type="button" onClick={() => onNavigate('saved')} className={linkCls(currentScreen === 'saved')}>
+          <button type="button" onClick={() => onNavigate('saved')} className={tabCls(currentScreen === 'saved')}>
             <span className="flex items-center gap-1.5">
               {isUrduMode ? 'Mehfooz' : 'Saved'}
               {savedCount > 0 && (
-                <span className="text-[11px] font-bold px-1.5 py-px rounded-full bg-lime text-void">
+                <span className={badgeCls(currentScreen === 'saved')}>
                   {savedCount}
                 </span>
               )}
             </span>
           </button>
 
-          <button type="button" onClick={() => onNavigate('tracking')} className={linkCls(currentScreen === 'tracking')}>
+          <button type="button" onClick={() => onNavigate('tracking')} className={tabCls(currentScreen === 'tracking')}>
             <span className="flex items-center gap-1.5">
               {isUrduMode ? 'Qeemat Alerts' : 'Price Alerts'}
               {trackingCount > 0 && (
-                <span className="text-[11px] font-bold px-1.5 py-px rounded-full bg-lime text-void">
+                <span className={badgeCls(currentScreen === 'tracking')}>
                   {trackingCount}
                 </span>
               )}
             </span>
           </button>
 
-          <button type="button" onClick={() => onNavigate('history')} className={linkCls(currentScreen === 'history')}>
+          <button type="button" onClick={() => onNavigate('history')} className={tabCls(currentScreen === 'history')}>
             {isUrduMode ? 'Tareekh' : 'History'}
           </button>
         </nav>
