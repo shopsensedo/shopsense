@@ -2,8 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   applyRelevanceFloor,
   categoryKeyForText,
+  extractProductNoun,
   formatSourceStatus,
   MIN_TEXT_RESULTS,
+  nounBoostedScore,
+  nounCapTextLabel,
+  nounVariants,
   priceOyeSellsCategory,
   TEXT_RELEVANCE_FLOOR,
   type SourceStatus,
@@ -121,5 +125,71 @@ describe('D1-2 relevance floor', () => {
 
   it('handles an empty input', () => {
     expect(applyRelevanceFloor([], 0.22, 3)).toEqual([]);
+  });
+});
+
+// ---------- D1-3: product-noun boost and label cap ----------
+
+describe('D1-3 product-noun boost and label cap', () => {
+  it('extracts the most specific product noun from the query', () => {
+    // "sasta smartwatch dikhao" -> smartwatch, never the generic "watch"
+    expect(extractProductNoun('sasta smartwatch dikhao', ['watch', 'smartwatch'], 'watch')).toBe(
+      'smartwatch',
+    );
+    expect(extractProductNoun('kala joota', ['black', 'shoes', 'sneakers', 'footwear'], 'shoes')).toBe(
+      'shoes',
+    );
+    expect(extractProductNoun('nike white sneakers', ['nike', 'white', 'sneakers'], 'shoes')).toBe(
+      'sneakers',
+    );
+  });
+
+  it('falls back to the category noun when the query has no noun', () => {
+    expect(extractProductNoun('sasta dikhao', ['cheap'], '')).toBe('cheap');
+  });
+
+  it('boosts the score when a synonym of the noun appears in the title', () => {
+    // "bt calling" is a smartwatch synonym in nounSynonyms.json
+    expect(nounBoostedScore(0.25, 'HainoTeko BT Calling Smart Watch', 'smartwatch')).toBeCloseTo(
+      0.27,
+      10,
+    );
+    // literal noun also counts
+    expect(nounBoostedScore(0.25, 'Amazfit Smartwatch GTS 4', 'smartwatch')).toBeCloseTo(0.27, 10);
+  });
+
+  it('does not boost when neither the noun nor a synonym is in the title', () => {
+    expect(nounBoostedScore(0.25, 'Vivo Y28 Mobile Phone', 'smartwatch')).toBe(0.25);
+    expect(nounBoostedScore(0.25, 'Anything', '')).toBe(0.25);
+  });
+
+  it('caps the label at Possible match when a specific noun is missing', () => {
+    expect(nounCapTextLabel('Strong match', 'Vivo Y28 Mobile Phone', 'smartwatch')).toBe(
+      'Possible match',
+    );
+    expect(nounCapTextLabel('Good match', 'HP Laptop Charger', 'airpods')).toBe('Possible match');
+  });
+
+  it('keeps the label when a synonym of the specific noun is in the title', () => {
+    // "smart watch" is a synonym of smartwatch
+    expect(nounCapTextLabel('Strong match', 'Amazfit GTS 4 Smart Watch', 'smartwatch')).toBe(
+      'Strong match',
+    );
+    // "tws"/"earbuds" are airpods synonyms
+    expect(nounCapTextLabel('Good match', 'Boat Airdopes TWS Earbuds', 'airpods')).toBe(
+      'Good match',
+    );
+  });
+
+  it('never caps a generic noun', () => {
+    expect(nounCapTextLabel('Good match', 'Red Tape Shoes', 'shoes')).toBe('Good match');
+    expect(nounCapTextLabel('Strong match', 'Anything', '')).toBe('Strong match');
+  });
+
+  it('exposes the noun plus synonyms as variants', () => {
+    const v = nounVariants('smartwatch');
+    expect(v).toContain('smartwatch');
+    expect(v).toContain('bt calling');
+    expect(v).toContain('fitness tracker');
   });
 });

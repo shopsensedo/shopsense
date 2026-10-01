@@ -25,6 +25,7 @@ import { IMAGE_CATEGORIES } from '../data/imageCategories';
 import brandsRaw from '../data/brands.json';
 import coloursRaw from '../data/colours.json';
 import categorySourcesRaw from '../data/categorySources.json';
+import nounSynonymsRaw from '../data/nounSynonyms.json';
 
 /** Category keys (IMAGE_CATEGORIES keys) that PriceOye actually sells:
 // electronics and appliances only. Everything else is Daraz-only. */
@@ -358,6 +359,111 @@ export function brandAwareTextLabel(
   return textSimilarityLabel(score);
 }
 
+/**
+ * The query's specific product noun ("sasta smartwatch dikhao" -> "smartwatch",
+ * "kala joota" -> "shoes", "nike white sneakers" -> "sneakers").
+ * Mirrors the noun rules inside buildMarketplaceQuery (kept as a separate
+ * function so the query builder's modifier pass stays untouched):
+ * - the user's literal word wins when it is already an English product noun
+ *   in its own dictionary mapping (longest literal wins: "watch smartwatch");
+ * - otherwise the primary (first) product noun of the token's mapping;
+ * - otherwise the category noun, else the last keyword, else ''.
+ */
+export function extractProductNoun(
+  rawQuery: string,
+  keywords: string[],
+  category: string,
+): string {
+  const rawTokens = rawQuery
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((t) => t && !STOPWORDS.has(t) && !isPriceWord(t));
+
+  const brand = brandsInQuery(rawQuery, keywords)[0] ?? '';
+  const brandTokens = new Set(brand.split(' ').filter(Boolean));
+  const colour = coloursInKeywords(keywords)[0] ?? '';
+
+  const mapToken = (tok: string): string[] => {
+    const v = romanUrduMap[tok];
+    return v && v.length > 0 ? v : [tok];
+  };
+
+  let noun = '';
+  for (const tok of rawTokens) {
+    if (brandTokens.has(tok)) continue;
+    const mapped = mapToken(tok);
+    if (colour && mapped.includes(colour)) continue;
+    if (PRODUCT_NOUNS.has(tok) && mapped.includes(tok)) {
+      if (tok.length > noun.length) noun = tok;
+      continue;
+    }
+    const primary = mapped.find((m) => PRODUCT_NOUNS.has(m));
+    if (primary && !noun) noun = primary;
+  }
+  if (!noun) {
+    noun = CATEGORY_NOUN[category] ?? keywords[keywords.length - 1] ?? '';
+  }
+  return noun;
+}
+
+/** Product-noun synonyms and the "specific" noun list live in a data file
+ *  (nounSynonyms.json), not hardcoded, so they can grow without touching
+ *  logic. */
+const NOUN_SYNONYMS: Record<string, string[]> = (
+  nounSynonymsRaw as { synonyms?: Record<string, string[]> }
+).synonyms ?? {};
+const SPECIFIC_NOUNS: Set<string> = new Set(
+  ((nounSynonymsRaw as { specific?: string[] }).specific ?? []).map((s) =>
+    s.toLowerCase(),
+  ),
+);
+
+export const NOUN_BOOST = 0.02;
+
+/** The noun plus every synonym that counts as a mention of it. */
+export function nounVariants(noun: string): string[] {
+  const n = noun.toLowerCase();
+  return [n, ...((NOUN_SYNONYMS[n] ?? []).map((s) => s.toLowerCase()))];
+}
+
+/**
+ * Product-noun boost — TEXT SEARCH ONLY. Extends the brand/colour mechanism:
+ * if the query's product noun (or a dictionary synonym, e.g. "smartwatch" ->
+ * "smart watch", "bt calling", "fitness tracker") appears in the title, the
+ * score gets the same small +0.02 boost. Like the brand/colour boost it is
+ * less than half a label tier, so CLIP's judgment stays primary.
+ */
+export function nounBoostedScore(
+  score: number,
+  title: string,
+  noun: string,
+): number {
+  if (!noun) return score;
+  const t = title.toLowerCase();
+  return nounVariants(noun).some((v) => v && t.includes(v))
+    ? score + NOUN_BOOST
+    : score;
+}
+
+/**
+ * Product-noun label cap — TEXT SEARCH ONLY. If the query names a *specific*
+ * product noun (smartwatch, airpods, sneakers, … — see nounSynonyms.json) and
+ * neither the noun nor any synonym appears in the title, the label is capped
+ * at "Possible match": a phone is not a strong match for a smartwatch query.
+ * Generic nouns ("shoes") are never capped — only boosted.
+ */
+export function nounCapTextLabel(
+  label: TextSimilarityLabel,
+  title: string,
+  noun: string,
+): TextSimilarityLabel {
+  if (!noun || !SPECIFIC_NOUNS.has(noun.toLowerCase())) return label;
+  const t = title.toLowerCase();
+  if (nounVariants(noun).some((v) => v && t.includes(v))) return label;
+  return 'Possible match';
+}
+
 export type LiveProgress =
   | { stage: 'classify' }
   | { stage: 'fetch' }
@@ -631,16 +737,23 @@ export async function searchLiveText(
   // least MIN_TEXT_RESULTS so the page never empties on a strict floor.
   const floored = applyRelevanceFloor(scored, TEXT_RELEVANCE_FLOOR, MIN_TEXT_RESULTS);
 
-  // 5b. brand/colour awareness (text search only): a brand or colour word from
-  // the query that appears in the title earns a small score boost; the label
-  // is computed with the brand-mismatch cap.
+  // 5b. brand/colour + product-noun awareness (text search only): a brand,
+  // colour or product-noun word from the query that appears in the title
+  // earns a small score boost; the label is computed with the brand-mismatch
+  // and specific-noun caps.
+  const noun = extractProductNoun(rawQuery, keywords, category);
   const aware = floored.map(({ l, score }) => {
-    const boosted = brandColourBoostedScore(score, l.title, rawQuery, keywords);
-    return {
-      l,
-      score: boosted,
-      label: brandAwareTextLabel(boosted, l.title, rawQuery, keywords),
-    };
+    const boosted = nounBoostedScore(
+      brandColourBoostedScore(score, l.title, rawQuery, keywords),
+      l.title,
+      noun,
+    );
+    const label = nounCapTextLabel(
+      brandAwareTextLabel(boosted, l.title, rawQuery, keywords),
+      l.title,
+      noun,
+    );
+    return { l, score: boosted, label };
   });
 
   // 6. relevance first (on the brand-aware label), then an optional price
