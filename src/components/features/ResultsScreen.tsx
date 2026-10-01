@@ -409,11 +409,11 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
                     <span className="ml-2 inline-flex items-center rounded-full bg-limetint dark:bg-limedim text-void dark:text-limebright px-2 py-0.5 text-[11px] font-bold">
                       {priceSort === 'asc'
                         ? isUrduMode
-                          ? 'Sab se kam qeemat pehle'
-                          : 'Sorted by lowest price'
+                          ? 'Behtareen nataij — sab se kam qeemat pehle'
+                          : 'Best matches, sorted by lowest price'
                         : isUrduMode
-                          ? 'Sab se zyada qeemat pehle'
-                          : 'Sorted by highest price'}
+                          ? 'Behtareen nataij — sab se zyada qeemat pehle'
+                          : 'Best matches, sorted by highest price'}
                     </span>
                   )}
                 </p>

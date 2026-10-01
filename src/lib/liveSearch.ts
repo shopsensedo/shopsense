@@ -209,6 +209,28 @@ export type LiveProgress =
   | { stage: 'match'; done: number; total: number };
 
 /**
+ * Relevance first, then price sort (text searches with a price intent).
+ * Keeps only results whose text label is "Good match" or better; if fewer
+ * than 5 qualify, keeps the top 8 by similarity instead. Only that surviving
+ * set — never the whole unfiltered result list — is then price-sorted, so a
+ * cheap irrelevant listing can never outrank a relevant one.
+ */
+export function applyRelevanceThenSort(
+  scored: { l: LiveListing; score: number }[],
+  priceIntent: PriceIntent,
+): { l: LiveListing; score: number }[] {
+  const ranked = [...scored].sort((a, b) => b.score - a.score);
+  const relevant = ranked.filter((r) => {
+    const lbl = textSimilarityLabel(r.score);
+    return lbl === 'Strong match' || lbl === 'Good match';
+  });
+  const pool = (relevant.length >= 5 ? relevant : ranked.slice(0, 8)).slice(0, 12);
+  if (priceIntent === 'asc') return [...pool].sort((a, b) => a.l.price - b.l.price);
+  if (priceIntent === 'desc') return [...pool].sort((a, b) => b.l.price - a.l.price);
+  return pool;
+}
+
+/**
  * Embed every candidate thumbnail (via the /api/img proxy) and cosine-score
  * it against the query vector. Shared by the visual and the text pipelines —
  * only the query vector differs (photo vs CLIP text embedding).
@@ -309,11 +331,9 @@ export async function searchLiveText(
   const scored = await scoreThumbnails(listings, queryVec, onProgress);
   if (scored.length === 0) return empty; // thumbnails failed — honest empty, not fake
 
-  // 6. rank; a price intent ("sasta"/"mehnga") overrides CLIP order with a price sort
-  scored.sort((a, b) => b.score - a.score);
-  let products = scored.slice(0, 12).map(({ l, score }) => toLiveProduct(l, score));
-  if (priceIntent === 'asc') products = [...products].sort((a, b) => a.price - b.price);
-  else if (priceIntent === 'desc') products = [...products].sort((a, b) => b.price - a.price);
+  // 6. relevance first, then an optional price sort over the relevant set only
+  const pool = applyRelevanceThenSort(scored, priceIntent);
+  const products = pool.map(({ l, score }) => toLiveProduct(l, score));
   return {
     products,
     mappedQuery: english,
