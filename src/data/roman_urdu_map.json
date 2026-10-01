@@ -142,7 +142,8 @@
   ],
   "suit": [
     "suit",
-    "kurta",
+    "shalwar",
+    "kameez",
     "ethnic"
   ],
   "lawn": [
@@ -204,7 +205,8 @@
     "sweater"
   ],
   "jersey": [
-    "sweater",
+    "sports",
+    "shirt",
     "jersey"
   ],
   "dupatta": [
@@ -494,11 +496,6 @@
     "phone",
     "mobile"
   ],
-  "sasta mobile": [
-    "cheap",
-    "mobile",
-    "smartphone"
-  ],
   "iphone": [
     "iphone",
     "apple"
@@ -617,7 +614,8 @@
     "fan"
   ],
   "iron": [
-    "iron"
+    "iron",
+    "clothes"
   ],
   "istri": [
     "iron"
@@ -662,28 +660,6 @@
   "large": [
     "large"
   ],
-  "sasta": [
-    "cheap",
-    "affordable"
-  ],
-  "sastay": [
-    "cheap",
-    "affordable"
-  ],
-  "mehnga": [
-    "expensive"
-  ],
-  "mehanga": [
-    "expensive"
-  ],
-  "discount": [
-    "discount",
-    "sale"
-  ],
-  "sale": [
-    "sale",
-    "discount"
-  ],
   "offer": [
     "offer",
     "deal"
@@ -692,19 +668,9 @@
     "deal",
     "offer"
   ],
-  "price": [
-    "price"
-  ],
-  "qeemat": [
-    "price"
-  ],
-  "rate": [
-    "price",
-    "rate"
-  ],
-  "cheapest": [
-    "cheapest"
-  ],
+  "price": [],
+  "qeemat": [],
+  "rate": [],
   "bartan": [
     "utensils",
     "kitchen"
@@ -755,5 +721,379 @@
   "lipstick": [
     "lipstick",
     "makeup"
+  ],
+  "nike": [
+    "nike",
+    "shoes",
+    "sneakers",
+    "sports"
+  ],
+  "adidas": [
+    "adidas",
+    "shoes",
+    "sneakers",
+    "sports"
+  ],
+  "puma": [
+    "puma",
+    "shoes",
+    "sneakers",
+    "sports"
+  ],
+  "khaadi": [
+    "khaadi",
+    "ethnic",
+    "lawn",
+    "kurta"
+  ],
+  "sapphire": [
+    "sapphire",
+    "ethnic",
+    "lawn"
+  ],
+  "gul ahmed": [
+    "gul",
+    "ahmed",
+    "ethnic",
+    "lawn",
+    "fabric"
+  ],
+  "outfitters": [
+    "outfitters",
+    "clothing",
+    "shirt",
+    "jeans"
+  ],
+  "bata": [
+    "bata",
+    "shoes",
+    "footwear"
+  ],
+  "service": [
+    "service",
+    "shoes",
+    "footwear"
+  ],
+  "breakout": [
+    "breakout",
+    "clothing"
+  ],
+  "junaid jamshed": [
+    "junaid",
+    "jamshed",
+    "ethnic",
+    "kurta"
+  ],
+  "j": [
+    "junaid",
+    "jamshed",
+    "ethnic"
+  ],
+  "j.": [
+    "junaid",
+    "jamshed",
+    "ethnic"
+  ],
+  "alkaram": [
+    "alkaram",
+    "ethnic",
+    "lawn",
+    "fabric"
+  ],
+  "mardana": [
+    "men",
+    "mens",
+    "gents"
+  ],
+  "gents": [
+    "men",
+    "mens",
+    "gents"
+  ],
+  "men": [
+    "men",
+    "mens"
+  ],
+  "zanana": [
+    "women",
+    "ladies",
+    "womens"
+  ],
+  "ladies": [
+    "women",
+    "ladies",
+    "womens"
+  ],
+  "women": [
+    "women",
+    "ladies",
+    "womens"
+  ],
+  "bachon": [
+    "kids",
+    "children",
+    "baby"
+  ],
+  "bachay": [
+    "kids",
+    "children",
+    "baby"
+  ],
+  "bacha": [
+    "kids",
+    "baby"
+  ],
+  "kids": [
+    "kids",
+    "children"
+  ],
+  "baby": [
+    "baby",
+    "kids"
+  ],
+  "naya": [
+    "new"
+  ],
+  "new": [
+    "new"
+  ],
+  "purana": [
+    "used",
+    "second",
+    "hand"
+  ],
+  "used": [
+    "used"
+  ],
+  "second hand": [
+    "used",
+    "second",
+    "hand"
+  ],
+  "belt": [
+    "belt"
+  ],
+  "topi": [
+    "cap",
+    "topi"
+  ],
+  "cap": [
+    "cap"
+  ],
+  "moze": [
+    "socks"
+  ],
+  "socks": [
+    "socks"
+  ],
+  "chashma": [
+    "glasses",
+    "sunglasses",
+    "eyewear"
+  ],
+  "sunglasses": [
+    "sunglasses",
+    "glasses"
+  ],
+  "glasses": [
+    "glasses",
+    "eyewear"
+  ],
+  "anguthi": [
+    "ring",
+    "jewellery"
+  ],
+  "ring": [
+    "ring",
+    "jewellery"
+  ],
+  "haar": [
+    "necklace",
+    "jewellery"
+  ],
+  "necklace": [
+    "necklace",
+    "jewellery"
+  ],
+  "bali": [
+    "earrings",
+    "jewellery"
+  ],
+  "earrings": [
+    "earrings",
+    "jewellery"
+  ],
+  "choori": [
+    "bangles",
+    "jewellery"
+  ],
+  "bangles": [
+    "bangles"
+  ],
+  "tie": [
+    "tie",
+    "necktie"
+  ],
+  "maxi": [
+    "maxi",
+    "dress",
+    "gown"
+  ],
+  "gown": [
+    "gown",
+    "dress"
+  ],
+  "skirt": [
+    "skirt"
+  ],
+  "gloves": [
+    "gloves",
+    "winter"
+  ],
+  "muffler": [
+    "muffler",
+    "scarf",
+    "winter"
+  ],
+  "night suit": [
+    "night",
+    "suit",
+    "pajama"
+  ],
+  "scarf": [
+    "scarf",
+    "hijab"
+  ],
+  "raincoat": [
+    "raincoat"
+  ],
+  "khussay": [
+    "khussa",
+    "ethnic",
+    "footwear"
+  ],
+  "pumps": [
+    "pumps",
+    "heels",
+    "shoes"
+  ],
+  "loafers": [
+    "loafers",
+    "shoes"
+  ],
+  "wedges": [
+    "wedges",
+    "heels"
+  ],
+  "smart watch": [
+    "smartwatch",
+    "watch"
+  ],
+  "drone": [
+    "drone",
+    "camera"
+  ],
+  "tripod": [
+    "tripod",
+    "camera"
+  ],
+  "memory card": [
+    "memory",
+    "card"
+  ],
+  "usb": [
+    "usb",
+    "drive"
+  ],
+  "pillow": [
+    "pillow"
+  ],
+  "razai": [
+    "quilt",
+    "blanket",
+    "razai"
+  ],
+  "blanket": [
+    "blanket"
+  ],
+  "towel": [
+    "towel"
+  ],
+  "lock": [
+    "lock"
+  ],
+  "chhata": [
+    "umbrella"
+  ],
+  "chata": [
+    "umbrella"
+  ],
+  "lunch box": [
+    "lunch",
+    "box"
+  ],
+  "water bottle": [
+    "water",
+    "bottle"
+  ],
+  "diaper": [
+    "diaper",
+    "baby"
+  ],
+  "pampers": [
+    "diaper",
+    "pampers",
+    "baby"
+  ],
+  "feeder": [
+    "feeder",
+    "baby",
+    "bottle"
+  ],
+  "cream": [
+    "cream",
+    "lotion",
+    "skincare"
+  ],
+  "lotion": [
+    "lotion",
+    "cream"
+  ],
+  "shampoo": [
+    "shampoo"
+  ],
+  "sabun": [
+    "soap"
+  ],
+  "soap": [
+    "soap"
+  ],
+  "face wash": [
+    "face",
+    "wash"
+  ],
+  "kajal": [
+    "kajal",
+    "eyeliner"
+  ],
+  "eyeliner": [
+    "eyeliner"
+  ],
+  "nail polish": [
+    "nail",
+    "polish"
+  ],
+  "hair color": [
+    "hair",
+    "color",
+    "dye"
+  ],
+  "mehndi": [
+    "mehndi",
+    "henna"
+  ],
+  "attar": [
+    "perfume",
+    "attar"
   ]
 }
