@@ -36,7 +36,11 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     <ToastContext.Provider value={{ showToast }}>
       {children}
       {/* Toast Notification Container */}
-      <div className="fixed bottom-20 sm:bottom-6 right-4 left-4 sm:left-auto sm:w-96 z-50 flex flex-col gap-2 pointer-events-none">
+      <div
+        className="fixed bottom-20 sm:bottom-6 right-4 left-4 sm:left-auto sm:w-96 z-50 flex flex-col gap-2 pointer-events-none"
+        role="status"
+        aria-live="polite"
+      >
         {toasts.map((toast) => {
           const typeConfig = {
             success: {
@@ -64,7 +68,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           return (
             <div
               key={toast.id}
-              className={`pointer-events-auto flex items-center justify-between p-3.5 rounded-xl border shadow-lg ${typeConfig.border} ${typeConfig.bg} animate-in slide-in-from-bottom-2 duration-200`}
+              className={`pointer-events-auto flex items-center justify-between p-3.5 rounded-xl border shadow-lg ${typeConfig.border} ${typeConfig.bg} animate-slide-up-sheet`}
             >
               <div className="flex items-center gap-2.5">
                 {typeConfig.icon}

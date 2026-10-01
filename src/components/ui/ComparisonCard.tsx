@@ -3,6 +3,7 @@ import { ExternalLink, Check, Clock, ShieldCheck, ArrowRight } from 'lucide-reac
 import { Product } from '../../types';
 import { SourceBadge } from './SourceBadge';
 import { PriceTag, formatPKR } from './PriceTag';
+import { handleImageError } from '../../utils/imageFallback';
 
 interface ComparisonCardProps {
   product: Product;
@@ -32,6 +33,7 @@ export const ComparisonCard: React.FC<ComparisonCardProps> = ({
       <div className="flex items-center gap-4 flex-1 min-w-0">
         <div className="relative w-16 h-16 md:w-20 md:h-20 rounded-xl bg-slate-50 dark:bg-[#0C0C0C] border border-slate-200 dark:border-slate-800 overflow-hidden shrink-0 flex items-center justify-center p-1.5">
           <img
+            onError={handleImageError}
             src={product.imageUrl}
             alt={product.title}
             className="w-full h-full object-contain"

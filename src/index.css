@@ -91,6 +91,19 @@ h1, h2, h3, h4, h5, h6 {
 .animate-pulse-soft { animation: pulse-soft 2.2s ease-in-out infinite; }
 .animate-float-slow { animation: float-slow 5s ease-in-out infinite; }
 
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .animate-fade-in,
+  .animate-scale-in,
+  .animate-slide-up-sheet,
+  .animate-pulse-soft,
+  .animate-float-slow {
+    animation: none;
+  }
+  .stagger-1, .stagger-2, .stagger-3, .stagger-4 { animation-delay: 0s; }
+}
+
 .stagger-1 { animation-delay: 0.05s; }
 .stagger-2 { animation-delay: 0.12s; }
 .stagger-3 { animation-delay: 0.19s; }

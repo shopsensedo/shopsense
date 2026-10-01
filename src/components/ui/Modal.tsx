@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -20,6 +20,9 @@ export const Modal: React.FC<ModalProps> = ({
   maxWidth = 'lg',
   isBottomSheetOnMobile = true,
 }) => {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+
   // ESC key listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -30,6 +33,48 @@ export const Modal: React.FC<ModalProps> = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
+
+  // Focus trap + body scroll lock while open; restore focus on close
+  useEffect(() => {
+    if (!isOpen) return;
+    previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
+    const dialog = dialogRef.current;
+    // Move focus into the dialog
+    const firstFocusable = dialog?.querySelector<HTMLElement>(
+      'a[href], button:not([disabled]), textarea, input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
+    (firstFocusable ?? dialog)?.focus();
+
+    const handleTab = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || !dialog) return;
+      const focusable = Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), textarea, input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((el) => el.offsetParent !== null);
+      if (focusable.length === 0) {
+        e.preventDefault();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', handleTab);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', handleTab);
+      document.body.style.overflow = prevOverflow;
+      previouslyFocusedRef.current?.focus?.();
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -53,10 +98,15 @@ export const Modal: React.FC<ModalProps> = ({
 
       {/* Modal / Bottom Sheet Card */}
       <div
-        className={`relative w-full bg-white dark:bg-[#1A1A1A] shadow-2xl z-10 overflow-hidden flex flex-col max-h-[90vh] ${maxWidthClasses[maxWidth]} ${
+        ref={dialogRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title || 'Dialog'}
+        className={`relative w-full bg-white dark:bg-[#1A1A1A] shadow-2xl z-10 overflow-hidden flex flex-col max-h-[90vh] focus:outline-none ${maxWidthClasses[maxWidth]} ${
           isBottomSheetOnMobile
-            ? 'rounded-t-3xl sm:rounded-2xl border-t sm:border border-slate-200 dark:border-[#262626] animate-in slide-in-from-bottom sm:zoom-in-95 duration-200'
-            : 'rounded-2xl border border-slate-200 dark:border-[#262626] animate-in zoom-in-95 duration-200'
+            ? 'rounded-t-3xl sm:rounded-2xl border-t sm:border border-slate-200 dark:border-[#262626] animate-slide-up-sheet'
+            : 'rounded-2xl border border-slate-200 dark:border-[#262626] animate-scale-in'
         }`}
       >
         {/* Mobile Drag Handle */}

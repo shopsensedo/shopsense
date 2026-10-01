@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { UploadCloud, Camera, Image as ImageIcon, Clipboard, AlertCircle } from 'lucide-react';
 import { SAMPLE_POPULAR_SEARCHES } from '../../lib/mockData';
+import { handleImageError } from '../../utils/imageFallback';
 
 interface DropzoneProps {
   onImageSelected: (imageDataUrl: string, sourceName?: string) => void;
@@ -170,6 +171,7 @@ export const Dropzone: React.FC<DropzoneProps> = ({
               className="flex items-center gap-2 p-2 rounded-xl bg-white dark:bg-[#1A1A1A] border border-slate-200 dark:border-[#333333] hover:border-[#0C0C0C] dark:hover:border-[#B9C006] hover:bg-[#F2F4D6]/40 dark:hover:bg-[#2B2F0C]/40 text-left transition-all duration-150 cursor-pointer group shadow-2xs"
             >
               <img
+                onError={handleImageError}
                 src={item.image}
                 alt={item.label}
                 className="w-10 h-10 rounded-lg object-cover bg-slate-100 dark:bg-slate-800 shrink-0 border border-slate-200 dark:border-slate-700"

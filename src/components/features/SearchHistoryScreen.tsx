@@ -3,6 +3,7 @@ import { History, Trash2, ArrowRight, Search, Sparkles } from 'lucide-react';
 import { SearchHistoryItem } from '../../types';
 import { EmptyState } from '../ui/EmptyState';
 import { Button } from '../ui/Button';
+import { handleImageError } from '../../utils/imageFallback';
 
 interface SearchHistoryScreenProps {
   history: SearchHistoryItem[];
@@ -36,7 +37,7 @@ export const SearchHistoryScreen: React.FC<SearchHistoryScreenProps> = ({
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 animate-in fade-in duration-150">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -71,6 +72,7 @@ export const SearchHistoryScreen: React.FC<SearchHistoryScreenProps> = ({
               <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-hidden shrink-0 flex items-center justify-center">
                 {item.queryImage ? (
                   <img
+                    onError={handleImageError}
                     src={item.queryImage}
                     alt={item.queryText || 'Search screenshot'}
                     className="w-full h-full object-cover"

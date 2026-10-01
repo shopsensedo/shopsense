@@ -6,6 +6,7 @@ import { SourceBadge } from '../ui/SourceBadge';
 import { EmptyState } from '../ui/EmptyState';
 import { Modal } from '../ui/Modal';
 import { formatPKR } from '../ui/PriceTag';
+import { handleImageError } from '../../utils/imageFallback';
 
 interface ResultsScreenProps {
   products: Product[];
@@ -294,7 +295,7 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
           <div className="flex items-center gap-3.5 min-w-0">
             {queryImage && (
               <div className="relative w-14 h-14 rounded-2xl overflow-hidden bg-void shrink-0">
-                <img src={queryImage} alt="Search query" className="w-full h-full object-cover" />
+                <img src={queryImage} alt="Search query" onError={handleImageError} className="w-full h-full object-cover" />
                 <span className="absolute bottom-1 right-1 bg-lime text-void p-0.5 rounded-full">
                   <Sparkles className="w-2.5 h-2.5" />
                 </span>
