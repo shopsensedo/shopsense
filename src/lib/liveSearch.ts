@@ -24,6 +24,43 @@ import { parseQuery, isPriceWord, STOPWORDS, romanUrduMap, type PriceIntent } fr
 import { IMAGE_CATEGORIES } from '../data/imageCategories';
 import brandsRaw from '../data/brands.json';
 import coloursRaw from '../data/colours.json';
+import categorySourcesRaw from '../data/categorySources.json';
+
+/** Category keys (IMAGE_CATEGORIES keys) that PriceOye actually sells:
+// electronics and appliances only. Everything else is Daraz-only. */
+const PRICEOYE_CATEGORIES: Set<string> = new Set(
+  ((categorySourcesRaw as { priceOye?: string[] }).priceOye ?? []).map((c) =>
+    c.toLowerCase(),
+  ),
+);
+
+/**
+ * True when PriceOye should be queried for this category key.
+ * PriceOye sells electronics/appliances only — fashion, bags, shoes, kids,
+ * beauty and home items go to Daraz alone, so PriceOye's electronics feed
+ * can never leak into e.g. a sneakers search.
+ */
+export function priceOyeSellsCategory(categoryKey: string): boolean {
+  return PRICEOYE_CATEGORIES.has(categoryKey.toLowerCase());
+}
+
+/**
+ * Map mapped-English keywords onto an IMAGE_CATEGORIES key (for source
+ * routing in text search). Longest key first so "smartwatch" beats "watch"
+ * and "power bank" beats "bank". Returns '' when nothing matches — the
+ * caller then queries both sources (today's behaviour).
+ */
+export function categoryKeyForText(keywords: string[]): string {
+  const kw = new Set(keywords.map((k) => k.toLowerCase()));
+  const keys = [...new Set(IMAGE_CATEGORIES.map((c) => c.key))].sort(
+    (a, b) => b.length - a.length,
+  );
+  for (const key of keys) {
+    const words = key.toLowerCase().split(' ');
+    if (words.every((w) => kw.has(w))) return key;
+  }
+  return '';
+}
 
 /** Brand and colour word lists live in data files (not hardcoded) so they
  *  can grow without touching logic. Used by the short marketplace query
@@ -68,10 +105,12 @@ export interface LiveListing {
 /**
  * Per-source outcome of a live fetch. A failed source is never skipped
  * silently — the UI shows it as "unavailable (blocked or timed out)".
+ * A deliberately un-queried source (category routing) is marked
+ * `skipped` — the UI shows "not searched (electronics only)".
  */
 export interface SourceStatus {
-  priceoye: { ok: true; count: number } | { ok: false };
-  daraz: { ok: true; count: number } | { ok: false };
+  priceoye: { ok: true; count: number } | { ok: false; skipped?: boolean };
+  daraz: { ok: true; count: number } | { ok: false; skipped?: boolean };
 }
 
 export const EMPTY_SOURCES: SourceStatus = {
@@ -79,12 +118,16 @@ export const EMPTY_SOURCES: SourceStatus = {
   daraz: { ok: false },
 };
 
+type SourceState = { ok: true; count: number } | { ok: false; skipped?: boolean };
+
 /** "PriceOye: 8 results · Daraz: unavailable (blocked or timed out)" */
 export function formatSourceStatus(s: SourceStatus): string {
-  const part = (name: string, st: { ok: true; count: number } | { ok: false }) =>
+  const part = (name: string, st: SourceState) =>
     st.ok
       ? `${name}: ${st.count} result${st.count === 1 ? '' : 's'}`
-      : `${name}: unavailable (blocked or timed out)`;
+      : st.skipped
+        ? `${name}: not searched (electronics only)`
+        : `${name}: unavailable (blocked or timed out)`;
   return `${part('PriceOye', s.priceoye)} · ${part('Daraz', s.daraz)}`;
 }
 
@@ -128,19 +171,24 @@ export function dedupeListings(listings: LiveListing[]): LiveListing[] {
 /** Real listings from /api/live-search (PriceOye + Daraz, fetched live).
  * When `siteQuery` is given it is sent to BOTH sources verbatim (text search
  * short query); otherwise the tuned per-category SITE_QUERIES are used
- * (image search keeps that behaviour). */
+ * (image search keeps that behaviour).
+ * `skipSource` tells the API not to query that source at all (category
+ * routing: PriceOye is electronics/appliances only). The skipped source is
+ * reported as `{ ok: false, skipped: true }`, never as a failure. */
 export async function fetchLiveListings(
   category: string,
   fallbackQuery: string,
   siteQuery?: string,
+  skipSource?: 'priceoye' | 'daraz',
 ): Promise<{ listings: LiveListing[]; sources: SourceStatus }> {
   const sq = siteQuery
     ? { daraz: siteQuery, priceoye: siteQuery }
     : (SITE_QUERIES[category] ?? { daraz: fallbackQuery, priceoye: fallbackQuery });
   let d: any;
   try {
+    const skipParam = skipSource ? `&skip=${skipSource}` : '';
     const r = await fetchWithTimeout(
-      `/api/live-search?q=${encodeURIComponent(sq.daraz)}&pq=${encodeURIComponent(sq.priceoye)}`,
+      `/api/live-search?q=${encodeURIComponent(sq.daraz)}&pq=${encodeURIComponent(sq.priceoye)}${skipParam}`,
       LIVE_TIMEOUT_MS,
     );
     if (!r.ok) throw new Error(`live-search ${r.status}`);
@@ -152,10 +200,14 @@ export async function fetchLiveListings(
   const results = dedupeListings(
     (Array.isArray(d?.results) ? d.results : []) as LiveListing[],
   ).slice(0, MAX_CANDIDATES);
-  // /api/live-search reports per-source outcomes as count | 'error'.
+  // /api/live-search reports per-source outcomes as count | 'error' | 'skipped'.
   const src = d?.sources ?? {};
-  const toStatus = (v: unknown): { ok: true; count: number } | { ok: false } =>
-    typeof v === 'number' ? { ok: true, count: v } : { ok: false };
+  const toStatus = (v: unknown): SourceState =>
+    typeof v === 'number'
+      ? { ok: true, count: v }
+      : v === 'skipped'
+        ? { ok: false, skipped: true }
+        : { ok: false };
   return {
     listings: results,
     sources: { priceoye: toStatus(src.priceoye), daraz: toStatus(src.daraz) },
@@ -505,8 +557,18 @@ export async function searchLiveText(
   const marketplaceQuery = buildMarketplaceQuery(rawQuery, keywords, category) || english;
 
   // 2. live listings from the sites (short query sent to both sources)
+  // Source routing: PriceOye sells electronics/appliances only — a fashion,
+  // bags, shoes, kids, beauty or home query goes to Daraz alone.
   onProgress?.({ stage: 'fetch' });
-  const { listings, sources } = await fetchLiveListings(category, english, marketplaceQuery);
+  const skipSource = priceOyeSellsCategory(categoryKeyForText(keywords))
+    ? undefined
+    : 'priceoye';
+  const { listings, sources } = await fetchLiveListings(
+    category,
+    english,
+    marketplaceQuery,
+    skipSource,
+  );
   const empty = {
     products: [] as Product[],
     mappedQuery: english,
@@ -574,9 +636,17 @@ export async function searchLive(
   const categoryEmbeddings = await getCategoryEmbeddings(IMAGE_CATEGORIES);
   const cls = classifyImage(queryVec, categoryEmbeddings);
 
-  // 3. live listings from the sites
+  // 3. live listings from the sites. Source routing by detected category:
+  // PriceOye is queried only for electronics/appliances; everything else is
+  // Daraz-only.
   onProgress?.({ stage: 'fetch' });
-  const { listings, sources } = await fetchLiveListings(cls.category, cls.query);
+  const skipSource = priceOyeSellsCategory(cls.category) ? undefined : 'priceoye';
+  const { listings, sources } = await fetchLiveListings(
+    cls.category,
+    cls.query,
+    undefined,
+    skipSource,
+  );
   const empty = { products: [] as Product[], category: cls.category, query: cls.query, sources };
   if (listings.length === 0) return empty;
 
