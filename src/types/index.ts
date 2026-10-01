@@ -25,6 +25,10 @@ export interface Product {
   platformUrl: string;
   imageUrl: string;
   similarityScore: number; // 0 - 100
+  /** Raw CLIP cosine similarity (unrounded). Set only when the score is a real
+   *  CLIP measurement (live search); mock/demo-heuristic products leave it undefined
+   *  so the UI never presents a fabricated cosine value. */
+  cosineSimilarity?: number;
   rating: number;
   reviewsCount: number;
   deliveryTime: string;

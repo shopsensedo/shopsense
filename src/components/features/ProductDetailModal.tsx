@@ -7,6 +7,7 @@ import { formatPKR } from '../ui/PriceTag';
 import { PriceChart } from '../ui/PriceChart';
 import { useToast } from '../ui/Toast';
 import { handleImageError } from '../../utils/imageFallback';
+import { similarityLabel } from '../../lib/liveSearch';
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -71,7 +72,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </span>
             )}
             <span className="absolute bottom-4 left-4 bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-semibold text-white tabular-nums">
-              {product.similarityScore}% Visual Match
+              {similarityLabel(product.similarityScore)}
             </span>
             <button
               type="button"
@@ -181,6 +182,18 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </span>
                 </li>
               </ul>
+            )}
+
+            {/* Raw CLIP cosine — only when the score is a real CLIP measurement
+                (live search); mock/demo-heuristic products have no cosineSimilarity
+                so nothing fabricated is shown. */}
+            {typeof product.cosineSimilarity === 'number' && (
+              <p className="text-[11px] text-smoke dark:text-fog tabular-nums mb-4">
+                CLIP cosine similarity:{' '}
+                <span className="font-semibold text-void dark:text-bone">
+                  {product.cosineSimilarity.toFixed(3)}
+                </span>
+              </p>
             )}
 
             {/* CTAs — Protech Buy Now style */}
