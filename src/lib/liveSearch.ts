@@ -98,6 +98,8 @@ export interface LiveListing {
   title: string;
   price: number;
   priceText: string;
+  /** Raw price field(s) from the source JSON, kept next to the parsed value. */
+  rawPrice?: unknown;
   image: string;
   url: string;
   source: 'PriceOye' | 'Daraz';

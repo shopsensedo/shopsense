@@ -2,26 +2,19 @@
 // Fetches PriceOye's JSON API and Daraz's catalog JSON in parallel (server-side,
 // so no CORS issues), normalizes them, and returns real listings.
 // Every item returned here is a REAL listing scraped seconds ago — no mock data.
+import {
+  normalizePriceOyeItem,
+  normalizeDarazItem,
+  type LiveItem,
+} from '../src/lib/liveNormalize';
+
+export type { LiveItem };
 
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
 
 const FETCH_TIMEOUT_MS = 8000;
 const MAX_PER_SITE = 12;
-
-export interface LiveItem {
-  title: string;
-  price: number;
-  priceText: string;
-  image: string;
-  url: string;
-  source: 'PriceOye' | 'Daraz';
-}
-
-function toInt(s: unknown): number {
-  const n = parseInt(String(s ?? '').replace(/[^0-9]/g, ''), 10);
-  return Number.isFinite(n) ? n : 0;
-}
 
 async function fetchJson(url: string, extraHeaders: Record<string, string> = {}): Promise<any> {
   const r = await fetch(url, {
@@ -36,14 +29,11 @@ async function fetchPriceOye(query: string): Promise<LiveItem[]> {
   const url = `https://api.priceoye.pk/api/search_suggest?category=&widget=0&page=&query=${encodeURIComponent(query)}`;
   const d = await fetchJson(url);
   const items = Array.isArray(d?.items) ? d.items : [];
-  return items.slice(0, MAX_PER_SITE).map((it: any) => ({
-    title: String(it.title ?? '').slice(0, 160),
-    price: toInt(it.lowest_price),
-    priceText: `Rs ${it.lowest_price}`,
-    image: String(it.image ?? ''),
-    url: String(it.prodcutUrl ?? it.productUrl ?? ''),
-    source: 'PriceOye' as const,
-  }));
+  return items.slice(0, MAX_PER_SITE).map((it: any) => {
+    const n = normalizePriceOyeItem(it);
+    n.title = n.title.slice(0, 160);
+    return n;
+  });
 }
 
 async function fetchDaraz(query: string): Promise<LiveItem[]> {
@@ -51,16 +41,11 @@ async function fetchDaraz(query: string): Promise<LiveItem[]> {
   const d = await fetchJson(url, { 'X-Requested-With': 'XMLHttpRequest' });
   const items = Array.isArray(d?.mods?.listItems) ? d.mods.listItems : [];
   return items.slice(0, MAX_PER_SITE).map((it: any) => {
-    const img = String(it.image ?? '');
-    const link = String(it.itemUrl ?? '');
-    return {
-      title: String(it.name ?? '').slice(0, 160),
-      price: typeof it.price === 'number' && it.price > 0 ? Math.round(it.price) : toInt(it.priceShow),
-      priceText: String(it.priceShow ?? ''),
-      image: img.startsWith('http') ? img : `https:${img}`,
-      url: link.startsWith('http') ? link : `https:${link}`,
-      source: 'Daraz' as const,
-    };
+    const n = normalizeDarazItem(it);
+    n.title = n.title.slice(0, 160);
+    const img = n.image;
+    n.image = img.startsWith('http') ? img : `https:${img}`;
+    return n;
   });
 }
 
