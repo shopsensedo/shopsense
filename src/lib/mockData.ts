@@ -1,4 +1,6 @@
 import { Product, PlatformInfo, PlatformType, SavedItem, PriceAlert, SearchHistoryItem, User } from '../types';
+import sneakerImg from '../assets/images/pakistan_shoes_sneaker_1790799393681.jpg';
+import kurtaImg from '../assets/images/pakistan_kurta_dress_1790799410747.jpg';
 
 export const PLATFORMS_INFO: Record<PlatformType, PlatformInfo> = {
   daraz: {
@@ -59,8 +61,8 @@ export const PLATFORMS_INFO: Record<PlatformType, PlatformInfo> = {
   }
 };
 
-export const SNEAKER_IMAGE = '/src/assets/images/pakistan_shoes_sneaker_1790799393681.jpg';
-export const KURTA_IMAGE = '/src/assets/images/pakistan_kurta_dress_1790799410747.jpg';
+export const SNEAKER_IMAGE = sneakerImg;
+export const KURTA_IMAGE = kurtaImg;
 
 // SVG inline representations for other popular items so zero broken images occur
 export const SMARTWATCH_SVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"><rect width="400" height="400" fill="%23F1F5F9"/><circle cx="200" cy="200" r="110" fill="%23FFFFFF" stroke="%23CBD5E1" stroke-width="4"/><rect x="180" y="40" width="40" height="70" rx="10" fill="%23F97316"/><rect x="180" y="290" width="40" height="70" rx="10" fill="%23F97316"/><rect x="130" y="130" width="140" height="140" rx="28" fill="%230F172A"/><circle cx="200" cy="200" r="45" fill="none" stroke="%23F97316" stroke-width="6" stroke-dasharray="180 60"/><text x="200" y="206" fill="%23FFFFFF" font-family="sans-serif" font-size="20" font-weight="bold" text-anchor="middle">10:45</text><text x="200" y="235" fill="%2394A3B8" font-family="sans-serif" font-size="11" text-anchor="middle">7,420 steps</text></svg>`;

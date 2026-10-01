@@ -55,8 +55,8 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               bg: 'bg-white',
             },
             info: {
-              icon: <Info className="w-5 h-5 text-[#4F46E5] shrink-0" />,
-              border: 'border-[#C7D2FE]',
+              icon: <Info className="w-5 h-5 text-[#0C0C0C] shrink-0" />,
+              border: 'border-[#DDE199]',
               bg: 'bg-white',
             },
           }[toast.type || 'success'];
@@ -68,7 +68,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             >
               <div className="flex items-center gap-2.5">
                 {typeConfig.icon}
-                <span className="text-xs md:text-sm font-medium text-[#0F172A]">
+                <span className="text-xs md:text-sm font-medium text-[#0C0C0C]">
                   {toast.message}
                 </span>
               </div>

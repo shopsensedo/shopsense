@@ -1,8 +1,8 @@
 import React from 'react';
-import { Heart, ExternalLink, Sparkles, Check } from 'lucide-react';
+import { Heart, ExternalLink, Star, Check } from 'lucide-react';
 import { Product } from '../../types';
 import { SourceBadge } from './SourceBadge';
-import { PriceTag } from './PriceTag';
+import { formatPKR } from './PriceTag';
 
 interface ProductCardProps {
   product: Product;
@@ -21,87 +21,106 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onCompare,
   className = '',
 }) => {
+  const hasDiscount = product.originalPrice && product.originalPrice > product.price;
+  const discountPercent = hasDiscount
+    ? Math.round(((product.originalPrice! - product.price) / product.originalPrice!) * 100)
+    : 0;
+
   return (
     <div
       onClick={() => onSelect?.(product)}
-      className={`group relative flex flex-col bg-white dark:bg-[#131B2E] rounded-2xl border border-[#E2E8F0] dark:border-[#1E293B] shadow-xs hover:shadow-md dark:hover:border-indigo-500/50 transition-all duration-200 overflow-hidden cursor-pointer ${className}`}
+      className={`group relative flex flex-col bg-white dark:bg-carbon rounded-[20px] border border-[#E5E5E1] dark:border-graphite overflow-hidden card-lift cursor-pointer ${className}`}
     >
-      {/* Visual Image Slot */}
-      <div className="relative aspect-[4/3] w-full bg-[#F8FAFC] dark:bg-[#0B0F19] overflow-hidden">
+      {/* Image well — deep black like the Protech reference */}
+      <div className="relative aspect-[4/3] w-full bg-void overflow-hidden">
         <img
           src={product.imageUrl}
           alt={product.title}
           referrerPolicy="no-referrer"
-          className="w-full h-full object-contain p-3 transition-transform duration-300 group-hover:scale-105"
+          loading="lazy"
+          className="w-full h-full object-contain p-4 transition-transform duration-300 group-hover:scale-105"
         />
 
-        {/* Top Badges Bar */}
-        <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
-          <SourceBadge platform={product.platform} size="sm" />
+        {/* Sale badge — lime pill, top-left */}
+        {hasDiscount && (
+          <span className="absolute top-3 left-3 bg-lime text-void text-[11px] font-bold px-2.5 py-1 rounded-full tabular-nums">
+            Sale {discountPercent}%
+          </span>
+        )}
 
-          {/* Similarity Score Indicator */}
-          <div className="flex items-center gap-1 bg-white/95 dark:bg-[#131B2E]/95 backdrop-blur-xs px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-700 shadow-xs text-[11px] font-semibold text-[#4F46E5] dark:text-[#818CF8] tabular-nums">
-            <Sparkles className="w-3 h-3 text-[#F97316]" />
-            <span>{product.similarityScore}% match</span>
-          </div>
+        {/* Platform badge — bottom-left */}
+        <div className="absolute bottom-3 left-3">
+          <SourceBadge platform={product.platform} size="sm" />
         </div>
 
-        {/* Floating Save Button */}
+        {/* Match pill — bottom-right, subtle */}
+        <span className="absolute bottom-3 right-3 bg-white/10 backdrop-blur-sm px-2 py-0.5 rounded-full text-[11px] font-semibold text-white/90 tabular-nums">
+          {product.similarityScore}% match
+        </span>
+
+        {/* Heart — circular, top-right */}
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
             onToggleSave?.(product);
           }}
-          className={`absolute bottom-2.5 right-2.5 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-150 shadow-sm min-h-[36px] min-w-[36px] cursor-pointer ${
+          className={`absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-150 cursor-pointer ${
             isSaved
-              ? 'bg-[#EEF2FF] dark:bg-[#1E1B4B] text-[#4F46E5] dark:text-[#A5B4FC] ring-2 ring-[#4F46E5]'
-              : 'bg-white/90 dark:bg-[#1E293B]/90 text-[#64748B] dark:text-[#94A3B8] hover:text-[#DC2626] hover:bg-white dark:hover:bg-[#1E293B]'
+              ? 'bg-lime text-void'
+              : 'bg-white/10 backdrop-blur-sm text-white/80 hover:bg-lime hover:text-void'
           }`}
           aria-label={isSaved ? 'Remove from saved' : 'Save item'}
         >
-          <Heart className={`w-4 h-4 ${isSaved ? 'fill-[#4F46E5] dark:fill-[#A5B4FC]' : ''}`} />
+          <Heart className={`w-4 h-4 ${isSaved ? 'fill-void' : ''}`} />
         </button>
       </div>
 
-      {/* Card Content Body */}
-      <div className="p-4 flex flex-col flex-1 justify-between">
-        <div>
-          {/* Unboxed Metadata Line */}
-          <div className="flex items-center gap-1.5 text-xs text-[#64748B] dark:text-[#94A3B8] mb-1.5">
-            <span className="font-medium text-[#0F172A] dark:text-[#F8FAFC]">{product.seller}</span>
-            <span aria-hidden="true">·</span>
-            <span>★ {product.rating} ({product.reviewsCount})</span>
-          </div>
-
-          {/* Product Title */}
-          <h3 className="text-sm font-semibold text-[#0F172A] dark:text-[#F8FAFC] line-clamp-2 leading-snug group-hover:text-[#4F46E5] dark:group-hover:text-[#818CF8] transition-colors mb-2">
-            {product.title}
-          </h3>
-
-          {/* Price Component */}
-          <PriceTag
-            price={product.price}
-            originalPrice={product.originalPrice}
-            size="md"
-          />
-
-          {/* Delivery Note */}
-          <div className="mt-2 text-xs text-[#64748B] dark:text-[#94A3B8] flex items-center gap-1">
-            {product.deliveryCost === 0 ? (
-              <span className="text-[#16A34A] dark:text-[#22C55E] font-medium flex items-center gap-1">
-                <Check className="w-3 h-3" /> Free delivery
-              </span>
-            ) : (
-              <span>Delivery: Rs. {product.deliveryCost}</span>
-            )}
-            <span aria-hidden="true">·</span>
-            <span className="truncate">{product.deliveryTime}</span>
-          </div>
+      {/* Body */}
+      <div className="p-4 flex flex-col flex-1">
+        {/* Brand + rating */}
+        <div className="flex items-center justify-between gap-2 mb-1.5">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-smoke dark:text-fog truncate">
+            {product.brand || product.category}
+          </span>
+          <span className="flex items-center gap-1 text-xs font-semibold text-void dark:text-bone shrink-0 tabular-nums">
+            <Star className="w-3.5 h-3.5 text-lime fill-lime" />
+            {product.rating}
+          </span>
         </div>
 
-        {/* Bottom Actions Row */}
-        <div className="mt-3.5 pt-3 border-t border-slate-100 dark:border-[#1E293B] flex items-center gap-2">
+        {/* Price */}
+        <div className="flex items-baseline gap-2 mb-1">
+          <span className="text-xl font-bold text-void dark:text-bone tracking-tight tabular-nums font-heading">
+            {formatPKR(product.price)}
+          </span>
+          {hasDiscount && (
+            <span className="text-sm line-through text-smoke dark:text-fog tabular-nums">
+              {formatPKR(product.originalPrice!)}
+            </span>
+          )}
+        </div>
+
+        {/* Title */}
+        <h3 className="text-sm text-smoke dark:text-fog line-clamp-1 leading-snug mb-2">
+          {product.title}
+        </h3>
+
+        {/* Delivery */}
+        <div className="text-[11px] text-smoke dark:text-fog flex items-center gap-1 mb-3">
+          {product.deliveryCost === 0 ? (
+            <span className="text-[#16A34A] dark:text-[#4ADE80] font-medium flex items-center gap-1">
+              <Check className="w-3 h-3" /> Free delivery
+            </span>
+          ) : (
+            <span>Rs. {product.deliveryCost} delivery</span>
+          )}
+          <span aria-hidden="true">·</span>
+          <span className="truncate">{product.deliveryTime}</span>
+        </div>
+
+        {/* Actions */}
+        <div className="mt-auto flex items-center gap-2">
           {onCompare && (
             <button
               type="button"
@@ -109,22 +128,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 e.stopPropagation();
                 onCompare(product);
               }}
-              className="flex-1 h-9 rounded-lg bg-[#EEF2FF] dark:bg-[#1E1B4B] hover:bg-[#E0E7FF] dark:hover:bg-[#312E81] text-[#4F46E5] dark:text-[#A5B4FC] text-xs font-semibold flex items-center justify-center gap-1 transition-colors min-h-[36px]"
+              className="flex-1 h-10 rounded-full bg-limetint dark:bg-limedim hover:bg-[#E7EAB8] dark:hover:bg-[#33330A] text-void dark:text-limebright text-xs font-bold transition-colors cursor-pointer"
             >
               Compare Stores
             </button>
           )}
-
           <a
             href={product.platformUrl}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="h-9 px-3 rounded-lg border border-slate-200 dark:border-[#283548] hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-[#1E293B] text-[#0F172A] dark:text-[#F8FAFC] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shrink-0"
+            className="h-10 px-4 rounded-full border border-[#E5E5E1] dark:border-ash hover:border-void dark:hover:border-lime text-void dark:text-bone text-xs font-bold flex items-center gap-1.5 transition-colors shrink-0"
             title={`Open on ${product.platform}`}
           >
             <span>Store</span>
-            <ExternalLink className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+            <ExternalLink className="w-3 h-3" />
           </a>
         </div>
       </div>

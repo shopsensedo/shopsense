@@ -21,10 +21,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return saved;
       }
     }
-    return 'light';
+    return 'dark';
   });
 
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
 
   useEffect(() => {
     const root = document.documentElement;

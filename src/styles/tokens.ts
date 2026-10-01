@@ -1,59 +1,59 @@
 /**
  * ShopSense Cross-Platform Design Tokens
  * 
- * Strict 8pt grid, 3 elevation levels, Poppins/Inter typography,
- * Light & Dark theme mappings 100% compatible with Flutter ThemeData.
+ * Protech dark-first theme — lime on near-black, Poppins/Inter typography,
+ * Dark-first light/dark mappings, 100% compatible with Flutter ThemeData.
  */
 
 export const DESIGN_TOKENS = {
   colors: {
     light: {
-      primary: '#4F46E5',         // Indigo
-      primaryDark: '#3730A3',     // Dark Indigo
-      primaryLight: '#EEF2FF',    // Indigo Tint
-      accent: '#F97316',          // Orange (ShopSense CTA)
-      accentLight: '#FFF7ED',     // Soft Orange
+      primary: '#0C0C0C',         // Noir
+      primaryDark: '#262626',     // Graphite
+      primaryLight: '#F2F4D6',    // Lime Tint
+      accent: '#B9C006',          // Lime (Protech CTA)
+      accentLight: '#F7F8E4',     // Soft Lime
       success: '#16A34A',         // Emerald Green (Price Drop)
       successLight: '#F0FDF4',
       warning: '#F59E0B',         // Amber
       warningLight: '#FFFBEB',
       error: '#DC2626',           // Red
       errorLight: '#FEF2F2',
-      background: '#F8FAFC',      // Slate 50
+      background: '#F5F5F5',      // Bone
       surface: '#FFFFFF',         // White Card
-      surfaceSubtle: '#F1F5F9',   // Slate 100
-      border: '#E2E8F0',          // Slate 200
-      borderSubtle: '#F1F5F9',
-      textPrimary: '#0F172A',     // Slate 900
-      textSecondary: '#64748B',   // Slate 500
-      textMuted: '#94A3B8',       // Slate 400
+      surfaceSubtle: '#EFEFEA',   // Pearl
+      border: '#E5E5E1',          // Stone
+      borderSubtle: '#EFEFEA',
+      textPrimary: '#0C0C0C',     // Void
+      textSecondary: '#5F5F60',   // Smoke
+      textMuted: '#9C9C9D',       // Fog
     },
     dark: {
-      primary: '#6366F1',
-      primaryDark: '#4F46E5',
-      primaryLight: '#1E1B4B',
-      accent: '#FB923C',
-      accentLight: '#431407',
+      primary: '#B9C006',
+      primaryDark: '#A3AE05',
+      primaryLight: '#2B2F0C',
+      accent: '#B9C006',
+      accentLight: '#2B2F0C',
       success: '#22C55E',
       successLight: '#052E16',
       warning: '#FBBF24',
       warningLight: '#451A03',
       error: '#EF4444',
       errorLight: '#450A0A',
-      background: '#0B0F19',
-      surface: '#131B2E',
-      surfaceSubtle: '#1E293B',
-      border: '#283548',
-      borderSubtle: '#1E293B',
-      textPrimary: '#F8FAFC',
-      textSecondary: '#94A3B8',
-      textMuted: '#64748B',
+      background: '#0C0C0C',
+      surface: '#1A1A1A',
+      surfaceSubtle: '#262626',
+      border: '#333333',
+      borderSubtle: '#262626',
+      textPrimary: '#F5F5F5',
+      textSecondary: '#9C9C9D',
+      textMuted: '#5F5F60',
     },
     platforms: {
       daraz: '#F85606',      // Daraz Orange
       telemart: '#0284C7',   // Telemart Sky Blue
       bagallery: '#E11D48',  // Bagallery Rose
-      priceoye: '#7C3AED',   // PriceOye Violet
+      priceoye: '#8A9204',   // PriceOye Olive
       elo: '#D97706',        // Export Leftovers Amber
       shophive: '#059669',   // Shophive Emerald
       gulahmed: '#B91C1C',   // Gul Ahmed Maroon
@@ -116,24 +116,24 @@ export interface TokenTableItem {
 
 export const DESIGN_TOKENS_TABLE: TokenTableItem[] = [
   // Colors
-  { name: 'color.primary', category: 'Color', webValue: '#4F46E5', flutterValue: 'Color(0xFF4F46E5)', description: 'Primary brand Indigo, active tab' },
-  { name: 'color.primaryDark', category: 'Color', webValue: '#3730A3', flutterValue: 'Color(0xFF3730A3)', description: 'Button pressed / dark variant' },
-  { name: 'color.primaryLight', category: 'Color', webValue: '#EEF2FF', flutterValue: 'Color(0xFFEEF2FF)', description: 'Primary chip / badge background' },
-  { name: 'color.accent', category: 'Color', webValue: '#F97316', flutterValue: 'Color(0xFFF97316)', description: 'High-intent CTA orange, camera icon' },
+  { name: 'color.primary', category: 'Color', webValue: '#0C0C0C', flutterValue: 'Color(0xFF0C0C0C)', description: 'Primary noir (light) / lime (dark), active tab' },
+  { name: 'color.primaryDark', category: 'Color', webValue: '#262626', flutterValue: 'Color(0xFF262626)', description: 'Button pressed / dark variant' },
+  { name: 'color.primaryLight', category: 'Color', webValue: '#F2F4D6', flutterValue: 'Color(0xFFF2F4D6)', description: 'Primary chip / badge background' },
+  { name: 'color.accent', category: 'Color', webValue: '#B9C006', flutterValue: 'Color(0xFFB9C006)', description: 'High-intent CTA lime, camera icon' },
   { name: 'color.success', category: 'Color', webValue: '#16A34A', flutterValue: 'Color(0xFF16A34A)', description: 'Price drop indicator, in stock' },
   { name: 'color.warning', category: 'Color', webValue: '#F59E0B', flutterValue: 'Color(0xFFF59E0B)', description: 'Low stock warning' },
   { name: 'color.error', category: 'Color', webValue: '#DC2626', flutterValue: 'Color(0xFFDC2626)', description: 'Out of stock, invalid file' },
-  { name: 'color.background', category: 'Color', webValue: '#F8FAFC', flutterValue: 'Color(0xFFF8FAFC)', description: 'Screen canvas background' },
+  { name: 'color.background', category: 'Color', webValue: '#F5F5F5', flutterValue: 'Color(0xFFF5F5F5)', description: 'Screen canvas background' },
   { name: 'color.surface', category: 'Color', webValue: '#FFFFFF', flutterValue: 'Color(0xFFFFFFFF)', description: 'Card and modal background' },
-  { name: 'color.border', category: 'Color', webValue: '#E2E8F0', flutterValue: 'Color(0xFFE2E8F0)', description: 'Hairline card dividers' },
-  { name: 'color.textPrimary', category: 'Color', webValue: '#0F172A', flutterValue: 'Color(0xFF0F172A)', description: 'High contrast readable text' },
-  { name: 'color.textSecondary', category: 'Color', webValue: '#64748B', flutterValue: 'Color(0xFF64748B)', description: 'Muted descriptions, subtitles' },
+  { name: 'color.border', category: 'Color', webValue: '#E5E5E1', flutterValue: 'Color(0xFFE5E5E1)', description: 'Hairline card dividers' },
+  { name: 'color.textPrimary', category: 'Color', webValue: '#0C0C0C', flutterValue: 'Color(0xFF0C0C0C)', description: 'High contrast readable text' },
+  { name: 'color.textSecondary', category: 'Color', webValue: '#5F5F60', flutterValue: 'Color(0xFF5F5F60)', description: 'Muted descriptions, subtitles' },
   
   // Platform Brand Colors
   { name: 'platform.daraz', category: 'Color', webValue: '#F85606', flutterValue: 'Color(0xFFF85606)', description: 'Daraz marketplace identity' },
   { name: 'platform.telemart', category: 'Color', webValue: '#0284C7', flutterValue: 'Color(0xFF0284C7)', description: 'Telemart tech store' },
   { name: 'platform.bagallery', category: 'Color', webValue: '#E11D48', flutterValue: 'Color(0xFFE11D48)', description: 'Bagallery fashion & beauty' },
-  { name: 'platform.priceoye', category: 'Color', webValue: '#7C3AED', flutterValue: 'Color(0xFF7C3AED)', description: 'PriceOye electronics' },
+  { name: 'platform.priceoye', category: 'Color', webValue: '#8A9204', flutterValue: 'Color(0xFF8A9204)', description: 'PriceOye electronics' },
   { name: 'platform.elo', category: 'Color', webValue: '#D97706', flutterValue: 'Color(0xFFD97706)', description: 'Export Leftovers apparel' },
 
   // Typography

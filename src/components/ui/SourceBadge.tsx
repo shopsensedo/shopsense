@@ -18,7 +18,7 @@ export const SourceBadge: React.FC<SourceBadgeProps> = ({
   const info = PLATFORMS_INFO[platform] || {
     id: platform,
     name: platform,
-    color: '#64748B',
+    color: '#5F5F60',
     badgeBg: '#F1F5F9',
     badgeText: '#475569',
     trustedSellerRate: 90,
