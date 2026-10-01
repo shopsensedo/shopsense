@@ -75,9 +75,10 @@ export default async function handler(req: any, res: any) {
     () => ({ status: 'rejected' as const, value: [] as LiveItem[] }),
   );
   const [po, dz] = await Promise.all([fetchPo, fetchDz]);
-  // Counts reflect VALID normalized listings (title, price, image, URL all
-  // present), so the client's status line never claims results it won't show.
-  const isValid = (r: LiveItem) => !!(r.title && r.price > 0 && r.image && r.url);
+  // Counts reflect VALID normalized listings (title, image, URL present).
+  // Price is deliberately NOT a validity criterion: an item with a missing
+  // price survives and the UI shows "Price unavailable" instead of a number.
+  const isValid = (r: LiveItem) => !!(r.title && r.image && r.url);
   const poItems = (po && po.status === 'fulfilled' ? po.value : []).filter(isValid);
   const dzItems = (dz && dz.status === 'fulfilled' ? dz.value : []).filter(isValid);
   const results: LiveItem[] = [...poItems, ...dzItems];

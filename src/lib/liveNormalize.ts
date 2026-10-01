@@ -76,6 +76,12 @@ export function formatPriceOrUnavailable(price: number, priceText?: string): str
   return `Rs. ${price.toLocaleString('en-PK')}`;
 }
 
+/** True when the price may be displayed as a number — the same rule as
+ *  formatPriceOrUnavailable. Used for price sorting (unavailable last). */
+export function isPriceAvailable(price: number, priceText?: string): boolean {
+  return formatPriceOrUnavailable(price, priceText) !== null;
+}
+
 /** Normalize one raw PriceOye suggest-API item. Never drops; the client-side
  *  `isValid` filter decides what is usable, so API result counts are unchanged. */
 export function normalizePriceOyeItem(it: any): LiveItem {

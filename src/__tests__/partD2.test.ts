@@ -205,11 +205,11 @@ import {
 
 const AF1_TITLE = 'Nike Air Force 1 Low \u201907 \u2013 Triple White';
 
-function mkListing(price: number): LiveListing {
+function mkListing(price: number, priceText?: string): LiveListing {
   return {
     title: 'x',
     price,
-    priceText: `Rs. ${price}`,
+    priceText: priceText ?? `Rs. ${price}`,
     image: 'https://example.com/x.jpg',
     url: `https://www.daraz.pk/x-${price}.html`,
     source: 'Daraz',
@@ -338,5 +338,28 @@ describe('D2-4 price sanity', () => {
     expect(formatPriceOrUnavailable(1968, 'Rs. 1,968')).toBe('Rs. 1,968');
     expect(formatPriceOrUnavailable(7649)).toBe('Rs. 7,649');
     expect(formatPriceOrUnavailable(50, 'Rs. 50')).toBe('Rs. 50');
+  });
+});
+
+describe('D2-4b unavailable prices sort last, never first', () => {
+  test('isPriceAvailable mirrors the display rule', async () => {
+    const { isPriceAvailable } = await import('../lib/liveNormalize');
+    expect(isPriceAvailable(0)).toBe(false);
+    expect(isPriceAvailable(29, 'Rs. 29')).toBe(false);
+    expect(isPriceAvailable(189, '189')).toBe(false);
+    expect(isPriceAvailable(189, 'Rs. 189')).toBe(true);
+    expect(isPriceAvailable(7649)).toBe(true);
+  });
+
+  test('a missing-price listing sorts after priced listings (asc and desc)', () => {
+    const rows = [
+      { l: mkListing(0, ''), score: 0.29, label: 'Strong match' as const },
+      { l: mkListing(5000), score: 0.28, label: 'Strong match' as const },
+      { l: mkListing(100), score: 0.27, label: 'Strong match' as const },
+    ];
+    const asc = applyRelevanceThenSort(rows, 'asc').map((r) => r.l.price);
+    const desc = applyRelevanceThenSort(rows, 'desc').map((r) => r.l.price);
+    expect(asc).toEqual([100, 5000, 0]);
+    expect(desc).toEqual([5000, 100, 0]);
   });
 });

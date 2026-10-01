@@ -26,7 +26,7 @@ import brandsRaw from '../data/brands.json';
 import coloursRaw from '../data/colours.json';
 import categorySourcesRaw from '../data/categorySources.json';
 import nounSynonymsRaw from '../data/nounSynonyms.json';
-import { buildFilterFunnel, type FilterFunnel } from './liveNormalize';
+import { buildFilterFunnel, isPriceAvailable, type FilterFunnel } from './liveNormalize';
 
 /** Category keys (IMAGE_CATEGORIES keys) that PriceOye actually sells:
 // electronics and appliances only. Everything else is Daraz-only. */
@@ -508,8 +508,18 @@ export function applyRelevanceThenSort(
     (r) => r.label === 'Strong match' || r.label === 'Good match',
   );
   const pool = (relevant.length >= 5 ? relevant : ranked.slice(0, 8)).slice(0, 12);
-  if (priceIntent === 'asc') return [...pool].sort((a, b) => a.l.price - b.l.price);
-  if (priceIntent === 'desc') return [...pool].sort((a, b) => b.l.price - a.l.price);
+  // Price-intent sorting: listings with no displayable price ("Price
+  // unavailable") always sort after priced listings, in both directions.
+  if (priceIntent === 'asc' || priceIntent === 'desc') {
+    const avail = (r: { l: LiveListing }): boolean =>
+      isPriceAvailable(r.l.price, r.l.priceText);
+    return [...pool].sort((a, b) => {
+      const aa = avail(a);
+      const ab = avail(b);
+      if (aa !== ab) return aa ? -1 : 1;
+      return priceIntent === 'asc' ? a.l.price - b.l.price : b.l.price - a.l.price;
+    });
+  }
   return pool;
 }
 
