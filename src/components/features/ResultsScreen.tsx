@@ -34,6 +34,8 @@ interface ResultsScreenProps {
   searchKind?: 'image' | 'text';
   /** Epoch ms when the shown results were cached (null = fresh live results). */
   cacheAt?: number | null;
+  /** Pre-relevance-floor candidate count (text search) — the "M" in "Showing N of M". */
+  totalResults?: number | null;
   /** Re-run the search bypassing the cache. */
   onRefresh?: () => void;
 }
@@ -64,6 +66,7 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
   priceSort = null,
   searchKind = 'image',
   cacheAt = null,
+  totalResults = null,
   onRefresh,
 }) => {
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
@@ -386,14 +389,14 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
                 <>
                   <span className="tabular-nums font-semibold text-void dark:text-bone">{filteredProducts.length}</span>
                   {' / '}
-                  <span className="tabular-nums font-semibold text-void dark:text-bone">{products.length}</span>
+                  <span className="tabular-nums font-semibold text-void dark:text-bone">{totalResults ?? products.length}</span>
                   {' nataij dikhaye ja rahe hain'}
                 </>
               ) : (
                 <>
                   Showing <span className="tabular-nums font-semibold text-void dark:text-bone">{filteredProducts.length}</span>
                   {' of '}
-                  <span className="tabular-nums font-semibold text-void dark:text-bone">{products.length}</span>
+                  <span className="tabular-nums font-semibold text-void dark:text-bone">{totalResults ?? products.length}</span>
                   {' results'}
                 </>
               )}

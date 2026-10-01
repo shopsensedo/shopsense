@@ -25,6 +25,8 @@ export interface CachedSearch {
   priceSort?: 'asc' | 'desc' | null;
   category?: string;
   sources?: SourceStatus | null;
+  /** Pre-relevance-floor candidate count — the "M" in "Showing N of M". */
+  totalCandidates?: number;
 }
 
 /** "text:black shoes sneakers|sort:asc" — the normalized query plus sort. */

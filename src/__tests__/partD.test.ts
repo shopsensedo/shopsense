@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+  applyRelevanceFloor,
   categoryKeyForText,
   formatSourceStatus,
+  MIN_TEXT_RESULTS,
   priceOyeSellsCategory,
+  TEXT_RELEVANCE_FLOOR,
   type SourceStatus,
 } from '../lib/liveSearch';
 
@@ -88,5 +91,35 @@ describe('D1-1 source routing', () => {
     expect(formatSourceStatus(s)).toBe(
       'PriceOye: unavailable (blocked or timed out) · Daraz: 1 result',
     );
+  });
+});
+
+// ---------- D1-2: relevance floor ----------
+
+describe('D1-2 relevance floor', () => {
+  const scored = (scores: number[]) => scores.map((score, i) => ({ score, i }));
+
+  it('uses 0.22 — the highest score an irrelevant pair ever reached', () => {
+    expect(TEXT_RELEVANCE_FLOOR).toBe(0.22);
+    expect(MIN_TEXT_RESULTS).toBe(3);
+  });
+
+  it('drops candidates below the floor', () => {
+    const out = applyRelevanceFloor(scored([0.3, 0.28, 0.25, 0.21, 0.19]), 0.22, 3);
+    expect(out.map((r) => r.score)).toEqual([0.3, 0.28, 0.25]);
+  });
+
+  it('never drops below the minimum of 3 results', () => {
+    const out = applyRelevanceFloor(scored([0.3, 0.21, 0.2, 0.19]), 0.22, 3);
+    expect(out.map((r) => r.score)).toEqual([0.3, 0.21, 0.2]);
+  });
+
+  it('keeps everything at or above the floor, sorted desc', () => {
+    const out = applyRelevanceFloor(scored([0.22, 0.31, 0.24]), 0.22, 3);
+    expect(out.map((r) => r.score)).toEqual([0.31, 0.24, 0.22]);
+  });
+
+  it('handles an empty input', () => {
+    expect(applyRelevanceFloor([], 0.22, 3)).toEqual([]);
   });
 });

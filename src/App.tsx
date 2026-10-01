@@ -52,6 +52,8 @@ function ShopSenseApp() {
   const [marketplaceQuery, setMarketplaceQuery] = useState<string | null>(null);
   const [priceSort, setPriceSort] = useState<'asc' | 'desc' | null>(null);
   const [cacheInfo, setCacheInfo] = useState<{ at: number } | null>(null);
+  /** Pre-relevance-floor candidate count for text search — the "M" in "Showing N of M". */
+  const [totalResults, setTotalResults] = useState<number | null>(null);
   const [lastSearch, setLastSearch] = useState<
     { type: 'image'; dataUrl: string } | { type: 'text'; query: string } | null
   >(null);
@@ -223,6 +225,7 @@ function ShopSenseApp() {
     setMarketplaceQuery(null);
     setCurrentScreen('search_loading');
     setCacheInfo(null);
+    setTotalResults(null); // image search has no relevance floor — M = shown
 
     // Served-from-cache path: key is the SHA-256 of the downscaled image.
     if (!demoMode && !forceRefresh) {
@@ -388,6 +391,7 @@ function ShopSenseApp() {
     setPriceSort(null);
     setCurrentScreen('search_loading');
     setCacheInfo(null);
+    setTotalResults(null);
 
     // Served-from-cache path: skip the live pipeline entirely.
     if (!demoMode && !forceRefresh) {
@@ -400,6 +404,7 @@ function ShopSenseApp() {
         setMappedQuery(hit.mappedQuery ?? null);
         setMarketplaceQuery(hit.marketplaceQuery ?? null);
         setPriceSort(hit.priceSort ?? null);
+        setTotalResults(hit.totalCandidates ?? hit.products.length);
         setCacheInfo({ at: hit.at });
         setLastSearch({ type: 'text', query });
         setSearchReady(true);
@@ -452,6 +457,7 @@ function ShopSenseApp() {
         setMappedQuery(live.mappedQuery);
         setMarketplaceQuery(live.marketplaceQuery);
         setPriceSort(live.priceSort);
+        setTotalResults(live.totalCandidates);
         if (live.products.length > 0) {
           matched = live.products;
           cat = live.category || 'General';
@@ -467,6 +473,7 @@ function ShopSenseApp() {
               priceSort: live.priceSort,
               category: live.category,
               sources: live.sources,
+              totalCandidates: live.totalCandidates,
             });
           }
         } else {
@@ -721,6 +728,7 @@ function ShopSenseApp() {
               priceSort={priceSort}
               searchKind={lastSearch?.type === 'text' ? 'text' : 'image'}
               cacheAt={cacheInfo?.at ?? null}
+              totalResults={totalResults}
               onRefresh={() => {
                 if (lastSearch?.type === 'text') handleTextSearch(lastSearch.query, true);
                 else if (lastSearch?.type === 'image')

@@ -285,6 +285,40 @@ export function textSimilarityLabel(score01: number): TextSimilarityLabel {
 }
 
 /**
+ * Relevance floor for TEXT search — raw text-to-image CLIP cosine.
+ *
+ * Calibrated on the real text-to-image distribution measured 2026-10-02 over
+ * live Daraz/PriceOye thumbnails (Xenova/clip-vit-base-patch32, same weights
+ * as the browser q8): relevant pairs scored 0.24-0.32 ("black shoes sneakers
+ * footwear" -> Black Camel Sneakers 0.300, "watch smartwatch" -> Oraimo Watch
+ * Nova 0.302, "leather handbag bag bags" -> Richlook Handbag 0.308), while
+ * irrelevant pairs never exceeded 0.22. The floor is therefore set exactly
+ * at 0.22 — the highest score an irrelevant pair ever reached — so nothing
+ * observed-relevant is dropped while clear misses are removed. Applied to
+ * the raw CLIP score, before the brand/colour/noun boosts.
+ */
+export const TEXT_RELEVANCE_FLOOR = 0.22;
+/** A bad floor must never empty the page: always keep at least this many. */
+export const MIN_TEXT_RESULTS = 3;
+
+/**
+ * Drop candidates below the relevance floor, but never fewer than `minKeep`
+ * (top by score survive). Keeps "Showing N of M" honest: the caller reports
+ * the pre-floor count as M.
+ */
+export function applyRelevanceFloor<T extends { score: number }>(
+  scored: T[],
+  floor: number,
+  minKeep: number,
+): T[] {
+  const ranked = [...scored].sort((a, b) => b.score - a.score);
+  const kept = ranked.filter((r) => r.score >= floor);
+  return kept.length >= minKeep
+    ? kept
+    : ranked.slice(0, Math.min(minKeep, ranked.length));
+}
+
+/**
  * Brand/colour awareness — TEXT SEARCH ONLY.
  *
  * If a brand or colour word from the query appears in the result title, the
@@ -545,6 +579,8 @@ export async function searchLiveText(
   query: string;
   sources: SourceStatus;
   priceSort: PriceIntent;
+  /** Candidates scored before the relevance floor — the "M" in "Showing N of M". */
+  totalCandidates: number;
 }> {
   // 1. Roman Urdu → English (word-boundary safe, mixed-language passthrough).
   // Price-intent words ("sasta", "mehnga") are stripped from the mapped query
@@ -577,6 +613,7 @@ export async function searchLiveText(
     query: english,
     sources,
     priceSort: priceIntent,
+    totalCandidates: 0,
   };
   if (listings.length === 0) return empty;
 
@@ -589,10 +626,15 @@ export async function searchLiveText(
   const scored = await scoreThumbnails(listings, queryVec, onProgress);
   if (scored.length === 0) return empty; // thumbnails failed — honest empty, not fake
 
+  // 5a. relevance floor (text search only): drop raw scores below the lowest
+  // observed relevant band (see TEXT_RELEVANCE_FLOOR), but always keep at
+  // least MIN_TEXT_RESULTS so the page never empties on a strict floor.
+  const floored = applyRelevanceFloor(scored, TEXT_RELEVANCE_FLOOR, MIN_TEXT_RESULTS);
+
   // 5b. brand/colour awareness (text search only): a brand or colour word from
   // the query that appears in the title earns a small score boost; the label
   // is computed with the brand-mismatch cap.
-  const aware = scored.map(({ l, score }) => {
+  const aware = floored.map(({ l, score }) => {
     const boosted = brandColourBoostedScore(score, l.title, rawQuery, keywords);
     return {
       l,
@@ -613,6 +655,7 @@ export async function searchLiveText(
     query: english,
     sources,
     priceSort: priceIntent,
+    totalCandidates: scored.length,
   };
 }
 /**
