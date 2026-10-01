@@ -12,7 +12,7 @@
  */
 import type { PlatformType, Product } from '../types';
 import { embedQueryImage, embedImageUrl, embedTextQuery, cosineSim } from './clipEmbed';
-import { parseQuery, type PriceIntent } from './localSearch';
+import { parseQuery, isPriceWord, STOPWORDS, romanUrduMap, type PriceIntent } from './localSearch';
 import categoryEmbeddingsRaw from '../data/category_embeddings.json';
 import brandsRaw from '../data/brands.json';
 import coloursRaw from '../data/colours.json';
@@ -353,7 +353,7 @@ function categorizeKeywords(keywords: string[]): string {
 
 /** Product-type nouns, used to pick the "type" word for a short marketplace query. */
 const PRODUCT_NOUNS: Set<string> = new Set(
-  'shoes sneakers footwear boots heels sandals slippers joggers khussa pumps loafers wedges watch watches smartwatch kurta shalwar kameez shirt tshirt hoodie jacket jeans bag bags handbag backpack mobile smartphone phone laptop earbuds headphones sunglasses clothes clothing dress suit frock abaya saree gown skirt maxi'.split(
+  'shoes sneakers footwear boots heels sandals slippers joggers khussa pumps loafers wedges watch watches smartwatch kurta shalwar kameez shirt tshirt hoodie jacket jeans bag bags handbag backpack mobile smartphone phone laptop earbuds airpods headphones sunglasses clothes clothing dress suit frock abaya saree gown skirt maxi'.split(
     ' ',
   ),
 );
@@ -394,29 +394,83 @@ export function coloursInKeywords(keywords: string[]): string[] {
 
 /**
  * Short marketplace query: at most 3 words, built from brand + colour +
- * product type ("nike white sneakers", "black shoes", "watch"). Daraz and
- * PriceOye do literal keyword matching, so a tight query lands on the right
- * shelf; the longer expanded keyword string stays as the CLIP ranking text,
- * which needs the synonyms ("footwear", "sneakers") to score thumbnails.
+ * modifiers + the most specific product noun. Daraz and PriceOye do literal
+ * keyword matching, so a tight query lands on the right shelf; the longer
+ * expanded keyword string stays as the CLIP ranking text, which needs the
+ * synonyms ("footwear", "sneakers") to score thumbnails.
+ *
+ * The noun rule is the important one: a specific noun the user typed (or its
+ * dictionary mapping) must never be replaced by a generic hypernym.
+ * - The user's literal word wins when it is already an English product noun
+ *   (it appears in its own dictionary mapping): "smartwatch" ->
+ *   ["watch","smartwatch"] keeps "smartwatch", NOT "watch".
+ * - Otherwise the primary (first) product noun of the token's mapping is
+ *   used: "joota" -> ["shoes","sneakers","footwear"] gives "shoes".
+ * - Longest literal wins when several are typed ("watch smartwatch").
  */
 export function buildMarketplaceQuery(
   rawQuery: string,
   keywords: string[],
   category: string,
 ): string {
-  const brand = brandsInQuery(rawQuery, keywords)[0];
-  const colour = coloursInKeywords(keywords)[0];
-  const type =
-    keywords.find((k) => PRODUCT_NOUNS.has(k)) ??
-    CATEGORY_NOUN[category] ??
-    keywords[keywords.length - 1] ??
-    '';
-  return [brand, colour, type]
-    .filter(Boolean)
-    .join(' ')
+  const rawTokens = rawQuery
+    .trim()
+    .toLowerCase()
     .split(/\s+/)
-    .slice(0, 3)
-    .join(' ');
+    .filter((t) => t && !STOPWORDS.has(t) && !isPriceWord(t));
+
+  const brand = brandsInQuery(rawQuery, keywords)[0] ?? '';
+  const brandTokens = new Set(brand.split(' ').filter(Boolean));
+  const colour = coloursInKeywords(keywords)[0] ?? '';
+
+  const mapToken = (tok: string): string[] => {
+    const v = romanUrduMap[tok];
+    return v && v.length > 0 ? v : [tok];
+  };
+
+  let noun = '';
+  const modifiers: string[] = [];
+  const seenMod = new Set<string>();
+  for (const tok of rawTokens) {
+    if (brandTokens.has(tok)) continue;
+    const mapped = mapToken(tok);
+    if (colour && mapped.includes(colour)) continue;
+    if (PRODUCT_NOUNS.has(tok) && mapped.includes(tok)) {
+      if (tok.length > noun.length) noun = tok;
+      continue;
+    }
+    const primary = mapped.find((m) => PRODUCT_NOUNS.has(m));
+    if (primary && !noun) {
+      noun = primary;
+      continue;
+    }
+    const mod = mapped[0] ?? tok;
+    if (mod && !PRODUCT_NOUNS.has(mod) && mod !== noun && !seenMod.has(mod)) {
+      seenMod.add(mod);
+      modifiers.push(mod);
+    }
+  }
+  if (!noun) {
+    noun =
+      CATEGORY_NOUN[category] ??
+      keywords[keywords.length - 1] ??
+      '';
+  }
+
+  // Assemble: brand + colour + modifiers + noun, at most 3 words.
+  // The noun is never dropped; overflow drops modifiers first, then colour
+  // (brand + product type win when everything cannot fit).
+  const brandWords = brand.split(' ').filter(Boolean);
+  const colourWords = colour ? [colour] : [];
+  const nounWords = noun ? [noun] : [];
+  let words = [...brandWords, ...colourWords, ...modifiers, ...nounWords];
+  if (words.length > 3 && modifiers.length > 0) {
+    words = [...brandWords, ...colourWords, ...nounWords];
+  }
+  if (words.length > 3 && colourWords.length > 0) {
+    words = [...brandWords, ...nounWords];
+  }
+  return words.slice(0, 3).join(' ');
 }
 
 /**

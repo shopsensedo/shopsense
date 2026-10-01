@@ -28,7 +28,7 @@ interface SeedProduct {
 const PRODUCTS = seedProducts as SeedProduct[];
 const EMBEDDINGS = seedEmbeddings as Record<string, number[]>;
 
-const romanUrduMap: Record<string, string[]> = (() => {
+export const romanUrduMap: Record<string, string[]> = (() => {
   const out: Record<string, string[]> = {};
   for (const [k, v] of Object.entries(romanUrduMapRaw as Record<string, unknown>)) {
     if (k !== '_note' && Array.isArray(v)) out[k] = v as string[];
@@ -97,7 +97,7 @@ export async function searchByImageLocal(
 // Text search (Roman Urdu keyword map — mirrors backend normalize_query)
 // ---------------------------------------------------------------------------
 
-const STOPWORDS: Set<string> = new Set(
+export const STOPWORDS: Set<string> = new Set(
   (stopwordsRaw as { words: string[] }).words,
 );
 

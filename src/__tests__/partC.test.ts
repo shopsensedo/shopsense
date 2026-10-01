@@ -85,16 +85,62 @@ describe('buildMarketplaceQuery', () => {
     expect(buildMarketplaceQuery('nike white sneakers', keywords, '')).toBe('nike white sneakers');
   });
 
-  it('"sasta smartwatch dikhao" -> "watch" (price words stripped, no brand/colour)', () => {
+  it('"sasta smartwatch dikhao" -> "smartwatch" (specific noun kept, never replaced by generic "watch")', () => {
     const { keywords } = q('sasta smartwatch dikhao');
     expect(keywords).toEqual(['watch', 'smartwatch']);
-    expect(buildMarketplaceQuery('sasta smartwatch dikhao', keywords, 'watch')).toBe('watch');
+    expect(buildMarketplaceQuery('sasta smartwatch dikhao', keywords, 'watch')).toBe('smartwatch');
   });
 
-  it('never exceeds 3 words', () => {
+  it('never exceeds 3 words; brand + product type win over colour', () => {
     const { keywords } = q('gul ahmed ka kala lawn suit');
     const short = buildMarketplaceQuery('gul ahmed ka kala lawn suit', keywords, 'kurta');
     expect(short.split(' ').length).toBeLessThanOrEqual(3);
+    expect(short).toBe('gul ahmed suit');
+  });
+});
+
+// ---------- C2-2: most-specific noun kept in the short query ----------
+
+describe('buildMarketplaceQuery: most-specific noun', () => {
+  const q = (raw: string) => {
+    const { keywords } = parseQuery(raw);
+    return { keywords, category: '' as string };
+  };
+  const short = (raw: string) => {
+    const { keywords } = q(raw);
+    return buildMarketplaceQuery(raw, keywords, '');
+  };
+
+  it('"kala joota" -> "black shoes"', () => {
+    expect(short('kala joota')).toBe('black shoes');
+  });
+
+  it('"airpods" -> "airpods" (specific product noun, not generic "earbuds")', () => {
+    expect(short('airpods')).toBe('airpods');
+  });
+
+  it('"wireless earbuds" -> "wireless earbuds" (meaningful modifier kept)', () => {
+    expect(short('wireless earbuds')).toBe('wireless earbuds');
+  });
+
+  it('"ghari" -> "watch" (generic stays generic, nothing invented)', () => {
+    expect(short('ghari')).toBe('watch');
+  });
+
+  it('"safaid kurta" -> "white kurta"', () => {
+    expect(short('safaid kurta')).toBe('white kurta');
+  });
+
+  it('"adidas running shoes" -> "adidas running shoes" (brand + modifier + noun)', () => {
+    expect(short('adidas running shoes')).toBe('adidas running shoes');
+  });
+
+  it('"bata black shoes" -> "bata black shoes"', () => {
+    expect(short('bata black shoes')).toBe('bata black shoes');
+  });
+
+  it('"mehnga leather handbag" -> "leather handbag" (price word stripped)', () => {
+    expect(short('mehnga leather handbag')).toBe('leather handbag');
   });
 });
 
