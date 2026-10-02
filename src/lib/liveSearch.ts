@@ -16,6 +16,7 @@ import {
   embedQueryImage,
   embedImageUrl,
   embedTextQuery,
+  embedTextBatch,
   cosineSim,
   getCategoryEmbeddings,
   getPhraseEmbeddings,
@@ -24,6 +25,22 @@ import {
 import { parseQuery, isPriceWord, STOPWORDS, romanUrduMap, type PriceIntent } from './localSearch';
 import { IMAGE_CATEGORIES } from '../data/imageCategories';
 import { QUERY_PHRASES, PHRASE_TEMPLATES } from '../data/queryPhrases';
+
+/**
+ * Colour prompts for fused re-rank (Claude 2026-10-02).
+ * CLIP zero-shot over these, dot product of probability vectors.
+ */
+const COLOUR_PROMPTS = [
+  'a black product', 'a white product', 'a red product', 'a blue product',
+  'a green product', 'a yellow product', 'a pink product', 'a brown product',
+  'a grey product', 'a orange product', 'a purple product', 'a beige product',
+];
+
+/** Categories where colour matters for relevance (fashion, not electronics). */
+const COLOUR_RELEVANT = new Set([
+  'dress', 'kurta', 'shalwar kameez', 'sneakers', 'shoes', 'sandals', 'slippers',
+  'handbag', 'backpack', 'tshirt', 'shirt', 'jeans', 'jacket', 'hoodie',
+]);
 import brandsRaw from '../data/brands.json';
 import coloursRaw from '../data/colours.json';
 import categorySourcesRaw from '../data/categorySources.json';
@@ -744,14 +761,56 @@ export function applyRelevanceThenSort(
  * marks it "Image unavailable". Callers rank imageOk=false items below
  * image-scored items of the same label tier.
  */
+/** Cached colour text embeddings (12 prompts). */
+let colourTextVecs: number[][] | null = null;
+async function getColourTextVecs(): Promise<number[][]> {
+  if (!colourTextVecs) {
+    colourTextVecs = await embedTextBatch(COLOUR_PROMPTS);
+  }
+  return colourTextVecs;
+}
+
+/** Softmax over colour prompt similarities. Returns probability vector. */
+function colourProbs(imgVec: number[], colourVecs: number[][]): number[] {
+  const logits = colourVecs.map((cv) => cosineSim(imgVec, cv));
+  const max = Math.max(...logits);
+  const exps = logits.map((l) => Math.exp(l - max));
+  const sum = exps.reduce((a, b) => a + b, 0);
+  return exps.map((e) => e / sum);
+}
+
+/** Z-normalise an array of numbers (mean 0, std 1). */
+function zNorm(values: number[]): number[] {
+  if (values.length === 0) return [];
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  const variance = values.reduce((a, b) => a + (b - mean) ** 2, 0) / values.length;
+  const std = Math.sqrt(variance) || 1;
+  return values.map((v) => (v - mean) / std);
+}
+
 async function scoreThumbnails(
   listings: LiveListing[],
   queryVec: number[],
   titleTerms: TitleTerms,
   onProgress?: (p: LiveProgress | number) => void,
+  categoryKey?: string,
 ): Promise<{ l: LiveListing; score: number; imageOk: boolean }[]> {
   const deadline = Date.now() + EMBED_TIMEOUT_MS;
-  const scored: { l: LiveListing; score: number; imageOk: boolean }[] = [];
+  // Fused re-rank (Claude 2026-10-02): collect raw signals, z-normalise per
+  // query, then combine. Signals: image cosine, title-image cosine, colour.
+  const useColour = categoryKey ? COLOUR_RELEVANT.has(categoryKey) : true;
+  const colourVecs = useColour ? await getColourTextVecs() : null;
+  const queryColourProbs = colourVecs ? colourProbs(queryVec, colourVecs) : null;
+
+  interface RawSignals {
+    l: LiveListing;
+    imgScore: number;
+    titleScore: number;
+    colourScore: number;
+    imageOk: boolean;
+    thumbVec: number[] | null;
+  }
+  const raws: RawSignals[] = [];
   let done = 0;
   const queue = listings.slice();
   const workers = Array.from({ length: 4 }, async () => {
@@ -760,21 +819,58 @@ async function scoreThumbnails(
       try {
         const vec = await embedImageUrl(`/api/img?url=${encodeURIComponent(l.image)}`);
         if (vec.length === queryVec.length) {
-          scored.push({ l, score: cosineSim(queryVec, vec), imageOk: true });
+          // Image-image cosine (main signal)
+          const imgScore = cosineSim(queryVec, vec);
+          // Title-image: CLIP text embedding of title vs query image
+          // (computed lazily; titles are short so this is cheap)
+          let titleScore = 0;
+          try {
+            const titleVec = await embedTextQuery(l.title.slice(0, 100));
+            titleScore = cosineSim(queryVec, titleVec);
+          } catch { /* title embedding failed, keep 0 */ }
+          // Colour: dot product of colour probability vectors
+          let colourScore = 0;
+          if (colourVecs && queryColourProbs) {
+            const thumbColourProbs = colourProbs(vec, colourVecs);
+            colourScore = queryColourProbs.reduce((sum, qp, i) => sum + qp * thumbColourProbs[i], 0);
+          }
+          raws.push({ l, imgScore, titleScore, colourScore, imageOk: true, thumbVec: vec });
         } else {
-          scored.push({ l, score: titleMatchScore(l.title, titleTerms), imageOk: false });
+          raws.push({ l, imgScore: 0, titleScore: 0, colourScore: 0, imageOk: false, thumbVec: null });
         }
       } catch {
-        // one bad image must not kill the search — keep the listing and
-        // score it by title match instead of dropping it
-        scored.push({ l, score: titleMatchScore(l.title, titleTerms), imageOk: false });
+        raws.push({ l, imgScore: 0, titleScore: 0, colourScore: 0, imageOk: false, thumbVec: null });
       }
       done++;
       onProgress?.({ stage: 'match', done, total: listings.length });
     }
   });
   await Promise.all(workers);
-  return scored;
+
+  // Z-normalise each signal across the pool, then fuse.
+  // Weights (Claude): image 1.0, title 0.5, colour 0.5 (0 for electronics).
+  const imgScores = raws.map((r) => r.imgScore);
+  const titleScores = raws.map((r) => r.titleScore);
+  const colourScores = raws.map((r) => r.colourScore);
+  const zImg = zNorm(imgScores);
+  const zTitle = zNorm(titleScores);
+  const zColour = zNorm(colourScores);
+
+  const scored = raws.map((r, i) => {
+    if (!r.imageOk) {
+      // No thumbnail: fall back to title match score (existing behavior)
+      return { l: r.l, score: titleMatchScore(r.l.title, titleTerms), imageOk: false };
+    }
+    const colourWeight = useColour ? 0.5 : 0;
+    const fused = 1.0 * zImg[i] + 0.5 * zTitle[i] + colourWeight * zColour[i];
+    return { l: r.l, score: fused, imageOk: true };
+  });
+
+  // Attach raw cosine for the detail modal (existing behavior)
+  return scored.map((s, i) => ({
+    ...s,
+    ...(s.imageOk ? { cosineSimilarity: raws[i].imgScore } : {}),
+  }));
 }
 
 /**
@@ -1030,7 +1126,7 @@ export async function searchLiveText(
       (k) => !queryBrands.includes(k) && !nounVars.includes(k) && !queryColours.includes(k),
     ),
   };
-  const scored = await scoreThumbnails(listings, queryVec, titleTerms, onProgress);
+  const scored = await scoreThumbnails(listings, queryVec, titleTerms, onProgress, category);
   if (scored.length === 0) return empty; // no listings at all — honest empty, not fake
 
   // 5a. relevance floor (text search only): applies to image-scored results
@@ -1199,7 +1295,7 @@ export async function searchLive(
     colours: [],
     words: query.split(/\s+/).filter(Boolean),
   };
-  const scored = await scoreThumbnails(listings, queryVec, visualTerms, onProgress);
+  const scored = await scoreThumbnails(listings, queryVec, visualTerms, onProgress, category);
   if (scored.length === 0) return empty; // no listings at all — honest empty, not fake
 
   // 6. rank: image-scored first (visual similarity), then title-scored
