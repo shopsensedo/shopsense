@@ -11,17 +11,26 @@ shopsensedo/shopsense. The items below are NOT authorized — they land here.
    — DONE 2026-10-02: push confirmed, remote `33d7957`, Vercel check green,
    preview deployed (smoke still blocked — see item 3).
 
-2. **Tap the GitHub approval card for the `t3` branch push** (T3 work:
-   Telemart fashion source + cross-platform grouping, local commit
-   `01e2853` on branch `t3`, stacked on `t2`).
+2. **Tap the GitHub approval cards for the `t3`, `t4`, `t5` branch pushes**
+   (say "ready" and I fire them back-to-back, one card per branch, stack
+   order t3 → t4 → t5).
+   - `t3` (tip `7f75352`): Telemart fashion source + cross-platform
+     grouping (Telemart via telex.pk public Shopify suggest API; GroupCard
+     UI). Tests 158/158, live 15/15 budget, EVAL-relevant.
+   - `t4` (tip `978ec12`): real accounts (bcrypt + JWT, `JWT_SECRET` env)
+     + per-user persistence (SQLite `data/users.db`); mock auth removed;
+     10/10 backend pytest, 167/167 vitest; live e2e incl. restart
+     persistence proven. Backend public deploy stays human-gated.
+   - `t5` (tip `23b3d6f`): `npm run eval` harness using the real client
+     query pipeline; EVAL PASS — 244 results, 100% prices, 100% images.
    The push tool (`github push_files`) always raises an approval card
    (~10 min expiry) that only you can tap — direct `git push` has no
    credentials in this environment and SSH is proxy-blocked.
-   After you tap: Vercel auto-deploys a preview → I run `npm run smoke`
-   on the preview → merge order after T1/T2 (stack: e1 → t2 → t3).
-   If the card expired, tell me "continue" and I will re-trigger the push.
+   After you tap: Vercel auto-deploys a preview per branch → I run
+   `npm run smoke` on each preview → merge in stack order (only if smoke
+   passes). If a card expired, tell me "continue" and I will re-trigger.
 
-2. **Enable the T2 photo-description endpoint with a free Gemini API key**
+3. **Enable the T2 photo-description endpoint with a free Gemini API key**
    (needed for the "We think this is: …" description on photo searches;
    without it the app silently uses the basic on-device recognition).
    Steps:
@@ -40,7 +49,7 @@ shopsensedo/shopsense. The items below are NOT authorized — they land here.
    Until this is done, photo search works exactly as before with the
    on-device classifier; nothing breaks.
 
-3. **Unblock the T1 preview smoke test** (branch `e1` is deployed and the
+4. **Unblock the T1 preview smoke test** (branch `e1` is deployed and the
    Vercel build check is green, but I cannot run the smoke test).
    The preview at https://shopsense-git-e1-shopsense.vercel.app has Vercel
    Authentication (SSO login) enabled, so every page redirects to a login

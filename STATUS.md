@@ -10,7 +10,7 @@ Rollback: revert the task's merge commit on main (GitHub → Revert); Vercel red
 | T2 any-image understanding | UNVERIFIED (code done) | t2: 298e6c9 + 2765049 (local, stacked on e1) | /api/describe-image + client integration. Review fixes committed: schema requires 2–3 queries (single → 502), `cleanBrand()` nulls suspicious/sentence-like/URL brands, `describedSkipSource()` routes on the multiword category key ("power bank" now keeps PriceOye), cache persists described/fallback so cache hits restore the honest chip, privacy notice now actually paints (determinate mode entered before the request). 129/129 tests, tsc+build green, real local HTTP missing-key check → 503 {"error":"describe_unavailable","fallback":true}. Gemini free-key steps added to HUMAN_TODO.md. | Live 10-image evaluation HUMAN-GATED on GEMINI_API_KEY (absent). Push + preview smoke + merge blocked on T1's merge (t2 stacks on e1). |
 | T3 fashion source + grouping | READY TO MERGE | t3: remote `9401ed24` (4 approved batches; stacked on t2→e1) | Telemart (telex.pk Shopify suggest API) added as 3rd source: 10 fashion listings/query with real PKR prices, telex.pk URLs, cdn.shopify.com images. Cross-platform grouping (titleTokens/titleOverlap/groupByTitle + GroupCard UI with per-platform prices + best-price). **Gated by `TELEMART_ENABLED` flag (default OFF)** — production never calls telex.pk until the terms review is cleared; see docs/SOURCES.md. 161/161 tests (incl. 3 flag tests), tsc+build green. Live: 3 end-to-end queries (sneakers 30, milli 22, audionic 30 results); audionic → 8 correct cross-platform groups, 0 false merges after hardening. 1 Shopify image proxied OK. | Terms review DONE 2026-10-02: ToS §13 forbids automated data gathering (robots.txt allows crawling) — documented in docs/SOURCES.md; flag stays OFF in production. |
 | T4 backend, persistence, real accounts | READY TO MERGE | t4: remote `ef8360d6` (approved batch; stacked on t3) | FastAPI auth (bcrypt + JWT, `JWT_SECRET` env) + /me/* (saved-items, history, alerts) on SQLite; frontend authClient (real auth, honest unreachable-backend error), AuthModal without mock user, session restore + guest-work pull/merge, write-through persistence. **Demo labelling**: when no account server is reachable the AuthModal shows a "Demo — no account server" banner and disables sign-in (matches pre-T4 production behaviour). Backend 10/10 pytest, frontend 170/170 vitest (incl. 3 new probe tests), tsc+build green. Local e2e on :8123: register→save→alert→history→restart persistence proven, tampered token 401. | Backend has no public deployment (local only) — production behaviour unchanged: accounts stay demo-labelled. |
-| T5 evaluation | TODO | — | — | — |
+| T5 evaluation | READY TO MERGE | t5: remote `d35156e1` (2 approved batches; stacked on t4) | `npm run eval` harness (scripts/eval.mjs + scripts/evalQuery.ts) runs the REAL client query pipeline against the real local api handler: 10 fixed queries (EN + Roman Urdu + brands), ≥2s spacing. EVAL PASS 2026-10-01: 244 listings, 100% images, price 100%, no all-source errors; keyword-relevance proxy 1.00 on 8/10 (laptop 0.38 / perfume 0.75 are title-wording artifacts, verified by reading titles). Gates: every query ≥1 result, no source all-error, price-available ≥40%. 173/173 vitest, tsc+build green. Eval does NOT measure the final in-browser CLIP rerank (can't run in node) — labelled as such. | buildMarketplaceQuery doubles tokens ("audionic audionic") — harmless, noted for later. |
 | T6 mobile readiness | TODO | — | — | Flutter SDK presence unknown |
 | T7 documentation + demo | TODO | — | — | — |
 
@@ -176,6 +176,51 @@ black-shoes probe). Plus 4 CDN gate-verification fetches through /api/img
   be set in the deploy environment when one exists.
 - Push: blocked on the approval tap; goes after the `t3` push (stack
   t4 → t3 → t2 → e1).
+
+## T5 plan (3–5 lines)
+1. New `scripts/eval.mjs` + `npm run eval`: spawns the real-handler local
+   API server, runs a fixed 10-query set (English + Roman Urdu + brands:
+   "nike white sneakers", "kala joota", "sasta smartwatch", "audionic",
+   "milli sneakers", "sneakers", "power bank", "bachon ke kapray",
+   "laptop", "perfume") with ≥2s between requests (30 marketplace calls,
+   inside the 100 budget).
+2. Per query records: total count, per-source counts, price-available
+   fraction (same rule as `isPriceAvailable`), image-present fraction, and
+   a keyword relevance proxy (fraction of top-8 titles containing a query
+   content token — labeled as a proxy, never as human judgment).
+3. Hard gates → non-zero exit: every query returns ≥1 result; no source in
+   `error` for all queries; overall price-available fraction ≥ 40%.
+   Prints a table + writes timestamped `eval/eval-report-*.json`.
+4. Run it, fix failures (max 3 cycles), record the graded evaluation in
+   STATUS.md. Branch `t5` stacked on `t4`.
+
+## T5 self-evaluation (2026-10-02 ~06:00 PKT)
+
+- Harness built: **PASS** — `npm run eval` (scripts/eval.mjs +
+  scripts/evalQuery.ts) sends exactly what the app sends, via the real
+  client query pipeline bundled with esbuild; no hand-written query
+  guesses. 10 queries, ≥2s spacing, ~66 marketplace calls total (inside
+  the 100 budget).
+- Gates: **PASS** — EVAL PASS, all green: every query ≥1 result (244
+  total), zero source errors, price-available 100% (one query 95% — a
+  single honestly-labeled "Price unavailable"), images present 100%.
+- Relevance (keyword proxy, English mapped query): **PASS** — 8/10
+  queries score 1.00 on top-8 titles; laptop 0.38 and perfume 0.75 are
+  proxy artifacts (titles like "Lenovo Legion Pro 7" / "Eau de Parfum"
+  omit the keyword while being the right product — verified by reading
+  the titles). Spot-checked top-5 titles for 3 queries: all the correct
+  product type, zero electronics-in-sneakers class errors.
+- Observations (not gates, for future work): `buildMarketplaceQuery`
+  doubles tokens for brand-only/single-noun queries ("audionic
+  audionic", "perfume perfume", "power bank bank") — harmless to results
+  but sloppy; PriceOye correctly skipped for 7/10 non-electronics
+  queries via category routing.
+- Tests/typecheck/build: **PASS** — 167/167, tsc clean, build green.
+- What eval does NOT measure: **UNVERIFIED** — the final ranked UX (the
+  in-browser CLIP rerank can't run in node); human relevance judgment.
+  The report labels the proxy as what it is.
+- Push: blocked on the approval tap; goes after t3/t4 (stack
+  t5 → t4 → t3 → t2 → e1).
 
 ## Next steps
 - T1: e1 preview smoke is SSO-blocked (HUMAN_TODO #3) → user disables
