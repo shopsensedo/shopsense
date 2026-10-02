@@ -9,7 +9,7 @@ Rollback: revert the task's merge commit on main (GitHub → Revert); Vercel red
 | T1 thumbnails, deploy safety, small fixes | HUMAN-GATED | e1: remote `33d7957` (8 local commits incl. 61d2e4d corrections, pushed in 2 approved batches) | Code complete, 126/126 tests, tsc+build green, smoke PASS on local real-handler harness, thumbnail failure 0% over 5 queries (68/68). Three T1 corrections applied and re-verified: exact-host proxy allowlist, capped streaming reads, guaranteed title-scored retention. Preview deployment EXISTS: https://shopsense-git-e1-shopsense.vercel.app — Vercel commit check **success** on 33d7957. | Preview smoke BLOCKED: Vercel Authentication (SSO login) is on for previews — every route 302s to login, so `npm run smoke` cannot reach the app. Needs the user: temporarily disable preview Deployment Protection, or supply a Protection Bypass token. Merge + production verify wait on smoke. |
 | T2 any-image understanding | UNVERIFIED (code done) | t2: 298e6c9 + 2765049 (local, stacked on e1) | /api/describe-image + client integration. Review fixes committed: schema requires 2–3 queries (single → 502), `cleanBrand()` nulls suspicious/sentence-like/URL brands, `describedSkipSource()` routes on the multiword category key ("power bank" now keeps PriceOye), cache persists described/fallback so cache hits restore the honest chip, privacy notice now actually paints (determinate mode entered before the request). 129/129 tests, tsc+build green, real local HTTP missing-key check → 503 {"error":"describe_unavailable","fallback":true}. Gemini free-key steps added to HUMAN_TODO.md. | Live 10-image evaluation HUMAN-GATED on GEMINI_API_KEY (absent). Push + preview smoke + merge blocked on T1's merge (t2 stacks on e1). |
 | T3 fashion source + grouping | READY TO MERGE | t3: remote `9401ed24` (4 approved batches; stacked on t2→e1) | Telemart (telex.pk Shopify suggest API) added as 3rd source: 10 fashion listings/query with real PKR prices, telex.pk URLs, cdn.shopify.com images. Cross-platform grouping (titleTokens/titleOverlap/groupByTitle + GroupCard UI with per-platform prices + best-price). **Gated by `TELEMART_ENABLED` flag (default OFF)** — production never calls telex.pk until the terms review is cleared; see docs/SOURCES.md. 161/161 tests (incl. 3 flag tests), tsc+build green. Live: 3 end-to-end queries (sneakers 30, milli 22, audionic 30 results); audionic → 8 correct cross-platform groups, 0 false merges after hardening. 1 Shopify image proxied OK. | Terms review DONE 2026-10-02: ToS §13 forbids automated data gathering (robots.txt allows crawling) — documented in docs/SOURCES.md; flag stays OFF in production. |
-| T4 backend, persistence, real accounts | TODO | — | — | deploy likely HUMAN-GATED |
+| T4 backend, persistence, real accounts | READY TO MERGE | t4: remote `ef8360d6` (approved batch; stacked on t3) | FastAPI auth (bcrypt + JWT, `JWT_SECRET` env) + /me/* (saved-items, history, alerts) on SQLite; frontend authClient (real auth, honest unreachable-backend error), AuthModal without mock user, session restore + guest-work pull/merge, write-through persistence. **Demo labelling**: when no account server is reachable the AuthModal shows a "Demo — no account server" banner and disables sign-in (matches pre-T4 production behaviour). Backend 10/10 pytest, frontend 170/170 vitest (incl. 3 new probe tests), tsc+build green. Local e2e on :8123: register→save→alert→history→restart persistence proven, tampered token 401. | Backend has no public deployment (local only) — production behaviour unchanged: accounts stay demo-labelled. |
 | T5 evaluation | TODO | — | — | — |
 | T6 mobile readiness | TODO | — | — | Flutter SDK presence unknown |
 | T7 documentation + demo | TODO | — | — | — |
@@ -127,6 +127,55 @@ black-shoes probe). Plus 4 CDN gate-verification fetches through /api/img
 4. Verify with tests/tsc/build + ≤6 live marketplace requests (1 Telemart
    probe search, 1 fashion + 1 electronics end-to-end); self-evaluate each
    criterion PASS/FAIL/UNVERIFIED. Branch `t3` stacked on `t2`.
+
+## T4 plan (3–5 lines)
+1. Backend (`~/workspace/shopsense-backend`, local FastAPI): real auth in
+   new `app/auth.py` — SQLite user store (`data/users.db`, stdlib sqlite3,
+   survives VM restarts unlike the wiped apt Postgres), `POST
+   /auth/register` + `POST /auth/login` with bcrypt hashing and JWT
+   (`JWT_SECRET` env, never logged). New `app/me.py`: `GET/POST/DELETE
+   /me/saved-items`, `/me/history`, `/me/alerts`; live listings upserted
+   by URL into a `listings` table so saved items reference real listings.
+2. Frontend: new `src/lib/authClient.ts` (JWT in memory + localStorage,
+   `Authorization: Bearer`); AuthModal calls the real backend — no more
+   mock user, clear error when the backend is unreachable. Saved
+   items/alerts/history sync to the backend when logged in; localStorage
+   stays the guest/offline store.
+3. Tests: backend pytest (register/login, wrong-password 401, JWT tamper
+   401, saved-item + alert round-trip on a temp DB); frontend vitest for
+   authClient with mocked fetch. Then tsc + build.
+4. Verify live locally: uvicorn :8000 — register → login → save a real
+   live listing → list → create alert → delete. Backend public deployment
+   stays HUMAN-GATED (local only; no new repo authorized). Branch `t4`
+   stacked on `t3`.
+
+## T4 self-evaluation (2026-10-02 ~05:15 PKT)
+
+- Real accounts: **PASS** — `POST /auth/register` + `/auth/login` with
+  bcrypt hashing and JWT (`JWT_SECRET` env, never logged); wrong-password
+  and unknown-email return the identical 401 (no existence leak); tampered
+  tokens rejected. 10/10 backend pytest green.
+- Persistence: **PASS** — SQLite user store (`data/users.db`, survives VM
+  restarts; the apt Postgres was wiped again). Saved items, search
+  history, price alerts per user; live listings upserted by URL so saved
+  items reference real listings. Restart-proven: saved item + history
+  survived a uvicorn restart.
+- No mock auth: **PASS** — the hardcoded mock user and prefilled demo
+  credentials are gone; an unreachable backend shows an honest error and
+  the app keeps working as a guest (localStorage store unchanged).
+- Sync behavior: **PASS** (code) / **UNVERIFIED** (browser) — session
+  restore on launch, pull+merge on login (guest work preserved, dedupe by
+  URL), write-through on save/unsave/alert/history with offline fallback.
+  No browser available locally for a click-through.
+- Tests/typecheck/build: **PASS** — frontend 167/167 (9 new T4), backend
+  10/10, `tsc` clean, `vite build` green.
+- Live e2e: **PASS** — register → save real listing → list → create alert
+  → history → delete, all 200/201; tampered token → 401.
+- Backend public deployment: **HUMAN-GATED** — stays local (no public
+  host; creating a new GitHub repo is not authorized). `JWT_SECRET` must
+  be set in the deploy environment when one exists.
+- Push: blocked on the approval tap; goes after the `t3` push (stack
+  t4 → t3 → t2 → e1).
 
 ## Next steps
 - T1: e1 preview smoke is SSO-blocked (HUMAN_TODO #3) → user disables

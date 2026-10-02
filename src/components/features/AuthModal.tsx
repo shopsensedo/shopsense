@@ -1,10 +1,18 @@
-import React, { useState } from 'react';
-import { Camera, Lock, Mail, Phone, ArrowRight, UserCheck } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Camera, Lock, Mail, ArrowRight, UserCheck } from 'lucide-react';
 import { User } from '../../types';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { FormInput } from '../ui/FormInput';
 import { useToast } from '../ui/Toast';
+import {
+  AuthError,
+  BackendUnavailableError,
+  isBackendReachable,
+  login as apiLogin,
+  register as apiRegister,
+  type BackendUser,
+} from '../../lib/authClient';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -12,6 +20,16 @@ interface AuthModalProps {
   onLoginSuccess: (user: User) => void;
   onContinueGuest: () => void;
   isUrduMode?: boolean;
+}
+
+function toAppUser(u: BackendUser, isUrduMode: boolean): User {
+  return {
+    id: `backend-${u.id}`,
+    name: u.name || u.email.split('@')[0],
+    email: u.email,
+    isGuest: false,
+    preferredLanguage: isUrduMode ? 'ur' : 'en',
+  };
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -23,41 +41,72 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 }) => {
   const { showToast } = useToast();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
-  const [identifier, setIdentifier] = useState('03001234567');
-  const [name, setName] = useState('Hamza Farooq');
-  const [password, setPassword] = useState('pakistan2026');
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  // 'checking' | 'up' | 'down' — when the account server is not reachable
+  // the form is clearly labelled Demo and sign-in is disabled.
+  const [backend, setBackend] = useState<'checking' | 'up' | 'down'>('checking');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!isOpen) return;
+    setBackend('checking');
+    let cancelled = false;
+    isBackendReachable().then((ok) => {
+      if (!cancelled) setBackend(ok ? 'up' : 'down');
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
+
+  const demoNoBackend = backend === 'down';
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (!identifier.trim()) {
-      setError('Please enter your Pakistani mobile number or email address');
+    if (!email.trim() || !email.includes('@')) {
+      setError('Please enter your email address');
       return;
     }
-
     if (password.length < 6) {
       setError('Password must be at least 6 characters');
       return;
     }
 
-    // Mock successful login
-    const newUser: User = {
-      id: `usr-${Date.now()}`,
-      name: mode === 'signup' ? name || 'ShopSense User' : 'Hamza Farooq',
-      email: identifier.includes('@') ? identifier : 'user@shopsense.pk',
-      phone: identifier.includes('@') ? '+92 300 1234567' : identifier,
-      isGuest: false,
-      preferredLanguage: isUrduMode ? 'ur' : 'en',
-    };
-
-    onLoginSuccess(newUser);
-    showToast(
-      mode === 'signup' ? 'Account created successfully! Welcome to ShopSense.' : 'Signed in successfully!',
-      'success'
-    );
-    onClose();
+    setBusy(true);
+    try {
+      // Real account against the ShopSense backend — no mock user.
+      const backendUser =
+        mode === 'signup'
+          ? await apiRegister(email.trim(), password, name.trim())
+          : await apiLogin(email.trim(), password);
+      onLoginSuccess(toAppUser(backendUser, isUrduMode));
+      showToast(
+        mode === 'signup'
+          ? 'Account created successfully! Welcome to ShopSense.'
+          : 'Signed in successfully!',
+        'success'
+      );
+      onClose();
+    } catch (err) {
+      if (err instanceof BackendUnavailableError) {
+        setError(
+          isUrduMode
+            ? 'Account server se rabta nahi ho saka. Guest ke tor par jari rakhen — saved items isi device par rahen gi.'
+            : `${err.message} You can continue as a guest.`
+        );
+      } else if (err instanceof AuthError) {
+        setError(err.message);
+      } else {
+        setError('Something went wrong. Please try again.');
+      }
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -76,15 +125,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         </h2>
         <p className="text-xs text-[#5F5F60] dark:text-[#9C9C9D] mt-1 max-w-xs mx-auto">
           {isUrduMode
-            ? 'Daraz aur local dukaano se bachat aur WhatsApp price alerts ke liye dakhil hon.'
-            : 'Sync saved items and get instant WhatsApp price drop alerts across Daraz & local stores.'}
-        </p>
-        <p className="mt-3 text-[11px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl px-3 py-2 max-w-xs mx-auto">
-          {isUrduMode
-            ? 'Demo sign-in sirf — asal accounts abhi nahi hain.'
-            : 'Demo sign-in only. No real accounts yet.'}
+            ? 'Saved items aur price alerts apke account me sync hon ge.'
+            : 'Your saved items and price alerts sync to your account.'}
         </p>
       </div>
+
+      {demoNoBackend && (
+        <div
+          role="status"
+          className="mb-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40 px-3 py-2.5 text-xs text-amber-900 dark:text-amber-200"
+        >
+          <span className="font-bold">Demo — </span>
+          {isUrduMode
+            ? 'Account server connected nahi hai, is liye sign-in band hai. Guest ke tor par jari rakhen — saved items isi device par rahen gi.'
+            : 'No account server is connected, so sign-in is disabled. Continue as a guest — saved items stay on this device.'}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-3.5">
         {mode === 'signup' && (
@@ -97,11 +153,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         )}
 
         <FormInput
-          label="Pakistani Mobile or Email"
-          placeholder="0300 1234567 or email@domain.com"
-          leftIcon={<Phone className="w-4 h-4" />}
-          value={identifier}
-          onChange={(e) => setIdentifier(e.target.value)}
+          label="Email"
+          placeholder="you@example.com"
+          leftIcon={<Mail className="w-4 h-4" />}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           error={error || undefined}
         />
 
@@ -119,8 +175,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           variant="primary"
           size="md"
           className="w-full mt-2"
+          disabled={busy || demoNoBackend}
         >
-          {mode === 'signin' ? 'Sign In' : 'Create Account'}
+          {busy ? (
+            'Please wait…'
+          ) : mode === 'signin' ? (
+            <>
+              Sign In <ArrowRight className="w-4 h-4" />
+            </>
+          ) : (
+            'Create Account'
+          )}
         </Button>
       </form>
 
