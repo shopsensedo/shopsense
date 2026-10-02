@@ -151,9 +151,13 @@ function render() {
 
   data.queries.forEach((q) => {
     const section = document.createElement('div');
+    // Route query photo through /api/img proxy (Wikimedia may be unreachable directly)
+    const queryPhotoUrl = q.photo.startsWith('http') 
+      ? `/api/img?url=${encodeURIComponent(q.photo)}`
+      : q.photo;
     section.innerHTML = `<div class="query-section">
       <div class="query-photo">
-        <img src="${q.photo}" alt="query">
+        <img src="${queryPhotoUrl}" alt="query" onerror="this.style.opacity=0.3; this.alt='Photo unavailable'">
         <h3>${q.file}</h3>
       </div>
       <div class="items" id="items-${q.file}"></div>
