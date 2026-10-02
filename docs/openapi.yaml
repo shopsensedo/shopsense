@@ -120,6 +120,44 @@ paths:
         '422':
           $ref: '#/components/responses/ValidationError'
 
+  /search/image:
+    post:
+      summary: Server-side photo re-rank (R11, for clients without CLIP)
+      operationId: searchImageLive
+      description: >-
+        Takes a photo, classifies it (Vercel describe-image when available,
+        else ONNX zero-shot), fetches candidates through the Vercel
+        live-search handler, re-ranks with quantized ONNX CLIP, and returns
+        ranked live listings. For mobile clients that cannot run CLIP.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [photo]
+              properties:
+                photo:
+                  type: string
+                  format: binary
+                  description: Product photo (JPEG/PNG)
+                top_k:
+                  type: integer
+                  default: 5
+                  minimum: 1
+                  maximum: 12
+      responses:
+        '200':
+          description: Ranked live listings with CLIP scores
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveImageSearchResponse'
+        '400':
+          description: File must be an image / unreadable
+        '502':
+          description: live-search fetch failed
+
   /auth/register:
     post:
       summary: Create an account
@@ -364,6 +402,29 @@ components:
       description: JWT from /auth/register or /auth/login (HS256, 30-day TTL)
 
   schemas:
+    LiveRankedItem:
+      type: object
+      required: [title, url, image, clip_score]
+      properties:
+        title: { type: string }
+        price: { type: [number, 'null'] }
+        price_text: { type: string }
+        url: { type: string, format: uri }
+        image: { type: string, format: uri }
+        clip_score: { type: number, minimum: 0, maximum: 1 }
+    LiveImageSearchResponse:
+      type: object
+      required: [query, category, results, latency_ms, memory_rss_mb]
+      properties:
+        query: { type: string }
+        category: { type: string }
+        category_score: { type: number }
+        describe_used: { type: boolean }
+        results:
+          type: array
+          items: { $ref: '#/components/schemas/LiveRankedItem' }
+        latency_ms: { type: integer }
+        memory_rss_mb: { type: number }
     HealthResponse:
       type: object
       required: [status, service, version]

@@ -61,18 +61,42 @@ are committed; the CLIP weights download once from HuggingFace).
 20% of queries (12, seeded RNG for reproducibility) × top-5 results with the
 agent label and a blank `hand_label` column for manual labelling.
 
-## Results (2026-10-02 — two runs: cold cache, then warm cache with the R6 fix)
+## Results (2026-10-02 — three runs: cold cache, warm cache with the R6 fix, warm cache with R7+R8)
 
-| Set | n | mean P@5 | mean P@10 | mean latency (cold cache) | mean latency (warm cache) |
+| Set | n | mean P@5 (CLIP-ranked) | mean P@5 (marketplace order, baseline) | mean CLIP gain | mean P@10 |
 |---|---|---|---|---|---|
-| Photo | 30 | 0.82 | 0.83 | ~9.5 s | ~2.0 s |
-| Text | 30 | 0.87 | 0.87 | ~14 s | ~3.1 s |
+| Photo | 30 | 0.82 | 0.84 | −0.02 | 0.83 |
+| Text | 30 | 0.88 | 0.87 | +0.01 | 0.87 |
+
+**What this proves — and what it doesn't.** The baseline is the
+marketplace's original per-source order (PriceOye, then Daraz, then
+Telemart — the order `/api/live-search` returns before any CLIP
+re-ranking). On the title-keyword rubric, CLIP re-ranking moves mean P@5
+by −0.02 (photo) and +0.01 (text): essentially nothing. This does **not**
+mean CLIP adds no value — it means the rubric cannot see CLIP's value.
+The rubric judges **titles only**; CLIP re-ranks by **visual similarity
+to the query photo**. A visually perfect match with a keyword-poor title
+scores 0 under the rubric, and a keyword-stuffed title scores 1 even if
+the photo looks nothing like the query. **The user's hand labels are the
+real visual-relevance test** — the rubric is a cheap proxy for
+regression detection only.
+
+**Hand-labelling page.** `public/eval-label.html` (noindex, not linked
+from the app) shows the 12 sampled queries with their query photo/text,
+the top-5 results (thumbnail via `/api/img`, title, price) and
+yes/partly/no buttons. Guide on the page: *yes* = same product type and
+similar look; *partly* = same type but different look, or an accessory;
+*no* = anything else. Labels persist in the browser's localStorage; a CSV
+download button exports them for merging into the eval report.
 
 Run 1 (35 live requests): cold cache, pre-fix marketplace queries.
 Run 2 (3 live requests): warm cache + R6 de-duplication fix
 (`audionic` → `audionic`, not `audionic audionic`; same for `power bank`,
 `perfume`). Precision unchanged by the fix — the sites ignore the
 duplicate token, as predicted in T5.
+Run 3 (1 live request): warm cache + R7 query-building fix
+(`baby diapers pack` → `baby diapers`, not `pack`) + R8 baseline
+reporting. Photo mean P@5 0.82, text 0.88.
 
 - Source success: PriceOye 1.00, Daraz 1.00 (no query had a source in
   `error` state; Telemart reports `skipped` — flag OFF).
@@ -87,21 +111,36 @@ The classifier — not the ranking — is the weak link for these.
 
 **Text notes.** Roman Urdu queries map correctly (`kala joota` →
 `black shoes`, P@5 0.8; `sasta smartwatch dikhao` → `smartwatch`, P@5 1.0).
-Weak spots: `laptop` (P@5 0.4 — generic query, mixed titles), `khussa`
-(P@5 0.5 — niche product, thin results), `baby diapers pack` → marketplace
-query collapsed to `pack` (P@5 0.5 — query-building weakness, worth a
-follow-up).
+Re-checked 2026-10-02 after the R7 fix: `baby diapers pack` → marketplace
+query `baby diapers` (was `pack`), top-5 all baby diapers — fixed.
+`laptop` → `laptop`, top-5 all laptops/Chromebooks (the earlier P@5 0.4
+was a rubric artifact: titles say "Chromebook", not "laptop").
+`khussa` → `khussa`, top-5 all khussa (earlier P@5 0.5 was the same title
+artifact). The remaining "weak spots" were the rubric's, not the
+pipeline's.
 
 ## Limitations
 
 1. **Labels are agent-made** (keyword rubric on titles) until the user
-   spot-checks the CSV sample. Title wording can undercount visually
-   correct matches.
-2. The rubric judges titles, not images — a visually perfect result with a
-   bad title scores 0.
-3. Node CLIP ≠ browser CLIP byte-for-byte (same weights, standard
+   spot-checks the CSV sample or uses the hand-labelling page.
+   **The title-keyword rubric judges titles only; the user's hand labels
+   are the real visual-relevance test.** Title wording can undercount
+   visually correct matches, and the baseline-vs-CLIP comparison above
+   shows the rubric cannot measure CLIP's visual re-ranking value.
+2. Node CLIP ≠ browser CLIP byte-for-byte (same weights, standard
    preprocessing; the browser's exact image pipeline isn't reproduced).
-4. Latency is VM-local (model cached, no real network variance for
+3. Latency is VM-local (model cached, no real network variance for
    embeddings); production user latency will differ.
-5. The 30 photos are a convenience sample, not a representative product
+4. The 30 photos are a convenience sample, not a representative product
    distribution.
+5. **describe-image evaluation: PENDING.** `scripts/eval2/describeEval.mjs`
+   evaluates the 30 photos through production `/api/describe-image`
+   (7 s spacing, respecting the 10 req/min limit) and compares the
+   described category with the zero-shot classifier. Production returns
+   503 (no `GEMINI_API_KEY` configured), so the run is marked PENDING;
+   the script is ready to re-run when the key is set.
+
+**Hand-label sample.** Each run writes `eval2/sample-<ts>.csv`: a random
+20% of queries (12, seeded RNG for reproducibility) × top-5 results with the
+agent label and a blank `hand_label` column for manual labelling. The
+same 12 queries are shown on the `public/eval-label.html` labelling page.
