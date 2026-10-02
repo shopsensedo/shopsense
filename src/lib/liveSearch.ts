@@ -103,7 +103,7 @@ export interface LiveListing {
   rawPrice?: unknown;
   image: string;
   url: string;
-  source: 'PriceOye' | 'Daraz';
+  source: 'PriceOye' | 'Daraz' | 'Telemart';
 }
 
 /**
@@ -115,24 +115,29 @@ export interface LiveListing {
 export interface SourceStatus {
   priceoye: { ok: true; count: number } | { ok: false; skipped?: boolean };
   daraz: { ok: true; count: number } | { ok: false; skipped?: boolean };
+  telemart: { ok: true; count: number } | { ok: false; skipped?: boolean };
 }
 
 export const EMPTY_SOURCES: SourceStatus = {
   priceoye: { ok: false },
   daraz: { ok: false },
+  telemart: { ok: false },
 };
 
 type SourceState = { ok: true; count: number } | { ok: false; skipped?: boolean };
 
-/** "PriceOye: 8 results · Daraz: unavailable (blocked or timed out)" */
+/** "PriceOye: 8 results · Daraz: unavailable (blocked or timed out) · Telemart: 5 results" */
 export function formatSourceStatus(s: SourceStatus): string {
-  const part = (name: string, st: SourceState) =>
+  const part = (name: string, st: SourceState, skippedNote = 'not searched') =>
     st.ok
       ? `${name}: ${st.count} result${st.count === 1 ? '' : 's'}`
       : st.skipped
-        ? `${name}: not searched (electronics only)`
+        ? `${name}: ${skippedNote}`
         : `${name}: unavailable (blocked or timed out)`;
-  return `${part('PriceOye', s.priceoye)} · ${part('Daraz', s.daraz)}`;
+  return (
+    `${part('PriceOye', s.priceoye, 'not searched (electronics only)')}` +
+    ` · ${part('Daraz', s.daraz)} · ${part('Telemart', s.telemart)}`
+  );
 }
 
 const LIVE_TIMEOUT_MS = 12000;
@@ -183,7 +188,7 @@ export async function fetchLiveListings(
   category: string,
   fallbackQuery: string,
   siteQuery?: string,
-  skipSource?: 'priceoye' | 'daraz',
+  skipSource?: 'priceoye' | 'daraz' | 'telemart',
 ): Promise<{ listings: LiveListing[]; sources: SourceStatus; returned: number }> {
   const sq = siteQuery
     ? { daraz: siteQuery, priceoye: siteQuery }
@@ -217,13 +222,73 @@ export async function fetchLiveListings(
         : { ok: false };
   return {
     listings: results,
-    sources: { priceoye: toStatus(src.priceoye), daraz: toStatus(src.daraz) },
+    sources: {
+      priceoye: toStatus(src.priceoye),
+      daraz: toStatus(src.daraz),
+      telemart: toStatus(src.telemart),
+    },
     returned: deduped.length,
   };
 }
 
-function toLiveProduct(l: LiveListing, score: number, textLabel?: TextSimilarityLabel): Product {
-  const platform = (l.source === 'Daraz' ? 'daraz' : 'priceoye') as PlatformType;
+/** Merge two per-source statuses: ok wins, counts add up. */
+function mergeSourceStatus(a: SourceStatus, b: SourceStatus): SourceStatus {
+  const merge = (
+    x: SourceState,
+    y: SourceState,
+  ): SourceState =>
+    y.ok
+      ? { ok: true, count: (x.ok ? x.count : 0) + y.count }
+      : x.ok
+        ? x
+        : y.skipped
+          ? { ok: false, skipped: true }
+          : x;
+  return {
+    priceoye: merge(a.priceoye, b.priceoye),
+    daraz: merge(a.daraz, b.daraz),
+    telemart: merge(a.telemart, b.telemart),
+  };
+}
+
+/**
+ * A server-side Gemini description of the user's photo (T2). When present,
+ * its 2-3 queries drive the source fetch instead of the on-device
+ * category classification.
+ */
+
+/**
+ * T2: source routing for a Gemini-described photo. Derives the multiword
+ * category key (longest key first, so "power bank" beats "bank") and skips
+ * PriceOye unless that key is an electronics/appliances category. Never
+ * routes word-by-word: single words miss every multiword electronics key.
+ * Exported for unit tests.
+ */
+export function describedSkipSource(described: DescribedImage): 'priceoye' | undefined {
+  const words = `${described.category} ${described.product_type} ${described.queries.join(' ')}`
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
+  const categoryKey = categoryKeyForText(words);
+  return categoryKey && priceOyeSellsCategory(categoryKey) ? undefined : 'priceoye';
+}
+export interface DescribedImage {
+  category: string;
+  product_type: string;
+  brand: string | null;
+  queries: string[];
+}
+
+/** Exported for unit tests: build a live Product from a listing. */
+export function toLiveProduct(
+  l: LiveListing,
+  score: number,
+  textLabel?: TextSimilarityLabel,
+  imageOk = true,
+): Product {
+  const platform = (
+    l.source === 'Daraz' ? 'daraz' : l.source === 'Telemart' ? 'telemart' : 'priceoye'
+  ) as PlatformType;
   return {
     id: `live-${l.source}-${encodeURIComponent(l.url).slice(-24)}`,
     title: l.title,
@@ -236,8 +301,14 @@ function toLiveProduct(l: LiveListing, score: number, textLabel?: TextSimilarity
     platform,
     platformUrl: l.url, // REAL product page
     imageUrl: l.image, // REAL product image (<img> needs no CORS)
+    /** True when the thumbnail failed to load and the listing was kept via
+     *  title-match scoring — the card shows "Image unavailable". */
+    imageUnavailable: !imageOk,
     similarityScore: Math.max(1, Math.round(score * 100)),
-    cosineSimilarity: score, // raw CLIP cosine, shown only in the detail modal
+    // Raw CLIP cosine, shown only in the detail modal — set ONLY for real
+    // image-scored results. Title-scored fallbacks (imageOk=false) must not
+    // wear a CLIP cosine they never earned.
+    ...(imageOk ? { cosineSimilarity: score } : {}),
     textLabel, // brand-aware text label (text search only)
     rating: 0,
     reviewsCount: 0,
@@ -485,56 +556,193 @@ export type LiveProgress =
   | { stage: 'match'; done: number; total: number };
 
 /**
+ * Weighted query terms for title-match scoring (thumbnail-fallback path).
+ * A listing whose thumbnail fails to load is never dropped: it is scored
+ * against these terms instead of a CLIP image embedding.
+ */
+export interface TitleTerms {
+  /** Typed brands, e.g. ["nike"] — weight 3 each. */
+  brands: string[];
+  /** Product noun + dictionary synonyms, e.g. ["sneakers","trainers"] —
+   *  matched as a group (any variant counts), weight 3. */
+  nouns: string[];
+  /** Colours from the mapped query, e.g. ["white"] — weight 2 each. */
+  colours: string[];
+  /** Remaining mapped keywords — weight 1 each. */
+  words: string[];
+}
+
+/**
+ * Title-match score in [0, 1]: the weighted fraction of query terms found in
+ * the title (word-boundary match on lowercased alphanumeric tokens).
+ * Pure and deterministic — no network, safe to unit-test.
+ */
+export function titleMatchScore(title: string, terms: TitleTerms): number {
+  const tokens = new Set(title.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean));
+  if (tokens.size === 0) return 0;
+  const hasTerm = (t: string): boolean =>
+    t
+      .toLowerCase()
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .every((part) => tokens.has(part));
+  let matched = 0;
+  let total = 0;
+  for (const b of terms.brands) {
+    if (!b.trim()) continue;
+    total += 3;
+    if (hasTerm(b)) matched += 3;
+  }
+  const nounList = terms.nouns.map((n) => n.trim()).filter(Boolean);
+  if (nounList.length > 0) {
+    total += 3;
+    if (nounList.some(hasTerm)) matched += 3;
+  }
+  for (const c of terms.colours) {
+    if (!c.trim()) continue;
+    total += 2;
+    if (hasTerm(c)) matched += 2;
+  }
+  for (const w of terms.words) {
+    if (!w.trim()) continue;
+    total += 1;
+    if (hasTerm(w)) matched += 1;
+  }
+  return total === 0 ? 0 : matched / total;
+}
+
+/**
+ * Label for a title-scored (thumbnail-failed) listing, on the same
+ * Strong/Good/Possible tier scale as image-scored results so the two can be
+ * ranked together. Thresholds are on the title-match fraction, NOT on CLIP
+ * cosine — the two scales are never mixed. The brand-mismatch and
+ * specific-noun caps apply exactly as for image-scored text results.
+ */
+export function titleMatchLabel(
+  titleScore: number,
+  title: string,
+  noun: string,
+  queryBrands: string[],
+): TextSimilarityLabel {
+  const base: TextSimilarityLabel =
+    titleScore >= 0.66 ? 'Strong match' : titleScore >= 0.33 ? 'Good match' : 'Possible match';
+  if (queryBrands.length > 0 && !queryBrands.some((b) => title.toLowerCase().includes(b))) {
+    return 'Possible match';
+  }
+  return nounCapTextLabel(base, title, noun, queryBrands);
+}
+
+/**
  * Relevance first, then price sort (text searches with a price intent).
  * Results are ordered by label tier first (Strong, Good, Possible), then by
- * score within a tier — so a noun-capped "Possible match" can never appear
- * above a Strong match. Keeps only results whose text label is "Good match"
- * or better; if fewer than 5 qualify, keeps the top 8 by tier-then-score
- * instead. Only that surviving set — never the whole unfiltered result
- * list — is then price-sorted, so a cheap irrelevant listing can never
- * outrank a relevant one. Price-sorted results are NOT tier-ordered: the
- * price intent decides their final order.
+ * image-scored above title-scored ("Image unavailable") inside the same
+ * tier, then by score — the two score scales (CLIP cosine vs title-match
+ * fraction) are never compared across the imageOk boundary.
+ *
+ * Title-scored rows are NEVER dropped by the relevance bar: a failed
+ * thumbnail keeps its listing. The relevance cut applies to image-scored
+ * rows only — Strong/Good if at least 5 qualify, otherwise the top 8 by
+ * rank — and the pool is capped at 12 total.
+ *
+ * Price-intent sorting then applies to the surviving pool only, so a cheap
+ * irrelevant listing can never outrank a relevant one. Price-sorted results
+ * are NOT tier-ordered: the price intent decides their final order.
+ * `imageKept` reports how many pool rows are image-scored, so the funnel
+ * counts shortlist drops honestly (the cut never applies to title-scored
+ * rows).
  */
+/** One row through relevance ranking: the listing, its score on its own
+ *  scale (CLIP cosine for image-scored, title-match fraction for
+ *  title-scored), its tier label, and whether its thumbnail loaded. */
+export type RankedRow = {
+  l: LiveListing;
+  score: number;
+  label: TextSimilarityLabel;
+  imageOk: boolean;
+};
+
+/**
+ * applyRelevanceThenSort's returned pool: the ranked rows, plus `imageKept`
+ * (how many rows in the pool are image-scored) so the funnel can count the
+ * relevance-shortlist drops honestly — title-scored rows were never subject
+ * to that cut.
+ */
+export type Pooled = RankedRow[] & { imageKept: number };
+
 export function applyRelevanceThenSort(
-  scored: { l: LiveListing; score: number; label: TextSimilarityLabel }[],
+  scored: { l: LiveListing; score: number; label: TextSimilarityLabel; imageOk?: boolean }[],
   priceIntent: PriceIntent,
-): { l: LiveListing; score: number; label: TextSimilarityLabel }[] {
+): Pooled {
   const tier = (label: TextSimilarityLabel): number =>
     label === 'Strong match' ? 0 : label === 'Good match' ? 1 : 2;
-  const ranked = [...scored].sort(
-    (a, b) => tier(a.label) - tier(b.label) || b.score - a.score,
+  // Tier first, then image-scored above title-scored ("Image unavailable")
+  // inside the same tier, then score — the two score scales (CLIP cosine vs
+  // title-match fraction) are never compared across the imageOk boundary.
+  const withOk = scored.map((r) => ({ ...r, imageOk: r.imageOk ?? true }));
+  const ranked = withOk.sort(
+    (a, b) =>
+      tier(a.label) - tier(b.label) ||
+      (a.imageOk === b.imageOk ? 0 : a.imageOk ? -1 : 1) ||
+      b.score - a.score,
   );
-  const relevant = ranked.filter(
+  // E1-1: a listing is NEVER excluded solely because its thumbnail failed.
+  // Title-scored rows bypass the relevance bar entirely — they were kept
+  // deliberately — and keep their ranked position (below image-scored rows
+  // of the same tier). The relevance cut applies to image-scored rows only:
+  // Strong/Good if there are at least 5, otherwise the top 8 by rank.
+  // The pool is still capped at 12 total.
+  const imageRanked = ranked.filter((r) => r.imageOk);
+  const relevant = imageRanked.filter(
     (r) => r.label === 'Strong match' || r.label === 'Good match',
   );
-  const pool = (relevant.length >= 5 ? relevant : ranked.slice(0, 8)).slice(0, 12);
+  const imageKeep = new Set(relevant.length >= 5 ? relevant : imageRanked.slice(0, 8));
+  const merged: RankedRow[] = [];
+  for (const r of ranked) {
+    if (r.imageOk) {
+      if (imageKeep.has(r)) merged.push(r);
+    } else {
+      merged.push(r);
+    }
+  }
+  const pool = merged.slice(0, 12);
+  const imageKept = pool.filter((r) => r.imageOk).length;
   // Price-intent sorting: listings with no displayable price ("Price
   // unavailable") always sort after priced listings, in both directions.
   if (priceIntent === 'asc' || priceIntent === 'desc') {
     const avail = (r: { l: LiveListing }): boolean =>
       isPriceAvailable(r.l.price, r.l.priceText);
-    return [...pool].sort((a, b) => {
-      const aa = avail(a);
-      const ab = avail(b);
-      if (aa !== ab) return aa ? -1 : 1;
-      return priceIntent === 'asc' ? a.l.price - b.l.price : b.l.price - a.l.price;
-    });
+    return Object.assign(
+      [...pool].sort((a, b) => {
+        const aa = avail(a);
+        const ab = avail(b);
+        if (aa !== ab) return aa ? -1 : 1;
+        return priceIntent === 'asc' ? a.l.price - b.l.price : b.l.price - a.l.price;
+      }),
+      { imageKept },
+    );
   }
-  return pool;
+  return Object.assign(pool, { imageKept });
 }
 
 /**
  * Embed every candidate thumbnail (via the /api/img proxy) and cosine-score
  * it against the query vector. Shared by the visual and the text pipelines —
  * only the query vector differs (photo vs CLIP text embedding).
+ *
+ * A listing whose thumbnail fails to load is NOT dropped: it is kept with
+ * imageOk=false, scored by title match against `titleTerms`, and the UI
+ * marks it "Image unavailable". Callers rank imageOk=false items below
+ * image-scored items of the same label tier.
  */
 async function scoreThumbnails(
   listings: LiveListing[],
   queryVec: number[],
+  titleTerms: TitleTerms,
   onProgress?: (p: LiveProgress | number) => void,
-): Promise<{ l: LiveListing; score: number }[]> {
+): Promise<{ l: LiveListing; score: number; imageOk: boolean }[]> {
   const deadline = Date.now() + EMBED_TIMEOUT_MS;
-  const scored: { l: LiveListing; score: number }[] = [];
+  const scored: { l: LiveListing; score: number; imageOk: boolean }[] = [];
   let done = 0;
   const queue = listings.slice();
   const workers = Array.from({ length: 4 }, async () => {
@@ -543,10 +751,14 @@ async function scoreThumbnails(
       try {
         const vec = await embedImageUrl(`/api/img?url=${encodeURIComponent(l.image)}`);
         if (vec.length === queryVec.length) {
-          scored.push({ l, score: cosineSim(queryVec, vec) });
+          scored.push({ l, score: cosineSim(queryVec, vec), imageOk: true });
+        } else {
+          scored.push({ l, score: titleMatchScore(l.title, titleTerms), imageOk: false });
         }
       } catch {
-        // one bad image must not kill the search
+        // one bad image must not kill the search — keep the listing and
+        // score it by title match instead of dropping it
+        scored.push({ l, score: titleMatchScore(l.title, titleTerms), imageOk: false });
       }
       done++;
       onProgress?.({ stage: 'match', done, total: listings.length });
@@ -764,21 +976,37 @@ export async function searchLiveText(
     onProgress?.(typeof f === 'number' ? f * 0.5 : f),
   );
 
-  // 4+5. rank thumbnails by text-to-image cosine similarity
-  const scored = await scoreThumbnails(listings, queryVec, onProgress);
-  if (scored.length === 0) return empty; // thumbnails failed — honest empty, not fake
+  // 4+5. rank thumbnails by text-to-image cosine similarity. Listings whose
+  // thumbnail failed keep imageOk=false and carry a title-match score.
+  const noun = extractProductNoun(rawQuery, keywords, category);
+  const queryBrands = brandsInQuery(rawQuery, keywords);
+  const nounVars = noun ? nounVariants(noun) : [];
+  const queryColours = coloursInKeywords(keywords);
+  const titleTerms: TitleTerms = {
+    brands: queryBrands,
+    nouns: nounVars,
+    colours: queryColours,
+    words: keywords.filter(
+      (k) => !queryBrands.includes(k) && !nounVars.includes(k) && !queryColours.includes(k),
+    ),
+  };
+  const scored = await scoreThumbnails(listings, queryVec, titleTerms, onProgress);
+  if (scored.length === 0) return empty; // no listings at all — honest empty, not fake
 
-  // 5a. relevance floor (text search only): drop raw scores below the lowest
-  // observed relevant band (see TEXT_RELEVANCE_FLOOR), but always keep at
-  // least MIN_TEXT_RESULTS so the page never empties on a strict floor.
-  const floored = applyRelevanceFloor(scored, TEXT_RELEVANCE_FLOOR, MIN_TEXT_RESULTS);
+  // 5a. relevance floor (text search only): applies to image-scored results
+  // only, because it is calibrated on CLIP cosine. Title-scored results skip
+  // it — they were kept deliberately — but still pass the label caps and the
+  // shortlist below.
+  const floored = applyRelevanceFloor(
+    scored.filter((s) => s.imageOk),
+    TEXT_RELEVANCE_FLOOR,
+    MIN_TEXT_RESULTS,
+  );
 
   // 5b. brand/colour + product-noun awareness (text search only): a brand,
   // colour or product-noun word from the query that appears in the title
   // earns a small score boost; the label is computed with the brand-mismatch
   // and specific-noun caps.
-  const noun = extractProductNoun(rawQuery, keywords, category);
-  const queryBrands = brandsInQuery(rawQuery, keywords);
   const aware = floored.map(({ l, score }) => {
     const boosted = nounBoostedScore(
       brandColourBoostedScore(score, l.title, rawQuery, keywords),
@@ -791,13 +1019,27 @@ export async function searchLiveText(
       noun,
       queryBrands,
     );
-    return { l, score: boosted, label };
+    return { l, score: boosted, label, imageOk: true };
   });
+
+  // 5c. thumbnail-failed listings: label from the title-match tier (same
+  // Strong/Good/Possible scale), then ranked below image-scored results of
+  // the same tier in applyRelevanceThenSort.
+  const titleKept = scored
+    .filter((s) => !s.imageOk)
+    .map(({ l, score }) => ({
+      l,
+      score,
+      label: titleMatchLabel(score, l.title, noun, queryBrands),
+      imageOk: false,
+    }));
 
   // 6. relevance first (on the brand-aware label), then an optional price
   // sort over the relevant set only
-  const pool = applyRelevanceThenSort(aware, priceIntent);
-  const products = pool.map(({ l, score, label }) => toLiveProduct(l, score, label));
+  const pool = applyRelevanceThenSort([...aware, ...titleKept], priceIntent);
+  const products = pool.map(({ l, score, label, imageOk }) =>
+    toLiveProduct(l, score, label, imageOk),
+  );
   return {
     products,
     mappedQuery: english,
@@ -813,9 +1055,11 @@ export async function searchLiveText(
       returned,
       cap: MAX_CANDIDATES,
       attempted: listings.length,
-      usable: scored.length,
+      usable: scored.filter((s) => s.imageOk).length,
+      titleScored: scored.filter((s) => !s.imageOk).length,
       floored: floored.length,
       pooled: pool.length,
+      imageKept: pool.imageKept,
       shown: products.length,
     }),
   };
@@ -829,42 +1073,98 @@ export async function searchLiveText(
 export async function searchLive(
   dataUrl: string,
   onProgress?: (p: LiveProgress | number) => void,
-): Promise<{ products: Product[]; category: string; query: string; sources: SourceStatus }> {
+  described?: DescribedImage | null,
+): Promise<{
+  products: Product[];
+  category: string;
+  query: string;
+  sources: SourceStatus;
+  described: DescribedImage | null;
+}> {
   // 1. embed the user's photo (downloads the CLIP model on first use)
   const queryVec = await embedQueryImage(dataUrl, (f) =>
     onProgress?.(typeof f === 'number' ? f * 0.5 : f),
   );
 
-  // 2. understand the image → site search query. Category text embeddings are
-  // encoded once with the in-browser CLIP text tower (preloaded on home idle).
+  // 2. understand the image.
+  // T2 path: a Gemini description supplies the 1-2 best site queries.
+  // Fallback path: the on-device 80-category zero-shot classification.
   onProgress?.({ stage: 'classify' });
-  const categoryEmbeddings = await getCategoryEmbeddings(IMAGE_CATEGORIES);
-  const cls = classifyImage(queryVec, categoryEmbeddings);
+  let category: string;
+  let siteQueries: string[];
+  let skipSource: 'priceoye' | 'daraz' | 'telemart' | undefined;
+  const describedOut = described && described.queries.length > 0 ? described : null;
+  if (describedOut) {
+    const words = `${describedOut.category} ${describedOut.product_type} ${describedOut.queries.join(' ')}`
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .filter(Boolean);
+    // Route on the derived multiword category key (longest key first, so
+    // "power bank" beats "bank") — never word-by-word, which misses every
+    // multiword electronics category and misroutes "wall charger".
+    const categoryKey = categoryKeyForText(words);
+    category = categoryKey || describedOut.category;
+    siteQueries = describedOut.queries.slice(0, 2);
+    skipSource = describedSkipSource(describedOut);
+  } else {
+    // Category text embeddings are encoded once with the in-browser CLIP
+    // text tower (preloaded on home idle).
+    const categoryEmbeddings = await getCategoryEmbeddings(IMAGE_CATEGORIES);
+    const cls = classifyImage(queryVec, categoryEmbeddings);
+    category = cls.category;
+    siteQueries = [cls.query];
+    // 3. live listings from the sites. Source routing by detected category:
+    // PriceOye is queried only for electronics/appliances; everything else is
+    // Daraz + Telemart (general stores, incl. fashion).
+    skipSource = priceOyeSellsCategory(cls.category) ? undefined : 'priceoye';
+  }
 
-  // 3. live listings from the sites. Source routing by detected category:
-  // PriceOye is queried only for electronics/appliances; everything else is
-  // Daraz-only.
+  // 3. live listings from the sites — one fetch per query, merged and
+  // deduped by URL (the describe path uses up to 2 queries).
   onProgress?.({ stage: 'fetch' });
-  const skipSource = priceOyeSellsCategory(cls.category) ? undefined : 'priceoye';
-  const { listings, sources } = await fetchLiveListings(
-    cls.category,
-    cls.query,
-    undefined,
-    skipSource,
-  );
-  const empty = { products: [] as Product[], category: cls.category, query: cls.query, sources };
+  const seenUrls = new Set<string>();
+  const listings: LiveListing[] = [];
+  let sources: SourceStatus = { ...EMPTY_SOURCES };
+  for (const q of siteQueries) {
+    const r = await fetchLiveListings(category, q, undefined, skipSource);
+    sources = mergeSourceStatus(sources, r.sources);
+    for (const l of r.listings) {
+      if (!seenUrls.has(l.url)) {
+        seenUrls.add(l.url);
+        listings.push(l);
+      }
+    }
+  }
+  const query = siteQueries[0];
+  const empty = { products: [] as Product[], category, query, sources, described: describedOut };
   if (listings.length === 0) return empty;
 
-  // 4+5. embed each product image (via proxy) and rank by visual similarity
-  const scored = await scoreThumbnails(listings, queryVec, onProgress);
-  if (scored.length === 0) return empty; // thumbnails failed — honest empty, not fake
+  // 4+5. embed each product image (via proxy) and rank by visual similarity.
+  // Listings whose thumbnail failed are kept and scored by title match
+  // against the site query, ranked below image-scored items.
+  const visualTerms: TitleTerms = {
+    brands: [],
+    nouns: [],
+    colours: [],
+    words: query.split(/\s+/).filter(Boolean),
+  };
+  const scored = await scoreThumbnails(listings, queryVec, visualTerms, onProgress);
+  if (scored.length === 0) return empty; // no listings at all — honest empty, not fake
 
-  // 6. rank
-  scored.sort((a, b) => b.score - a.score);
+  // 6. rank: image-scored first (visual similarity), then title-scored
+  scored.sort((a, b) => (a.imageOk === b.imageOk ? b.score - a.score : a.imageOk ? -1 : 1));
   return {
-    products: scored.slice(0, 12).map(({ l, score }) => toLiveProduct(l, score)),
-    category: cls.category,
-    query: cls.query,
+    products: scored.slice(0, 12).map(({ l, score, imageOk }) =>
+      toLiveProduct(
+        l,
+        score,
+        imageOk ? undefined : titleMatchLabel(score, l.title, '', []),
+        imageOk,
+      ),
+    ),
+    category,
+    query,
     sources,
+    described: describedOut,
   };
 }

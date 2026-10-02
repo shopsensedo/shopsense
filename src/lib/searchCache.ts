@@ -10,7 +10,7 @@
  * never fabricates data: only real ranked results are ever stored.
  */
 import type { Product } from '../types';
-import type { SourceStatus } from './liveSearch';
+import type { SourceStatus, DescribedImage } from './liveSearch';
 import type { FilterFunnel } from './liveNormalize';
 
 const DB_NAME = 'shopsense-cache';
@@ -30,6 +30,12 @@ export interface CachedSearch {
   totalCandidates?: number;
   /** Honest per-stage drop counts for the "How results were filtered" line. */
   funnel?: FilterFunnel | null;
+  /** T2: the Gemini description that drove this image search (null = basic
+   * on-device recognition was used). Restored on cache hits so the
+   * "We think this is…" / "Basic recognition used" chip stays honest. */
+  described?: DescribedImage | null;
+  /** T2: true when the describe request fell back to on-device classification. */
+  describeFallback?: boolean;
 }
 
 /** "text:black shoes sneakers|sort:asc" — the normalized query plus sort. */
