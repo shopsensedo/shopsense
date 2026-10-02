@@ -12,7 +12,13 @@ import {
 import { ToastProvider, useToast } from './components/ui/Toast';
 import { searchByImage, searchByText } from './lib/api';
 import { searchByImageLocal, searchByTextLocal, parseQuery } from './lib/localSearch';
-import { searchLive, searchLiveText, SourceStatus } from './lib/liveSearch';
+import { searchLive, searchLiveText, SourceStatus, DescribedImage } from './lib/liveSearch';
+import {
+  describeImage,
+  downscaleToJpeg,
+  describeNoticeSeen,
+  markDescribeNoticeSeen,
+} from './lib/describeImage';
 import type { FilterFunnel } from './lib/liveNormalize';
 import { preloadClipModels, isClipPreloaded, onPreloadProgress } from './lib/clipEmbed';
 import { isDemoMode } from './lib/demoMode';
@@ -60,6 +66,12 @@ function ShopSenseApp() {
   const [lastSearch, setLastSearch] = useState<
     { type: 'image'; dataUrl: string } | { type: 'text'; query: string } | null
   >(null);
+  /** T2: Gemini description of the photo (null when basic recognition was used). */
+  const [imageDescription, setImageDescription] = useState<DescribedImage | null>(null);
+  /** T2: true when the describe call failed/missing-key and we fell back. */
+  const [describeFallback, setDescribeFallback] = useState(false);
+  /** T2: one-time privacy notice while the photo is being described. */
+  const [showDescribeNotice, setShowDescribeNotice] = useState(false);
 
   // User State — production starts as Guest; the fake MOCK_USER is demo-only.
   const [user, setUser] = useState<User | null>(() =>
@@ -226,6 +238,9 @@ function ShopSenseApp() {
     setSourceStatus(null);
     setMappedQuery(null);
     setMarketplaceQuery(null);
+    setImageDescription(null);
+    setDescribeFallback(false);
+    setShowDescribeNotice(false);
     setCurrentScreen('search_loading');
     setCacheInfo(null);
     setTotalResults(null); // image search has no relevance floor — M = shown
@@ -241,6 +256,9 @@ function ShopSenseApp() {
           setSourceStatus(hit.sources ?? null);
           setLastSearch({ type: 'image', dataUrl: croppedDataUrl });
           setCacheInfo({ at: hit.at });
+          // Restore the honest description/fallback chip for cached results.
+          setImageDescription(hit.described ?? null);
+          setDescribeFallback(hit.describeFallback ?? false);
           setSearchReady(true);
           return;
         }
@@ -252,6 +270,8 @@ function ShopSenseApp() {
     let matchedProducts: Product[] | null = null;
     let detectedCat = 'Footwear';
     let freshSources: SourceStatus | null = null;
+    // T2 description hoisted so the cache write below can persist it.
+    let described: DescribedImage | null = null;
 
     try {
       matchedProducts = await searchByImage(croppedDataUrl, 7);
@@ -265,9 +285,46 @@ function ShopSenseApp() {
         // LIVE pipeline: understand the photo → fetch REAL listings from
         // PriceOye + Daraz → CLIP-embed product images → visual rank.
         // No mock data in this path; source failures are reported, not hidden.
+        //
+        // T2: first ask /api/describe-image (Gemini Flash) to describe the
+        // downscaled photo. Any failure (no key, timeout, bad output) falls
+        // back to the on-device 80-category classification below.
+        described = null;
+        try {
+          const jpeg = await downscaleToJpeg(croppedDataUrl, 768);
+          // Enter determinate progress BEFORE the describe request: the
+          // privacy notice only renders in the determinate branch, and the
+          // request takes long enough for it to paint.
+          setLocalClipProgress(0);
+          if (!describeNoticeSeen()) {
+            setShowDescribeNotice(true);
+            markDescribeNoticeSeen();
+          }
+          setClipProgressLabel(
+            isUrduMode ? 'Tasveer samjhi ja rahi hai…' : 'Understanding your photo…',
+          );
+          const d = await describeImage(jpeg);
+          if (d.ok) {
+            described = {
+              category: d.description.category,
+              product_type: d.description.product_type,
+              brand: d.description.brand,
+              queries: d.description.queries,
+            };
+            setImageDescription(described);
+          } else {
+            setDescribeFallback(true);
+          }
+        } catch {
+          setDescribeFallback(true); // downscale/describe blew up — basic recognition
+        } finally {
+          setShowDescribeNotice(false);
+        }
         await waitForModelsIfNeeded();
         setLocalClipProgress(0);
-        const live = await searchLive(croppedDataUrl, (p) => {
+        const live = await searchLive(
+          croppedDataUrl,
+          (p) => {
           if (typeof p === 'number') {
             setLocalClipProgress(p * 0.4);
             setClipProgressLabel(isUrduMode ? 'AI model load ho raha hai…' : 'Loading AI model…');
@@ -284,7 +341,9 @@ function ShopSenseApp() {
                 : `Matching photos ${p.done}/${p.total}…`,
             );
           }
-        });
+          },
+          described,
+        );
         // Always surface what each source did — even when it failed.
         setSourceStatus(live.sources);
         freshSources = live.sources;
@@ -360,6 +419,8 @@ function ShopSenseApp() {
           products: matchedProducts,
           category: detectedCat,
           sources: freshSources,
+          described,
+          describeFallback,
         });
       } catch {
         // cache write failed — results are still shown, non-fatal
@@ -714,6 +775,7 @@ function ShopSenseApp() {
               progress={localClipProgress}
               progressLabel={clipProgressLabel}
               canComplete={searchReady}
+              showPrivacyNotice={showDescribeNotice}
             />
           )}
 
@@ -743,6 +805,9 @@ function ShopSenseApp() {
                 else if (lastSearch?.type === 'image')
                   handleConfirmCrop(lastSearch.dataUrl, true);
               }}
+              imageDescription={imageDescription}
+              describeFallback={describeFallback}
+              onDescribeEdit={(text) => handleTextSearch(text)}
             />
           )}
 

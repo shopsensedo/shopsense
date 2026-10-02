@@ -8,6 +8,7 @@ import {
   nounBoostedScore,
   nounCapTextLabel,
   nounVariants,
+  describedSkipSource,
   priceOyeSellsCategory,
   TEXT_RELEVANCE_FLOOR,
   type SourceStatus,
@@ -81,9 +82,10 @@ describe('D1-1 source routing', () => {
     const s: SourceStatus = {
       priceoye: { ok: false, skipped: true },
       daraz: { ok: true, count: 5 },
+      telemart: { ok: true, count: 2 },
     };
     expect(formatSourceStatus(s)).toBe(
-      'PriceOye: not searched (electronics only) · Daraz: 5 results',
+      'PriceOye: not searched (electronics only) · Daraz: 5 results · Telemart: 2 results',
     );
   });
 
@@ -91,10 +93,51 @@ describe('D1-1 source routing', () => {
     const s: SourceStatus = {
       priceoye: { ok: false },
       daraz: { ok: true, count: 1 },
+      telemart: { ok: false },
     };
     expect(formatSourceStatus(s)).toBe(
-      'PriceOye: unavailable (blocked or timed out) · Daraz: 1 result',
+      'PriceOye: unavailable (blocked or timed out) · Daraz: 1 result · Telemart: unavailable (blocked or timed out)',
     );
+  });
+
+  it('routes described photos on the multiword category key, never word-by-word', () => {
+    // "power bank": the old word-by-word check saw ["power","bank"] and
+    // skipped PriceOye for an electronics item; the key check keeps it.
+    expect(
+      describedSkipSource({
+        category: 'Mobile accessories',
+        product_type: 'power bank',
+        brand: null,
+        queries: ['power bank 10000mah', 'power bank'],
+      }),
+    ).toBeUndefined();
+    // "wall charger" — key "charger" is electronics → both sources
+    expect(
+      describedSkipSource({
+        category: 'Mobile accessories',
+        product_type: 'wall charger',
+        brand: null,
+        queries: ['wall charger usb-c', 'mobile charger'],
+      }),
+    ).toBeUndefined();
+    // fashion photo → PriceOye skipped (Daraz only)
+    expect(
+      describedSkipSource({
+        category: 'Footwear',
+        product_type: 'running shoes',
+        brand: 'Nike',
+        queries: ['nike running shoes', 'running shoes'],
+      }),
+    ).toBe('priceoye');
+    // unrecognized category → conservative: skip PriceOye
+    expect(
+      describedSkipSource({
+        category: 'Mystery',
+        product_type: 'unknown gizmo',
+        brand: null,
+        queries: ['gizmo thing', 'gizmo'],
+      }),
+    ).toBe('priceoye');
   });
 });
 

@@ -42,6 +42,10 @@ export interface Product {
   /** The source's own price text, e.g. "Rs. 1,968" (live items only). Used
    *  for the "Price unavailable" display rule. */
   priceText?: string;
+  /** True when the live thumbnail failed to load and the listing was kept via
+   *  title-match scoring — the card shows "Image unavailable" instead of a
+   *  broken image, and the match pill uses the title-derived label. */
+  imageUnavailable?: boolean;
   rating: number;
   reviewsCount: number;
   deliveryTime: string;

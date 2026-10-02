@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExternalLink, Heart, Bell, Check, Truck, ShieldCheck, Share2, Star, X } from 'lucide-react';
+import { ExternalLink, Heart, Bell, Check, Truck, ShieldCheck, Share2, Star, X, ImageOff } from 'lucide-react';
 import { Product } from '../../types';
 import { Modal } from '../ui/Modal';
 import { SourceBadge } from '../ui/SourceBadge';
@@ -8,7 +8,7 @@ import { PriceChart } from '../ui/PriceChart';
 import { useToast } from '../ui/Toast';
 import { handleImageError } from '../../utils/imageFallback';
 import { similarityLabel } from '../../lib/liveSearch';
-import { formatPriceOrUnavailable } from '../../lib/liveNormalize';
+import { formatPriceOrUnavailable, liveWasDiscount } from '../../lib/liveNormalize';
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -55,15 +55,26 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       <div className="flex flex-col gap-6">
         {/* Detail layout — Protech product page style */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-          {/* Image */}
+          {/* Image — "Image unavailable" placeholder when the thumbnail failed
+              to load (same honesty as the card); never render a broken <img>. */}
           <div className="relative aspect-square w-full rounded-[20px] bg-void overflow-hidden flex items-center justify-center p-6">
-            <img
-              onError={handleImageError}
-              src={product.imageUrl}
-              alt={product.title}
-              referrerPolicy="no-referrer"
-              className="w-full h-full object-contain"
-            />
+            {product.imageUnavailable ? (
+              <div className="w-full h-full flex flex-col items-center justify-center gap-3 p-6 text-center">
+                <ImageOff className="w-12 h-12 text-fog/60" aria-hidden />
+                <span className="text-sm font-semibold text-fog/80">Image unavailable</span>
+                <span className="text-xs text-fog/50 leading-snug max-w-[240px]">
+                  Scored by title match — open the product page to see photos
+                </span>
+              </div>
+            ) : (
+              <img
+                onError={handleImageError}
+                src={product.imageUrl}
+                alt={product.title}
+                referrerPolicy="no-referrer"
+                className="w-full h-full object-contain"
+              />
+            )}
             <div className="absolute top-4 left-4 flex items-center gap-2">
               <SourceBadge platform={product.platform} size="md" showTrustScore />
             </div>
@@ -140,18 +151,32 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             )}
 
             {/* Price — "Price unavailable" when the parsed price is missing,
-                below Rs 50, or the source text carries no currency marker */}
-            <div className="flex items-baseline gap-3 mb-5">
+                below Rs 50, or the source text carries no currency marker.
+                Live items with raw originalPrice+discount show "was Rs 999 · 81% off". */}
+            <div className="flex items-baseline gap-3 mb-5 flex-wrap">
               {(() => {
                 const priceStr = formatPriceOrUnavailable(product.price, product.priceText);
-                return priceStr ? (
-                  <span className="text-3xl md:text-4xl font-bold text-void dark:text-bone font-heading tracking-tight tabular-nums">
-                    {priceStr}
-                  </span>
-                ) : (
-                  <span className="text-lg font-semibold text-smoke dark:text-fog">
-                    Price unavailable
-                  </span>
+                const was =
+                  priceStr && product.isLive
+                    ? liveWasDiscount(product.rawPrice, product.price)
+                    : null;
+                return (
+                  <>
+                    {priceStr ? (
+                      <span className="text-3xl md:text-4xl font-bold text-void dark:text-bone font-heading tracking-tight tabular-nums">
+                        {priceStr}
+                      </span>
+                    ) : (
+                      <span className="text-lg font-semibold text-smoke dark:text-fog">
+                        Price unavailable
+                      </span>
+                    )}
+                    {was && (
+                      <span className="text-sm font-medium text-smoke dark:text-fog tabular-nums">
+                        was {was.was} · {was.off}
+                      </span>
+                    )}
+                  </>
                 );
               })()}
               {hasDiscount && (

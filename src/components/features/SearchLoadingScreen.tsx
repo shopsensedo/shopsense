@@ -10,6 +10,8 @@ interface SearchLoadingScreenProps {
   progressLabel?: string;
   /** When false, the staged animation waits instead of auto-completing. */
   canComplete?: boolean;
+  /** T2: show the one-time "photo sent to an AI service" privacy notice. */
+  showPrivacyNotice?: boolean;
 }
 
 export const SearchLoadingScreen: React.FC<SearchLoadingScreenProps> = ({
@@ -18,6 +20,7 @@ export const SearchLoadingScreen: React.FC<SearchLoadingScreenProps> = ({
   progress = null,
   progressLabel,
   canComplete = true,
+  showPrivacyNotice = false,
 }) => {
   const [step, setStep] = useState(1);
   const determinate = progress !== null;
@@ -64,6 +67,13 @@ export const SearchLoadingScreen: React.FC<SearchLoadingScreenProps> = ({
                 ? 'Pehli baar ~90MB download hoga, phir fast chalega'
                 : 'One-time ~90MB download, then instant')}
           </p>
+          {showPrivacyNotice && (
+            <p className="text-[11px] text-smoke dark:text-fog mt-2 max-w-sm mx-auto">
+              {isUrduMode
+                ? 'Aap ki tasveer AI service ko bheji ja rahi hai taake usay samjha ja sake. Yeh mehfooz nahi ki jati.'
+                : 'Your photo is sent to an AI service to describe it. It is not stored.'}
+            </p>
+          )}
           <div className="h-3 rounded-full bg-neutral-200 dark:bg-neutral-800 overflow-hidden">
             <div
               className="h-full rounded-full bg-lime-400 transition-all duration-300"
