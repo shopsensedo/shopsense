@@ -32,7 +32,7 @@ import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { PHOTO_QUERIES, TEXT_QUERIES } from './eval2/queries.mjs';
-import { loadClip, embedImageFile, embedImageBuffer, embedTexts, cosine, classifyImage } from './eval2/clipNode.mjs';
+import { loadClip, embedImageFile, embedImageBuffer, embedTexts, cosine, classifyImage, classifyPhrase } from './eval2/clipNode.mjs';
 
 const root = path.dirname(fileURLToPath(new URL('../package.json', import.meta.url)));
 const PORT = 4182;
@@ -182,8 +182,8 @@ async function main() {
   for (const pq of photoSet) {
     const t0 = Date.now();
     const { vector: qvec, ms: embedMs } = await embedImageFile(pq.path);
-    const cls = await classifyImage(qvec, pipeline.IMAGE_CATEGORIES);
-    const plan = pipeline.planPhotoQuery(cls.category);
+    const cls = await classifyPhrase(qvec, pipeline.QUERY_PHRASES, pipeline.PHRASE_TEMPLATES);
+    const plan = pipeline.planPhotoQuery(cls.phrase, cls.category);
     const api = await liveSearch(base, plan.marketplaceQuery, plan.skipSource);
     for (const [s, v] of Object.entries(api.sources ?? {})) {
       if (sourceStats[s]) { sourceStats[s].total++; if (v !== 'error') sourceStats[s].ok++; }
@@ -197,7 +197,8 @@ async function main() {
     const shown = labeled.slice(0, 10);
     report.queries.push({
       kind: 'photo', file: pq.file, subject: pq.subject,
-      classifiedAs: cls.category, classifiedScore: +cls.score.toFixed(3),
+      classifiedAs: cls.phrase, classifiedScore: +cls.score.toFixed(3),
+      parentCategory: cls.category,
       marketplaceQuery: plan.marketplaceQuery, skipSource: plan.skipSource ?? null,
       returned: listings.length, shown: shown.length,
       precisionAt5: +precisionAt(labeled, 5).toFixed(2),
@@ -206,6 +207,8 @@ async function main() {
       titleKeywordCoverage: +titleKeywordCoverage(labeled, pq.yes).toFixed(2),
       latencyMs: Date.now() - t0, embedMs, cold: !coldDone,
       top5: shown.slice(0, 5).map((r) => ({ title: r.title, priceText: r.priceText ?? (r.price != null ? `Rs ${r.price}` : 'Price unavailable'), url: r.url, image: r.image, score: r.rubric.label, clip: +r.clipScore.toFixed(3) })),
+      // Labelling: marketplace-order top-5 (baseline arm) for hand-labelling UI
+      baselineTop5: listings.slice(0, 5).map((r) => ({ title: r.title, priceText: r.priceText ?? (r.price != null ? `Rs ${r.price}` : 'Price unavailable'), url: r.url, image: r.image })),
     });
     coldDone = true;
     console.log(`photo ${pq.file}: cls=${cls.category} n=${listings.length} P@5=${report.queries.at(-1).precisionAt5} P@10=${report.queries.at(-1).precisionAt10}`);

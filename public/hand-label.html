@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>ShopSense Hand-Labelling Tool</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+  header { background: #1e293b; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
+  header h1 { font-size: 1.2rem; }
+  #progress { font-size: 0.9rem; color: #94a3b8; }
+  #progressBar { height: 4px; background: #334155; margin-top: 0.5rem; border-radius: 2px; }
+  #progressFill { height: 100%; background: #22c55e; border-radius: 2px; transition: width 0.3s; }
+  main { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+  .query-section { display: grid; grid-template-columns: 300px 1fr; gap: 2rem; margin-bottom: 2rem; }
+  .query-photo { background: #1e293b; border-radius: 12px; padding: 1rem; text-align: center; position: sticky; top: 100px; align-self: start; }
+  .query-photo img { max-width: 100%; max-height: 300px; border-radius: 8px; }
+  .query-photo h3 { margin-top: 0.5rem; font-size: 0.9rem; color: #94a3b8; }
+  .items { display: flex; flex-direction: column; gap: 1rem; }
+  .item { background: #1e293b; border-radius: 12px; padding: 1rem; display: grid; grid-template-columns: 120px 1fr auto; gap: 1rem; align-items: center; }
+  .item img { width: 120px; height: 120px; object-fit: cover; border-radius: 8px; background: #334155; }
+  .item-info h4 { font-size: 0.95rem; margin-bottom: 0.25rem; }
+  .item-info p { font-size: 0.85rem; color: #94a3b8; }
+  .item-info a { color: #60a5fa; font-size: 0.8rem; }
+  .label-btns { display: flex; flex-direction: column; gap: 0.5rem; }
+  .label-btns button { padding: 0.6rem 1.2rem; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; min-width: 140px; }
+  .btn-0 { background: #7f1d1d; color: #fecaca; }
+  .btn-1 { background: #78350f; color: #fde68a; }
+  .btn-2 { background: #14532d; color: #bbf7d0; }
+  .label-btns button.selected-0 { outline: 3px solid #ef4444; }
+  .label-btns button.selected-1 { outline: 3px solid #f59e0b; }
+  .label-btns button.selected-2 { outline: 3px solid #22c55e; }
+  .label-btns button:hover { opacity: 0.85; }
+  #exportBtn { background: #2563eb; color: white; padding: 0.75rem 2rem; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; margin: 2rem auto; display: block; }
+  #exportBtn:hover { background: #1d4ed8; }
+  .rubric { background: #1e293b; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; }
+  .rubric h2 { font-size: 1rem; margin-bottom: 0.75rem; }
+  .rubric li { margin-left: 1.5rem; margin-bottom: 0.4rem; font-size: 0.9rem; color: #cbd5e1; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>ShopSense Hand-Labelling</h1>
+    <div id="progress">0 / 0 labelled</div>
+    <div id="progressBar"><div id="progressFill" style="width: 0%"></div></div>
+  </div>
+  <div style="display: flex; gap: 1rem; align-items: center;">
+    <label style="font-size: 0.9rem; color: #94a3b8;">Annotator:
+      <input type="text" id="annotatorId" placeholder="Your name/ID" style="background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 0.4rem 0.8rem; border-radius: 6px; margin-left: 0.5rem;">
+    </label>
+    <button id="loadMoreBtn" style="background: #475569; color: white; padding: 0.4rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">Load Additional Items</button>
+    <input type="file" id="additionalFile" accept=".json" style="display: none;">
+  </div>
+</header>
+<main>
+  <div class="rubric">
+    <h2>Rubric (arm identity hidden — judge only what you see)</h2>
+    <ul>
+      <li><strong>0 — Wrong:</strong> wrong product category entirely</li>
+      <li><strong>1 — Partly:</strong> right category, but wrong colour, style, or type</li>
+      <li><strong>2 — Right:</strong> right category + colour + style match</li>
+    </ul>
+    <p style="margin-top: 0.75rem; font-size: 0.85rem; color: #94a3b8;">
+      Compare the candidate (right) against the query photo (left). Label blind — don't guess which ranking produced it.
+    </p>
+  </div>
+  <div id="queries"></div>
+  <button id="exportBtn">Export Labels as CSV</button>
+</main>
+<script>
+let data = null;
+let labels = {}; // itemKey -> {label, timestamp, annotator}
+let annotatorId = '';
+
+async function load() {
+  // Restore annotator ID
+  annotatorId = localStorage.getItem('shopsense-annotator') || '';
+  document.getElementById('annotatorId').value = annotatorId;
+  document.getElementById('annotatorId').addEventListener('change', (e) => {
+    annotatorId = e.target.value.trim();
+    localStorage.setItem('shopsense-annotator', annotatorId);
+  });
+
+  // Load additional items button
+  document.getElementById('loadMoreBtn').addEventListener('click', () => {
+    document.getElementById('additionalFile').click();
+  });
+  document.getElementById('additionalFile').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const text = await file.text();
+    const additional = JSON.parse(text);
+    // Merge additional items, skipping already-labelled
+    let added = 0;
+    additional.queries.forEach((q) => {
+      const existing = data.queries.find((eq) => eq.file === q.file);
+      if (existing) {
+        q.items.forEach((item) => {
+          const key = itemKey(q.file, item.url);
+          if (!existing.items.find((i) => i.url === item.url) && labels[key] === undefined) {
+            existing.items.push(item);
+            added++;
+          }
+        });
+      } else {
+        // New query entirely
+        const newItems = q.items.filter((item) => labels[itemKey(q.file, item.url)] === undefined);
+        if (newItems.length > 0) {
+          data.queries.push({ ...q, items: newItems });
+          added += newItems.length;
+        }
+      }
+    });
+    alert(`Added ${added} new unlabelled items`);
+    render();
+  });
+
+  // Check for assignment parameter (?assignment=a)
+  const params = new URLSearchParams(window.location.search);
+  const assignment = params.get('assignment');
+
+  if (assignment) {
+    // Load specific annotator assignment
+    const res = await fetch(`assignments/annotator-${assignment}.json`);
+    const assignmentData = await res.json();
+    data = assignmentData;
+    // Pre-fill annotator ID from assignment
+    if (!annotatorId) {
+      annotatorId = assignmentData.annotator.toUpperCase();
+      document.getElementById('annotatorId').value = annotatorId;
+      localStorage.setItem('shopsense-annotator', annotatorId);
+    }
+    document.title = `ShopSense Labelling - Annotator ${assignment.toUpperCase()}`;
+  } else {
+    const res = await fetch('hand-label-data.json');
+    data = await res.json();
+  }
+  render();
+}
+
+function itemKey(qfile, url) { return qfile + '||' + url; }
+
+function render() {
+  const container = document.getElementById('queries');
+  container.innerHTML = '';
+  let total = 0, done = 0;
+
+  data.queries.forEach((q) => {
+    const section = document.createElement('div');
+    section.innerHTML = `<div class="query-section">
+      <div class="query-photo">
+        <img src="${q.photo}" alt="query">
+        <h3>${q.file}</h3>
+      </div>
+      <div class="items" id="items-${q.file}"></div>
+    </div>`;
+    container.appendChild(section);
+
+    const itemsDiv = section.querySelector(`#items-${CSS.escape(q.file)}`);
+    // Shuffle items so arm identity is hidden
+    const shuffled = [...q.items].sort(() => Math.random() - 0.5);
+    shuffled.forEach((item) => {
+      total++;
+      const key = itemKey(q.file, item.url);
+      const saved = labels[key];
+      const savedVal = saved !== undefined ? (typeof saved === 'object' ? saved.label : saved) : undefined;
+      if (savedVal !== undefined) done++;
+      const div = document.createElement('div');
+      div.className = 'item';
+      div.innerHTML = `
+        <img src="/api/img?url=${encodeURIComponent(item.image)}" alt="" loading="lazy" onerror="this.style.opacity=0.3">
+        <div class="item-info">
+          <h4>${escapeHtml(item.title)}</h4>
+          <p>${escapeHtml(item.priceText)}</p>
+          <a href="${escapeHtml(item.url)}" target="_blank">View listing</a>
+        </div>
+        <div class="label-btns">
+          <button class="btn-0 ${savedVal===0?'selected-0':''}" data-key="${escapeHtml(key)}" data-val="0">0 — Wrong</button>
+          <button class="btn-1 ${savedVal===1?'selected-1':''}" data-key="${escapeHtml(key)}" data-val="1">1 — Partly</button>
+          <button class="btn-2 ${savedVal===2?'selected-2':''}" data-key="${escapeHtml(key)}" data-val="2">2 — Right</button>
+        </div>`;
+      itemsDiv.appendChild(div);
+    });
+  });
+
+  document.querySelectorAll('.label-btns button').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.key;
+      const val = parseInt(btn.dataset.val);
+      if (!annotatorId) {
+        alert('Please enter your annotator ID at the top first');
+        document.getElementById('annotatorId').focus();
+        return;
+      }
+      labels[key] = {
+        label: val,
+        timestamp: new Date().toISOString(),
+        annotator: annotatorId
+      };
+      // Update visual
+      const siblings = btn.parentElement.querySelectorAll('button');
+      siblings.forEach((s) => s.classList.remove('selected-0', 'selected-1', 'selected-2'));
+      btn.classList.add(`selected-${val}`);
+      updateProgress();
+      // Save to localStorage
+      localStorage.setItem('shopsense-labels', JSON.stringify(labels));
+      // Remind to export every 25 items
+      const count = Object.keys(labels).length;
+      if (count % 25 === 0) {
+        alert(`You've labelled ${count} items. Please export your CSV now as a backup (localStorage can be cleared).`);
+      }
+    });
+  });
+
+  // Restore from localStorage
+  try {
+    const saved = localStorage.getItem('shopsense-labels');
+    if (saved) labels = JSON.parse(saved);
+  } catch {}
+
+  updateProgress(total, done);
+}
+
+function updateProgress() {
+  const total = document.querySelectorAll('.item').length;
+  const done = Object.keys(labels).length;
+  document.getElementById('progress').textContent = `${done} / ${total} labelled`;
+  document.getElementById('progressFill').style.width = total ? `${(done/total*100).toFixed(1)}%` : '0%';
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+document.getElementById('exportBtn').addEventListener('click', () => {
+  if (!annotatorId) {
+    alert('Please enter your annotator ID first');
+    return;
+  }
+  const rows = [['query_file', 'item_url', 'item_title', 'label', 'annotator_id', 'timestamp']];
+  Object.entries(labels).forEach(([key, val]) => {
+    const [qfile, url] = key.split('||');
+    const label = typeof val === 'object' ? val.label : val;
+    const timestamp = typeof val === 'object' ? val.timestamp : new Date().toISOString();
+    const annotator = typeof val === 'object' ? val.annotator : annotatorId;
+    // Find title
+    let title = '';
+    data.queries.forEach((q) => {
+      if (q.file === qfile) {
+        const item = q.items.find((i) => i.url === url);
+        if (item) title = item.title;
+      }
+    });
+    rows.push([qfile, url, `"${title.replace(/"/g, '""')}"`, label, annotator, timestamp]);
+  });
+  const csv = rows.map((r) => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `hand-labels-${annotatorId}-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+});
+
+load();
+</script>
+</body>
+</html>
