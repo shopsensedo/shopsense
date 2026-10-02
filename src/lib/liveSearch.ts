@@ -773,7 +773,10 @@ async function scoreThumbnails(
  * SITE_QUERIES key, or '' when nothing matches — then fetchLiveListings
  * uses the mapped English query verbatim for both sources.
  */
-function categorizeKeywords(keywords: string[]): string {
+/** Exported for the T5 eval harness (scripts/eval.mjs) so it can send the
+ *  exact marketplace query the app would send. Pure function, no behavior
+ *  change. */
+export function categorizeKeywords(keywords: string[]): string {
   const kw = new Set(keywords);
   const has = (...ws: string[]) => ws.some((w) => kw.has(w));
   if (has('watch', 'watches', 'smartwatch')) return 'watch';
