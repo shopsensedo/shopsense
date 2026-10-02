@@ -35,6 +35,7 @@ const ALLOWED_HOSTS = new Set([
   // R8: eval labelling page query photos (Wikimedia Commons).
   'commons.wikimedia.org',
   'upload.wikimedia.org',
+  'thumb.wikimedia.org',
 ]);
 
 function isAllowedUrl(u: string): boolean {
