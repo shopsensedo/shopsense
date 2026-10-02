@@ -1,0 +1,1086 @@
+{
+  "_note": "Roman Urdu -> English keyword map for Pakistani shopping queries. Longest-phrase match first, then whole-word match (word boundaries), then raw passthrough for unknown words. Mirrored in shopsense-backend/data/roman_urdu_map.json.",
+  "kala": [
+    "black"
+  ],
+  "kaala": [
+    "black"
+  ],
+  "kalay": [
+    "black"
+  ],
+  "safaid": [
+    "white"
+  ],
+  "safed": [
+    "white"
+  ],
+  "sufaid": [
+    "white"
+  ],
+  "lal": [
+    "red"
+  ],
+  "surkh": [
+    "red"
+  ],
+  "neela": [
+    "blue"
+  ],
+  "neelay": [
+    "blue"
+  ],
+  "hara": [
+    "green"
+  ],
+  "sabz": [
+    "green"
+  ],
+  "peela": [
+    "yellow"
+  ],
+  "zard": [
+    "yellow"
+  ],
+  "gulabi": [
+    "pink"
+  ],
+  "narangi": [
+    "orange"
+  ],
+  "jamni": [
+    "purple"
+  ],
+  "baingani": [
+    "purple"
+  ],
+  "bhura": [
+    "brown"
+  ],
+  "brown": [
+    "brown"
+  ],
+  "grey": [
+    "grey",
+    "gray"
+  ],
+  "saleti": [
+    "grey",
+    "gray"
+  ],
+  "sunaehra": [
+    "golden"
+  ],
+  "golden": [
+    "golden"
+  ],
+  "chandi": [
+    "silver"
+  ],
+  "silver": [
+    "silver"
+  ],
+  "kala joota": [
+    "black",
+    "shoes",
+    "sneakers",
+    "footwear"
+  ],
+  "kalay jootay": [
+    "black",
+    "shoes",
+    "sneakers",
+    "footwear"
+  ],
+  "safaid joota": [
+    "white",
+    "shoes",
+    "sneakers",
+    "footwear"
+  ],
+  "lal joota": [
+    "red",
+    "shoes",
+    "sneakers",
+    "footwear"
+  ],
+  "kala suit": [
+    "black",
+    "suit",
+    "kurta",
+    "ethnic"
+  ],
+  "neela suit": [
+    "blue",
+    "suit",
+    "kurta",
+    "ethnic"
+  ],
+  "kurta": [
+    "kurta",
+    "ethnic",
+    "dress"
+  ],
+  "lawn kurta": [
+    "kurta",
+    "lawn",
+    "ethnic"
+  ],
+  "shalwar": [
+    "shalwar",
+    "ethnic"
+  ],
+  "kameez": [
+    "kameez",
+    "ethnic"
+  ],
+  "shalwar kameez": [
+    "shalwar",
+    "kameez",
+    "ethnic",
+    "dress"
+  ],
+  "suit": [
+    "suit",
+    "shalwar",
+    "kameez",
+    "ethnic"
+  ],
+  "lawn": [
+    "lawn",
+    "ethnic"
+  ],
+  "lawn suit": [
+    "lawn",
+    "suit",
+    "ethnic",
+    "dress"
+  ],
+  "kapray": [
+    "clothes",
+    "clothing"
+  ],
+  "kapde": [
+    "clothes",
+    "clothing"
+  ],
+  "libas": [
+    "clothes",
+    "clothing",
+    "dress"
+  ],
+  "tshirt": [
+    "tshirt"
+  ],
+  "t shirt": [
+    "tshirt"
+  ],
+  "shirt": [
+    "shirt"
+  ],
+  "jeans": [
+    "jeans",
+    "denim",
+    "pants"
+  ],
+  "pent": [
+    "pants",
+    "trouser"
+  ],
+  "trouser": [
+    "trouser",
+    "pants"
+  ],
+  "jacket": [
+    "jacket"
+  ],
+  "leather jacket": [
+    "leather",
+    "jacket"
+  ],
+  "hoodie": [
+    "hoodie"
+  ],
+  "sweater": [
+    "sweater"
+  ],
+  "jersey": [
+    "sports",
+    "shirt",
+    "jersey"
+  ],
+  "dupatta": [
+    "dupatta",
+    "scarf",
+    "ethnic"
+  ],
+  "abaya": [
+    "abaya",
+    "ethnic"
+  ],
+  "hijab": [
+    "hijab",
+    "scarf"
+  ],
+  "frock": [
+    "frock",
+    "dress"
+  ],
+  "lehenga": [
+    "lehenga",
+    "ethnic"
+  ],
+  "saree": [
+    "saree",
+    "ethnic"
+  ],
+  "sari": [
+    "saree",
+    "ethnic"
+  ],
+  "pajama": [
+    "pajama"
+  ],
+  "pajamay": [
+    "pajama"
+  ],
+  "shorts": [
+    "shorts"
+  ],
+  "waistcoat": [
+    "waistcoat",
+    "ethnic"
+  ],
+  "sherwani": [
+    "sherwani",
+    "ethnic"
+  ],
+  "coat": [
+    "coat"
+  ],
+  "shawl": [
+    "shawl"
+  ],
+  "unstitched": [
+    "unstitched",
+    "fabric"
+  ],
+  "stitched": [
+    "stitched"
+  ],
+  "2 piece": [
+    "2",
+    "piece",
+    "suit"
+  ],
+  "3 piece": [
+    "3",
+    "piece",
+    "suit"
+  ],
+  "joota": [
+    "shoes",
+    "sneakers",
+    "footwear"
+  ],
+  "jooti": [
+    "shoes",
+    "footwear",
+    "flats"
+  ],
+  "juta": [
+    "shoes",
+    "sneakers",
+    "footwear"
+  ],
+  "jootay": [
+    "shoes",
+    "sneakers",
+    "footwear"
+  ],
+  "sneaker": [
+    "shoes",
+    "sneakers",
+    "footwear"
+  ],
+  "sneakers": [
+    "shoes",
+    "sneakers",
+    "footwear"
+  ],
+  "joggers": [
+    "shoes",
+    "sneakers",
+    "running"
+  ],
+  "sports shoes": [
+    "sports",
+    "shoes",
+    "sneakers"
+  ],
+  "sports joota": [
+    "sports",
+    "shoes",
+    "sneakers"
+  ],
+  "khussa": [
+    "khussa",
+    "ethnic",
+    "shoes"
+  ],
+  "chapal": [
+    "slippers",
+    "sandals"
+  ],
+  "chappal": [
+    "slippers",
+    "sandals"
+  ],
+  "sandal": [
+    "sandals"
+  ],
+  "sandals": [
+    "sandals"
+  ],
+  "boots": [
+    "boots"
+  ],
+  "long boots": [
+    "boots"
+  ],
+  "heels": [
+    "heels"
+  ],
+  "high heels": [
+    "heels"
+  ],
+  "slippers": [
+    "slippers"
+  ],
+  "school shoes": [
+    "school",
+    "shoes"
+  ],
+  "running shoes": [
+    "running",
+    "shoes",
+    "sneakers"
+  ],
+  "canvas shoes": [
+    "canvas",
+    "shoes",
+    "sneakers"
+  ],
+  "formal shoes": [
+    "formal",
+    "shoes"
+  ],
+  "white sneakers": [
+    "white",
+    "sneakers",
+    "shoes"
+  ],
+  "bag": [
+    "handbag",
+    "bag",
+    "bags"
+  ],
+  "handbag": [
+    "handbag",
+    "bag",
+    "bags"
+  ],
+  "ladies bag": [
+    "handbag",
+    "bag",
+    "bags"
+  ],
+  "backpack": [
+    "backpack"
+  ],
+  "school bag": [
+    "school",
+    "bag",
+    "backpack"
+  ],
+  "travel bag": [
+    "travel",
+    "bag",
+    "luggage"
+  ],
+  "purse": [
+    "purse",
+    "handbag"
+  ],
+  "clutch": [
+    "clutch",
+    "handbag"
+  ],
+  "tote": [
+    "tote",
+    "bag",
+    "handbag"
+  ],
+  "wallet": [
+    "wallet"
+  ],
+  "leather wallet": [
+    "leather",
+    "wallet"
+  ],
+  "side bag": [
+    "side",
+    "bag"
+  ],
+  "shoulder bag": [
+    "shoulder",
+    "bag",
+    "handbag"
+  ],
+  "briefcase": [
+    "briefcase"
+  ],
+  "laptop bag": [
+    "laptop",
+    "bag"
+  ],
+  "gym bag": [
+    "gym",
+    "bag"
+  ],
+  "ghari": [
+    "watch",
+    "watches"
+  ],
+  "gari": [
+    "watch",
+    "watches"
+  ],
+  "watch": [
+    "watch",
+    "watches"
+  ],
+  "smartwatch": [
+    "watch",
+    "smartwatch"
+  ],
+  "smart ghari": [
+    "smartwatch",
+    "watch"
+  ],
+  "wrist watch": [
+    "watch",
+    "watches"
+  ],
+  "gents watch": [
+    "mens",
+    "watch"
+  ],
+  "ladies watch": [
+    "womens",
+    "watch"
+  ],
+  "wall clock": [
+    "wall",
+    "clock"
+  ],
+  "mobile": [
+    "mobile",
+    "smartphone"
+  ],
+  "smartphone": [
+    "smartphone",
+    "mobile"
+  ],
+  "phone": [
+    "phone",
+    "mobile"
+  ],
+  "iphone": [
+    "iphone",
+    "apple"
+  ],
+  "samsung": [
+    "samsung",
+    "mobile"
+  ],
+  "charger": [
+    "charger"
+  ],
+  "fast charger": [
+    "fast",
+    "charger"
+  ],
+  "cable": [
+    "cable"
+  ],
+  "data cable": [
+    "data",
+    "cable"
+  ],
+  "earbuds": [
+    "earbuds",
+    "audio",
+    "wireless"
+  ],
+  "airpods": [
+    "earbuds",
+    "airpods"
+  ],
+  "headphones": [
+    "headphones"
+  ],
+  "handsfree": [
+    "handsfree",
+    "earphones"
+  ],
+  "speaker": [
+    "speaker",
+    "bluetooth"
+  ],
+  "bluetooth speaker": [
+    "bluetooth",
+    "speaker"
+  ],
+  "laptop": [
+    "laptop"
+  ],
+  "macbook": [
+    "macbook",
+    "laptop"
+  ],
+  "tablet": [
+    "tablet"
+  ],
+  "ipad": [
+    "ipad",
+    "tablet"
+  ],
+  "camera": [
+    "camera"
+  ],
+  "dslr": [
+    "dslr",
+    "camera"
+  ],
+  "power bank": [
+    "power",
+    "bank"
+  ],
+  "powerbank": [
+    "power",
+    "bank"
+  ],
+  "mouse": [
+    "mouse"
+  ],
+  "keyboard": [
+    "keyboard"
+  ],
+  "led tv": [
+    "led",
+    "tv",
+    "television"
+  ],
+  "tv": [
+    "television",
+    "tv"
+  ],
+  "fridge": [
+    "refrigerator",
+    "fridge"
+  ],
+  "ac": [
+    "air",
+    "conditioner"
+  ],
+  "air conditioner": [
+    "air",
+    "conditioner"
+  ],
+  "washing machine": [
+    "washing",
+    "machine"
+  ],
+  "washingmachine": [
+    "washing",
+    "machine"
+  ],
+  "fan": [
+    "fan"
+  ],
+  "ceiling fan": [
+    "ceiling",
+    "fan"
+  ],
+  "iron": [
+    "iron",
+    "clothes"
+  ],
+  "istri": [
+    "iron"
+  ],
+  "microwave": [
+    "microwave",
+    "oven"
+  ],
+  "heater": [
+    "heater"
+  ],
+  "trimmer": [
+    "trimmer"
+  ],
+  "shaver": [
+    "shaver",
+    "trimmer"
+  ],
+  "hair dryer": [
+    "hair",
+    "dryer"
+  ],
+  "chota": [
+    "small"
+  ],
+  "bara": [
+    "large",
+    "big"
+  ],
+  "darmiyana": [
+    "medium"
+  ],
+  "darmiyani": [
+    "medium"
+  ],
+  "small": [
+    "small"
+  ],
+  "medium": [
+    "medium"
+  ],
+  "large": [
+    "large"
+  ],
+  "offer": [
+    "offer",
+    "deal"
+  ],
+  "deal": [
+    "deal",
+    "offer"
+  ],
+  "price": [],
+  "qeemat": [],
+  "rate": [],
+  "bartan": [
+    "utensils",
+    "kitchen"
+  ],
+  "bedsheet": [
+    "bedsheet"
+  ],
+  "bed sheet": [
+    "bedsheet"
+  ],
+  "curtain": [
+    "curtain"
+  ],
+  "parda": [
+    "curtain"
+  ],
+  "carpet": [
+    "carpet"
+  ],
+  "qaleen": [
+    "carpet",
+    "rug"
+  ],
+  "toys": [
+    "toys"
+  ],
+  "khilona": [
+    "toys"
+  ],
+  "cycle": [
+    "bicycle",
+    "cycle"
+  ],
+  "helmet": [
+    "helmet"
+  ],
+  "perfume": [
+    "perfume"
+  ],
+  "itar": [
+    "perfume",
+    "attar"
+  ],
+  "makeup": [
+    "makeup",
+    "cosmetics"
+  ],
+  "lipstick": [
+    "lipstick",
+    "makeup"
+  ],
+  "nike": [
+    "nike",
+    "shoes",
+    "sneakers"
+  ],
+  "adidas": [
+    "adidas",
+    "shoes",
+    "sneakers"
+  ],
+  "puma": [
+    "puma",
+    "shoes",
+    "sneakers"
+  ],
+  "khaadi": [
+    "khaadi",
+    "ethnic",
+    "lawn",
+    "kurta"
+  ],
+  "sapphire": [
+    "sapphire",
+    "ethnic",
+    "lawn"
+  ],
+  "gul ahmed": [
+    "gul",
+    "ahmed",
+    "ethnic",
+    "lawn",
+    "fabric"
+  ],
+  "outfitters": [
+    "outfitters",
+    "clothing",
+    "shirt",
+    "jeans"
+  ],
+  "bata": [
+    "bata",
+    "shoes",
+    "footwear"
+  ],
+  "service": [
+    "service",
+    "shoes",
+    "footwear"
+  ],
+  "breakout": [
+    "breakout",
+    "clothing"
+  ],
+  "junaid jamshed": [
+    "junaid",
+    "jamshed",
+    "ethnic",
+    "kurta"
+  ],
+  "alkaram": [
+    "alkaram",
+    "ethnic",
+    "lawn",
+    "fabric"
+  ],
+  "mardana": [
+    "men",
+    "mens",
+    "gents"
+  ],
+  "gents": [
+    "men",
+    "mens",
+    "gents"
+  ],
+  "men": [
+    "men",
+    "mens"
+  ],
+  "zanana": [
+    "women",
+    "ladies",
+    "womens"
+  ],
+  "ladies": [
+    "women",
+    "ladies",
+    "womens"
+  ],
+  "women": [
+    "women",
+    "ladies",
+    "womens"
+  ],
+  "bachon": [
+    "kids",
+    "children",
+    "baby"
+  ],
+  "bachay": [
+    "kids",
+    "children",
+    "baby"
+  ],
+  "bacha": [
+    "kids",
+    "baby"
+  ],
+  "kids": [
+    "kids",
+    "children"
+  ],
+  "baby": [
+    "baby",
+    "kids"
+  ],
+  "naya": [
+    "new"
+  ],
+  "new": [
+    "new"
+  ],
+  "purana": [
+    "used",
+    "second",
+    "hand"
+  ],
+  "used": [
+    "used"
+  ],
+  "second hand": [
+    "used",
+    "second",
+    "hand"
+  ],
+  "belt": [
+    "belt"
+  ],
+  "topi": [
+    "cap",
+    "topi"
+  ],
+  "cap": [
+    "cap"
+  ],
+  "moze": [
+    "socks"
+  ],
+  "socks": [
+    "socks"
+  ],
+  "chashma": [
+    "glasses",
+    "sunglasses",
+    "eyewear"
+  ],
+  "sunglasses": [
+    "sunglasses",
+    "glasses"
+  ],
+  "glasses": [
+    "glasses",
+    "eyewear"
+  ],
+  "anguthi": [
+    "ring",
+    "jewellery"
+  ],
+  "ring": [
+    "ring",
+    "jewellery"
+  ],
+  "haar": [
+    "necklace",
+    "jewellery"
+  ],
+  "necklace": [
+    "necklace",
+    "jewellery"
+  ],
+  "bali": [
+    "earrings",
+    "jewellery"
+  ],
+  "earrings": [
+    "earrings",
+    "jewellery"
+  ],
+  "choori": [
+    "bangles",
+    "jewellery"
+  ],
+  "bangles": [
+    "bangles"
+  ],
+  "tie": [
+    "tie",
+    "necktie"
+  ],
+  "maxi": [
+    "maxi",
+    "dress",
+    "gown"
+  ],
+  "gown": [
+    "gown",
+    "dress"
+  ],
+  "skirt": [
+    "skirt"
+  ],
+  "gloves": [
+    "gloves",
+    "winter"
+  ],
+  "muffler": [
+    "muffler",
+    "scarf",
+    "winter"
+  ],
+  "night suit": [
+    "night",
+    "suit",
+    "pajama"
+  ],
+  "scarf": [
+    "scarf",
+    "hijab"
+  ],
+  "raincoat": [
+    "raincoat"
+  ],
+  "khussay": [
+    "khussa",
+    "ethnic",
+    "footwear"
+  ],
+  "pumps": [
+    "pumps",
+    "heels",
+    "shoes"
+  ],
+  "loafers": [
+    "loafers",
+    "shoes"
+  ],
+  "wedges": [
+    "wedges",
+    "heels"
+  ],
+  "smart watch": [
+    "smartwatch",
+    "watch"
+  ],
+  "drone": [
+    "drone",
+    "camera"
+  ],
+  "tripod": [
+    "tripod",
+    "camera"
+  ],
+  "memory card": [
+    "memory",
+    "card"
+  ],
+  "usb": [
+    "usb",
+    "drive"
+  ],
+  "pillow": [
+    "pillow"
+  ],
+  "razai": [
+    "quilt",
+    "blanket",
+    "razai"
+  ],
+  "blanket": [
+    "blanket"
+  ],
+  "towel": [
+    "towel"
+  ],
+  "lock": [
+    "lock"
+  ],
+  "chhata": [
+    "umbrella"
+  ],
+  "chata": [
+    "umbrella"
+  ],
+  "lunch box": [
+    "lunch",
+    "box"
+  ],
+  "water bottle": [
+    "water",
+    "bottle"
+  ],
+  "diaper": [
+    "diaper",
+    "baby"
+  ],
+  "pampers": [
+    "diaper",
+    "pampers",
+    "baby"
+  ],
+  "feeder": [
+    "feeder",
+    "baby",
+    "bottle"
+  ],
+  "cream": [
+    "cream",
+    "lotion",
+    "skincare"
+  ],
+  "lotion": [
+    "lotion",
+    "cream"
+  ],
+  "shampoo": [
+    "shampoo"
+  ],
+  "sabun": [
+    "soap"
+  ],
+  "soap": [
+    "soap"
+  ],
+  "face wash": [
+    "face",
+    "wash"
+  ],
+  "kajal": [
+    "kajal",
+    "eyeliner"
+  ],
+  "eyeliner": [
+    "eyeliner"
+  ],
+  "nail polish": [
+    "nail",
+    "polish"
+  ],
+  "hair color": [
+    "hair",
+    "color",
+    "dye"
+  ],
+  "mehndi": [
+    "mehndi",
+    "henna"
+  ],
+  "attar": [
+    "perfume",
+    "attar"
+  ]
+}
