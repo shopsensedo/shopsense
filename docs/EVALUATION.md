@@ -119,6 +119,47 @@ was a rubric artifact: titles say "Chromebook", not "laptop").
 artifact). The remaining "weak spots" were the rubric's, not the
 pipeline's.
 
+
+## Hand-labelled P@5 (2026-10-02 — user labelled 12 queries × 5 results)
+
+The user hand-labelled the 12 sampled queries on the production labelling
+page (`/eval-label.html`). Labels: **yes** = same product type and similar
+look; **partly** = same type but different look, or an accessory;
+**no** = anything else. The displayed results were in **CLIP-ranked order**
+(decreasing CLIP score), so this measures CLIP-ranked P@5.
+
+| query | kind | P@5 (strict: yes only) | P@5 (lenient: yes+partly) |
+|-------|------|------------------------|---------------------------|
+| handbag_3.jpg | photo | 0.60 | 1.00 |
+| sunglasses_1.jpg | photo | 0.80 | 1.00 |
+| backpack_1.jpg | photo | 0.00 | 1.00 |
+| backpack_3.jpg | photo | 0.00 | 1.00 |
+| dress_3.jpg | photo | 0.00 | 0.00 |
+| sneakers_1.jpg | photo | 0.00 | 1.00 |
+| safaid kurta | text | 1.00 | 1.00 |
+| sasti ghari | text | 1.00 | 1.00 |
+| sunehri watch | text | 0.40 | 1.00 |
+| adidas running shoes | text | 0.40 | 1.00 |
+| haier washing machine | text | 0.20 | 0.20 |
+| kurti lawn | text | 1.00 | 1.00 |
+| **Mean (n=12)** | | **0.45** | **0.85** |
+| **Photo mean (n=6)** | | **0.23** | **0.83** |
+| **Text mean (n=6)** | | **0.67** | **0.87** |
+
+**Honest reading:** CLIP re-ranking puts *at least partly relevant* results
+in the top 5 most of the time (lenient 0.85), but exact matches (strict)
+are much rarer (0.45 overall, 0.23 for photos). The `dress_3.jpg` query
+failed completely (all 5 labelled "no"). The title-rubric P@5 from the
+automated eval (photo 0.82, text 0.87) substantially overstates relevance
+compared to human judgement — the rubric counts title keyword matches,
+not visual correctness.
+
+**Limitation:** baseline (marketplace-order) P@5 cannot be computed from
+these labels because the labelling page displayed results in CLIP-ranked
+order only; the baseline order was not preserved. A baseline-vs-CLIP
+comparison on hand labels would require re-running the labelling with
+both orders displayed.
+
 ## Limitations
 
 1. **Labels are agent-made** (keyword rubric on titles) until the user
