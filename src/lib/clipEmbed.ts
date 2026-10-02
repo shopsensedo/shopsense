@@ -5,6 +5,43 @@
 
 const MODEL_ID = 'Xenova/clip-vit-base-patch32';
 
+/**
+ * Pad-to-square flag (default OFF).
+ * When enabled, images are padded to square (with black bars) before CLIP
+ * embedding, instead of the default center-crop. This preserves aspect ratio
+ * for portrait/landscape photos.
+ * 
+ * This is an experimental arm for ablation eval — do not enable in production
+ * until hand-labelled results confirm improvement.
+ */
+export const PAD_TO_SQUARE = false;
+
+/**
+ * Pad an image URL to square using canvas (black bars).
+ * Returns a data URL of the padded image.
+ */
+async function padImageToSquare(url: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const size = Math.max(img.width, img.height);
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, size, size);
+      const x = (size - img.width) / 2;
+      const y = (size - img.height) / 2;
+      ctx.drawImage(img, x, y);
+      resolve(canvas.toDataURL('image/jpeg', 0.95));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let extractorPromise: Promise<any> | null = null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -60,7 +97,9 @@ export async function embedImageUrl(
 ): Promise<number[]> {
   const extractor = await getClipExtractor(onProgress);
   const RawImage = getRawImageCtor();
-  const image = await RawImage.fromURL(url);
+  // Pad to square if flag enabled (experimental arm)
+  const imageUrl = PAD_TO_SQUARE ? await padImageToSquare(url) : url;
+  const image = await RawImage.fromURL(imageUrl);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const output: any = await extractor(image, { pooling: 'mean', normalize: true });
   image.dispose?.();
