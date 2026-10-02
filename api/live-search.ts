@@ -55,7 +55,18 @@ async function fetchDaraz(query: string): Promise<LiveItem[]> {
  * public search-suggest JSON. robots.txt allows crawling (`Allow: /` for
  * public product pages); currency verified PKR via /cart.js. Uses the same
  * `q` keyword query as Daraz (both are plain keyword searches).
+ *
+ * FEATURE FLAG: TELEMART_ENABLED (default OFF). The store's own Terms of
+ * Service (§13 "Prohibited Uses") forbid automated data-gathering tools even
+ * though robots.txt permits crawling — see docs/SOURCES.md. Until that
+ * conflict is explicitly cleared, this source stays OFF and is reported as
+ * 'skipped' (same as category routing). Set TELEMART_ENABLED=1 to enable.
  */
+export function isTelemartEnabled(
+  env: Record<string, string | undefined> = process.env,
+): boolean {
+  return env.TELEMART_ENABLED === '1';
+}
 async function fetchTelemart(query: string): Promise<LiveItem[]> {
   const params = new URLSearchParams({
     q: query,
@@ -99,10 +110,13 @@ export default async function handler(req: any, res: any) {
     (v) => ({ status: 'fulfilled' as const, value: v }),
     () => ({ status: 'rejected' as const, value: [] as LiveItem[] }),
   );
-  const fetchTm = skip === 'telemart' ? null : fetchTelemart(q).then(
-    (v) => ({ status: 'fulfilled' as const, value: v }),
-    () => ({ status: 'rejected' as const, value: [] as LiveItem[] }),
-  );
+  const fetchTm =
+    !isTelemartEnabled() || skip === 'telemart'
+      ? null
+      : fetchTelemart(q).then(
+          (v) => ({ status: 'fulfilled' as const, value: v }),
+          () => ({ status: 'rejected' as const, value: [] as LiveItem[] }),
+        );
   const [po, dz, tm] = await Promise.all([fetchPo, fetchDz, fetchTm]);
   // Counts reflect VALID normalized listings (title, image, URL present).
   // Price is deliberately NOT a validity criterion: an item with a missing

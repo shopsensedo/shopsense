@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Camera, Lock, Mail, ArrowRight, UserCheck } from 'lucide-react';
 import { User } from '../../types';
 import { Modal } from '../ui/Modal';
@@ -8,6 +8,7 @@ import { useToast } from '../ui/Toast';
 import {
   AuthError,
   BackendUnavailableError,
+  isBackendReachable,
   login as apiLogin,
   register as apiRegister,
   type BackendUser,
@@ -45,6 +46,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // 'checking' | 'up' | 'down' — when the account server is not reachable
+  // the form is clearly labelled Demo and sign-in is disabled.
+  const [backend, setBackend] = useState<'checking' | 'up' | 'down'>('checking');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setBackend('checking');
+    let cancelled = false;
+    isBackendReachable().then((ok) => {
+      if (!cancelled) setBackend(ok ? 'up' : 'down');
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
+
+  const demoNoBackend = backend === 'down';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,6 +130,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         </p>
       </div>
 
+      {demoNoBackend && (
+        <div
+          role="status"
+          className="mb-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40 px-3 py-2.5 text-xs text-amber-900 dark:text-amber-200"
+        >
+          <span className="font-bold">Demo — </span>
+          {isUrduMode
+            ? 'Account server connected nahi hai, is liye sign-in band hai. Guest ke tor par jari rakhen — saved items isi device par rahen gi.'
+            : 'No account server is connected, so sign-in is disabled. Continue as a guest — saved items stay on this device.'}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-3.5">
         {mode === 'signup' && (
           <FormInput
@@ -145,7 +175,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           variant="primary"
           size="md"
           className="w-full mt-2"
-          disabled={busy}
+          disabled={busy || demoNoBackend}
         >
           {busy ? (
             'Please wait…'

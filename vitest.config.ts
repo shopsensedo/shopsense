@@ -12,8 +12,29 @@ const stubAssets: Plugin = {
   },
 };
 
+// api/*.ts uses `.js` import extensions (Vercel ESM requirement, see the D2-1
+// incident). Map them back to the .ts sources so unit tests can import the
+// real handlers.
+const apiJsAlias: Plugin = {
+  name: 'api-js-alias-for-tests',
+  resolveId(id, importer) {
+    if (
+      typeof importer === 'string' &&
+      importer.includes(`${path.sep}api${path.sep}`) &&
+      /^\.\/[^/]+\.js$/.test(id)
+    ) {
+      const target = path.resolve(
+        path.dirname(importer),
+        id.replace(/\.js$/, '.ts'),
+      );
+      return target;
+    }
+    return null;
+  },
+};
+
 export default defineConfig({
-  plugins: [stubAssets],
+  plugins: [stubAssets, apiJsAlias],
   test: {
     environment: 'node',
   },
