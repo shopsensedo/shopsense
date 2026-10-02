@@ -6,3 +6,6 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# R3 eval: raw live responses + thumbnails (local only, 200MB+)
+eval2/cache/

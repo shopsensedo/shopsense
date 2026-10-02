@@ -911,6 +911,9 @@ export function buildMarketplaceQuery(
   if (words.length > 3 && colourWords.length > 0) {
     words = [...brandWords, ...nounWords];
   }
+  // R6: drop duplicate tokens ("audionic audionic" when brand == noun).
+  const seen = new Set<string>();
+  words = words.filter((w) => (seen.has(w) ? false : (seen.add(w), true)));
   return words.slice(0, 3).join(' ');
 }
 

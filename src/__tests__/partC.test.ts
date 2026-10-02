@@ -91,6 +91,13 @@ describe('buildMarketplaceQuery', () => {
     expect(buildMarketplaceQuery('sasta smartwatch dikhao', keywords, 'watch')).toBe('smartwatch');
   });
 
+  it('R6: never duplicates a token ("audionic" -> "audionic", not "audionic audionic")', () => {
+    const { keywords } = q('audionic');
+    const mq = buildMarketplaceQuery('audionic', keywords, '');
+    expect(mq).toBe('audionic');
+    expect(new Set(mq.split(' ')).size).toBe(mq.split(' ').length);
+  });
+
   it('never exceeds 3 words; brand + product type win over colour', () => {
     const { keywords } = q('gul ahmed ka kala lawn suit');
     const short = buildMarketplaceQuery('gul ahmed ka kala lawn suit', keywords, 'kurta');
