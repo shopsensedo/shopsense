@@ -245,6 +245,30 @@ document.getElementById('exportBtn').addEventListener('click', () => {
     alert('Please enter your annotator ID first');
     return;
   }
+  const csv = generateCSV();
+  // Debug mode: display CSV in textarea instead of downloading
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('debug') === '1') {
+    let ta = document.getElementById('csvOutput');
+    if (!ta) {
+      ta = document.createElement('textarea');
+      ta.id = 'csvOutput';
+      ta.style.cssText = 'width: 100%; height: 400px; margin: 2rem 0; font-family: monospace; font-size: 0.8rem;';
+      ta.readOnly = true;
+      document.querySelector('main').appendChild(ta);
+    }
+    ta.value = csv;
+    ta.scrollIntoView();
+    return;
+  }
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `hand-labels-${annotatorId}-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+});
+
+function generateCSV() {
   const rows = [['query_file', 'item_url', 'item_title', 'label', 'annotator_id', 'timestamp']];
   Object.entries(labels).forEach(([key, val]) => {
     const [qfile, url] = key.split('||');
@@ -261,13 +285,8 @@ document.getElementById('exportBtn').addEventListener('click', () => {
     });
     rows.push([qfile, url, `"${title.replace(/"/g, '""')}"`, label, annotator, timestamp]);
   });
-  const csv = rows.map((r) => r.join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `hand-labels-${annotatorId}-${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
-});
+  return rows.map((r) => r.join(',')).join('\n');
+}
 
 load();
 </script>
