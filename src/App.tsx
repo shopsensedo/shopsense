@@ -44,6 +44,7 @@ import { ThemeProvider, useTheme } from './lib/theme';
 import { Navbar } from './components/ui/Navbar';
 import { BottomNav } from './components/ui/BottomNav';
 import { HomeScreen } from './components/features/HomeScreen';
+import { loadDemoCatalogueFile, demoItemsToProducts } from './lib/demoCatalogue';
 import { CropPreviewModal } from './components/features/CropPreviewModal';
 import { SearchLoadingScreen } from './components/features/SearchLoadingScreen';
 import { ResultsScreen } from './components/features/ResultsScreen';
@@ -72,6 +73,8 @@ function ShopSenseApp() {
   // Search failure state (production): honest error + retry, never fake data.
   const [searchError, setSearchError] = useState<string | null>(null);
   const [sourceStatus, setSourceStatus] = useState<SourceStatus | null>(null);
+  const [liveSourcesDisabled, setLiveSourcesDisabled] = useState(false);
+  const [demoCatalogueName, setDemoCatalogueName] = useState<string | null>(null);
   const [mappedQuery, setMappedQuery] = useState<string | null>(null);
   const [marketplaceQuery, setMarketplaceQuery] = useState<string | null>(null);
   const [priceSort, setPriceSort] = useState<'asc' | 'desc' | null>(null);
@@ -373,6 +376,7 @@ function ShopSenseApp() {
         if (hit && hit.products.length > 0) {
           setSearchError(null);
           setCurrentProducts(hit.products);
+          setDemoCatalogueName(null);
           setSourceStatus(hit.sources ?? null);
           setLastSearch({ type: 'image', dataUrl: croppedDataUrl });
           setCacheInfo({ at: hit.at });
@@ -466,6 +470,7 @@ function ShopSenseApp() {
         );
         // Always surface what each source did — even when it failed.
         setSourceStatus(live.sources);
+        setLiveSourcesDisabled(!!live.liveSourcesDisabled);
         freshSources = live.sources;
         if (live.products.length > 0) {
           matchedProducts = live.products;
@@ -530,6 +535,7 @@ function ShopSenseApp() {
 
     setSearchError(null);
     setCurrentProducts(matchedProducts);
+    setDemoCatalogueName(null);
     setLastSearch({ type: 'image', dataUrl: croppedDataUrl });
     if (!demoMode) {
       try {
@@ -647,6 +653,7 @@ function ShopSenseApp() {
         });
         // Always surface what each source did — even when it failed.
         setSourceStatus(live.sources);
+        setLiveSourcesDisabled(!!live.liveSourcesDisabled);
         setMappedQuery(live.mappedQuery);
         setMarketplaceQuery(live.marketplaceQuery);
         setPriceSort(live.priceSort);
@@ -946,6 +953,7 @@ function ShopSenseApp() {
       {/* Dynamic Screen Content */}
       <main className="flex-1 pb-20 md:pb-8">
           {currentScreen === 'home' && (
+            <>
             <HomeScreen
               onImageSelected={handleImageSelected}
               onTextSearch={handleTextSearch}
@@ -954,6 +962,32 @@ function ShopSenseApp() {
               isUrduMode={isUrduMode}
               modelPreloadPct={modelPreloadPct}
             />
+            {/* R9: demo catalogue loader — hand-curated JSON, never mixed with live */}
+            <div className="px-4 pb-8 text-center">
+              <label className="text-xs text-smoke dark:text-fog underline cursor-pointer">
+                Load demo catalogue (JSON)
+                <input
+                  type="file"
+                  accept=".json,application/json"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    try {
+                      const cat = await loadDemoCatalogueFile(f);
+                      setCurrentProducts(demoItemsToProducts(cat));
+                      setDemoCatalogueName(cat.name);
+                      setSourceStatus(null);
+                      setCurrentScreen('results');
+                    } catch (err) {
+                      alert(`Could not load demo catalogue: ${(err as Error).message}`);
+                    }
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+            </div>
+            </>
           )}
 
           {currentScreen === 'search_loading' && (
@@ -981,6 +1015,8 @@ function ShopSenseApp() {
               searchError={searchError}
               onRetry={handleRetrySearch}
               sourceStatus={sourceStatus}
+              liveSourcesDisabled={liveSourcesDisabled}
+              demoCatalogueName={demoCatalogueName}
               mappedQuery={mappedQuery}
               marketplaceQuery={marketplaceQuery}
               priceSort={priceSort}
