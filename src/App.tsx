@@ -22,6 +22,23 @@ import {
 import type { FilterFunnel } from './lib/liveNormalize';
 import { preloadClipModels, isClipPreloaded, onPreloadProgress } from './lib/clipEmbed';
 import { isDemoMode } from './lib/demoMode';
+import {
+  isLoggedIn,
+  logout as apiLogout,
+  validateSession,
+  serverSaveItem,
+  serverGetSaved,
+  serverDeleteSaved,
+  serverAddHistory,
+  serverGetHistory,
+  serverAddAlert,
+  serverGetAlerts,
+  serverDeleteAlert,
+  listingToProduct,
+  type ServerAlert as ServerAlertRow,
+  type ServerHistoryItem as ServerHistoryRow,
+  type ServerListing,
+} from './lib/authClient';
 import { getCached, setCached, cacheKeyForText, cacheKeyForImage } from './lib/searchCache';
 import { ThemeProvider, useTheme } from './lib/theme';
 import { Navbar } from './components/ui/Navbar';
@@ -80,6 +97,109 @@ function ShopSenseApp() {
       : { id: 'guest', name: 'Guest', email: '', isGuest: true, preferredLanguage: 'en' },
   );
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  // ---- T4: real-account server sync -------------------------------------
+  // When signed in, the backend is the source of truth for saved items,
+  // alerts and history; localStorage remains the guest/offline store.
+  // Merges de-duplicate by listing URL so guest work is never lost.
+  const mergeServerSaved = (prev: SavedItem[], rows: ServerListing[]): SavedItem[] => {
+    const urls = new Set(prev.map((s) => s.product.platformUrl));
+    const mapped: SavedItem[] = rows
+      .filter((r) => !urls.has(r.url))
+      .map((r) => ({
+        id: `server-${r.id}`,
+        product: listingToProduct(r),
+        savedAt: 'Synced',
+        initialPrice: r.price_pkr,
+        currentPrice: r.price_pkr,
+        priceChange: 0,
+      }));
+    return [...mapped, ...prev];
+  };
+
+  const mergeServerAlerts = (prev: PriceAlert[], rows: ServerAlertRow[]): PriceAlert[] => {
+    const keys = new Set(prev.map((a) => `${a.product.platformUrl}|${a.targetPrice}`));
+    const mapped: PriceAlert[] = rows
+      .filter((r) => !keys.has(`${r.url}|${r.target_pkr}`))
+      .map((r) => ({
+        id: `alert-server-${r.alert_id}`,
+        product: listingToProduct(r),
+        targetPrice: r.target_pkr,
+        currentPrice: r.price_pkr,
+        enabled: r.is_active === 1,
+        createdAt: 'Synced',
+        notificationsSent: 0,
+      }));
+    return [...mapped, ...prev];
+  };
+
+  const mergeServerHistory = (
+    prev: SearchHistoryItem[], rows: ServerHistoryRow[]
+  ): SearchHistoryItem[] => {
+    const queries = new Set(prev.map((h) => h.queryText));
+    const mapped: SearchHistoryItem[] = rows
+      .filter((r) => !queries.has(r.query_text))
+      .map((r) => ({
+        id: `hist-server-${r.id}`,
+        queryText: r.query_text,
+        timestamp: new Date(r.created_at * 1000).toLocaleDateString(),
+        resultsCount: 0,
+        category: '',
+      }));
+    return [...mapped, ...prev];
+  };
+
+  const pullServerState = async () => {
+    try {
+      const [saved, alerts, history] = await Promise.all([
+        serverGetSaved(),
+        serverGetAlerts(),
+        serverGetHistory(),
+      ]);
+      setSavedItems((prev) => mergeServerSaved(prev, saved));
+      setPriceAlerts((prev) => mergeServerAlerts(prev, alerts));
+      setSearchHistory((prev) => mergeServerHistory(prev, history));
+    } catch {
+      // Backend unreachable — local state stands, user stays signed in
+      // locally until the token is proven invalid.
+    }
+  };
+
+  const handleLoginSuccess = (loggedUser: User) => {
+    setUser(loggedUser);
+    void pullServerState();
+  };
+
+  const handleLogout = () => {
+    apiLogout();
+    setUser({ id: 'guest', name: 'Guest', email: '', isGuest: true, preferredLanguage: 'en' });
+    showToast('Signed out', 'info');
+  };
+
+  // Restore a previous session on launch (production only).
+  useEffect(() => {
+    if (demoMode) return;
+    let cancelled = false;
+    validateSession()
+      .then((bu) => {
+        if (cancelled || !bu) return;
+        setUser({
+          id: `backend-${bu.id}`,
+          name: bu.name || bu.email.split('@')[0],
+          email: bu.email,
+          isGuest: false,
+          preferredLanguage: 'en',
+        });
+        void pullServerState();
+      })
+      .catch(() => {
+        // No valid session — stay as guest.
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Search & Products State
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
@@ -437,6 +557,12 @@ function ShopSenseApp() {
       category: detectedCat,
     };
     setSearchHistory((prev) => [historyItem, ...prev]);
+    // T4: write-through to the account when signed in.
+    if (isLoggedIn() && historyItem.queryText) {
+      serverAddHistory(historyItem.queryText).catch(() => {
+        // offline — local copy stands
+      });
+    }
 
     // Products are set; the loading screen (staged animation) hands off to results.
     setSearchReady(true);
@@ -610,6 +736,12 @@ function ShopSenseApp() {
       category: cat,
     };
     setSearchHistory((prev) => [historyItem, ...prev]);
+    // T4: write-through to the account when signed in.
+    if (isLoggedIn() && query.trim()) {
+      serverAddHistory(query.trim()).catch(() => {
+        // offline — local copy stands
+      });
+    }
     setLastSearch({ type: 'text', query });
 
     setSearchReady(true);
@@ -641,7 +773,17 @@ function ShopSenseApp() {
     const isAlreadySaved = savedItems.some((s) => s.product.id === product.id);
 
     if (isAlreadySaved) {
+      const existing = savedItems.find((s) => s.product.id === product.id);
       setSavedItems((prev) => prev.filter((s) => s.product.id !== product.id));
+      // T4: write-through to the account when signed in.
+      if (existing && isLoggedIn() && existing.id.startsWith('server-')) {
+        const listingId = Number(existing.id.replace('server-', ''));
+        if (Number.isFinite(listingId)) {
+          serverDeleteSaved(listingId).catch(() => {
+            // offline — local removal stands
+          });
+        }
+      }
       showToast('Removed from saved items', 'info');
     } else {
       const newSavedItem: SavedItem = {
@@ -653,12 +795,26 @@ function ShopSenseApp() {
         priceChange: 0,
       };
       setSavedItems((prev) => [newSavedItem, ...prev]);
+      // T4: write-through to the account when signed in; adopt the server id.
+      if (isLoggedIn()) {
+        serverSaveItem(product)
+          .then((srv) => {
+            setSavedItems((prev) =>
+              prev.map((s) =>
+                s.id === newSavedItem.id ? { ...s, id: `server-${srv.id}` } : s
+              )
+            );
+          })
+          .catch(() => {
+            // offline — local copy stands
+          });
+      }
       showToast('Saved to your wishlist! We will track its price.', 'success');
     }
   };
 
   // Handle adding a price alert
-  const handleSetAlert = (product: Product, targetPrice: number) => {
+  const handleSetAlert = (product: Product, targetPrice: number, channel = 'whatsapp', contact = '') => {
     const newAlert: PriceAlert = {
       id: `alert-${Date.now()}`,
       product,
@@ -669,6 +825,20 @@ function ShopSenseApp() {
       notificationsSent: 0,
     };
     setPriceAlerts((prev) => [newAlert, ...prev]);
+    // T4: write-through to the account when signed in; adopt the server id.
+    if (isLoggedIn() && contact.trim()) {
+      serverAddAlert(product, targetPrice, channel, contact.trim())
+        .then((srv) => {
+          setPriceAlerts((prev) =>
+            prev.map((a) =>
+              a.id === newAlert.id ? { ...a, id: `alert-server-${srv.alert_id}` } : a
+            )
+          );
+        })
+        .catch(() => {
+          // offline — local copy stands
+        });
+    }
   };
 
   // Toggle alert active/inactive
@@ -682,12 +852,30 @@ function ShopSenseApp() {
   // Delete an alert
   const handleDeleteAlert = (id: string) => {
     setPriceAlerts((prev) => prev.filter((a) => a.id !== id));
+    // T4: write-through to the account when signed in.
+    if (isLoggedIn() && id.startsWith('alert-server-')) {
+      const alertId = Number(id.replace('alert-server-', ''));
+      if (Number.isFinite(alertId)) {
+        serverDeleteAlert(alertId).catch(() => {
+          // offline — local removal stands
+        });
+      }
+    }
     showToast('Price alert deleted', 'info');
   };
 
   // Remove saved item
   const handleRemoveSaved = (id: string) => {
     setSavedItems((prev) => prev.filter((s) => s.id !== id));
+    // T4: write-through to the account when signed in.
+    if (isLoggedIn() && id.startsWith('server-')) {
+      const listingId = Number(id.replace('server-', ''));
+      if (Number.isFinite(listingId)) {
+        serverDeleteSaved(listingId).catch(() => {
+          // offline — local removal stands
+        });
+      }
+    }
     showToast('Removed from saved items', 'info');
   };
 
@@ -859,10 +1047,7 @@ function ShopSenseApp() {
           {currentScreen === 'profile' && (
             <ProfileScreen
               user={user}
-              onLogout={() => {
-                setUser({ id: 'guest', name: 'Guest', email: '', isGuest: true, preferredLanguage: 'en' });
-                showToast('Signed out', 'info');
-              }}
+              onLogout={handleLogout}
               onOpenAuth={() => setIsAuthModalOpen(true)}
               isUrduMode={isUrduMode}
               onToggleLanguage={() => setIsUrduMode(!isUrduMode)}
@@ -928,7 +1113,7 @@ function ShopSenseApp() {
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
-        onLoginSuccess={(loggedUser) => setUser(loggedUser)}
+        onLoginSuccess={handleLoginSuccess}
         onContinueGuest={() => {
           setUser({ id: 'guest', name: 'Guest Shopper', email: '', isGuest: true, preferredLanguage: 'en' });
         }}

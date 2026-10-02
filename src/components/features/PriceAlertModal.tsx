@@ -11,7 +11,7 @@ interface PriceAlertModalProps {
   product: Product | null;
   isOpen: boolean;
   onClose: () => void;
-  onSetAlert: (product: Product, targetPrice: number) => void;
+  onSetAlert: (product: Product, targetPrice: number, channel: string, contact: string) => void;
   isUrduMode?: boolean;
 }
 
@@ -65,7 +65,7 @@ export const PriceAlertModal: React.FC<PriceAlertModalProps> = ({
       );
       return;
     }
-    onSetAlert(product, priceNum);
+    onSetAlert(product, priceNum, channel, contact.trim());
     showToast(`Price alert set! We will notify you when price drops below ${formatPKR(priceNum)}`, 'success');
     onClose();
   };

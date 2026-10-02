@@ -126,6 +126,55 @@ black-shoes probe). Plus 4 CDN gate-verification fetches through /api/img
    probe search, 1 fashion + 1 electronics end-to-end); self-evaluate each
    criterion PASS/FAIL/UNVERIFIED. Branch `t3` stacked on `t2`.
 
+## T4 plan (3–5 lines)
+1. Backend (`~/workspace/shopsense-backend`, local FastAPI): real auth in
+   new `app/auth.py` — SQLite user store (`data/users.db`, stdlib sqlite3,
+   survives VM restarts unlike the wiped apt Postgres), `POST
+   /auth/register` + `POST /auth/login` with bcrypt hashing and JWT
+   (`JWT_SECRET` env, never logged). New `app/me.py`: `GET/POST/DELETE
+   /me/saved-items`, `/me/history`, `/me/alerts`; live listings upserted
+   by URL into a `listings` table so saved items reference real listings.
+2. Frontend: new `src/lib/authClient.ts` (JWT in memory + localStorage,
+   `Authorization: Bearer`); AuthModal calls the real backend — no more
+   mock user, clear error when the backend is unreachable. Saved
+   items/alerts/history sync to the backend when logged in; localStorage
+   stays the guest/offline store.
+3. Tests: backend pytest (register/login, wrong-password 401, JWT tamper
+   401, saved-item + alert round-trip on a temp DB); frontend vitest for
+   authClient with mocked fetch. Then tsc + build.
+4. Verify live locally: uvicorn :8000 — register → login → save a real
+   live listing → list → create alert → delete. Backend public deployment
+   stays HUMAN-GATED (local only; no new repo authorized). Branch `t4`
+   stacked on `t3`.
+
+## T4 self-evaluation (2026-10-02 ~05:15 PKT)
+
+- Real accounts: **PASS** — `POST /auth/register` + `/auth/login` with
+  bcrypt hashing and JWT (`JWT_SECRET` env, never logged); wrong-password
+  and unknown-email return the identical 401 (no existence leak); tampered
+  tokens rejected. 10/10 backend pytest green.
+- Persistence: **PASS** — SQLite user store (`data/users.db`, survives VM
+  restarts; the apt Postgres was wiped again). Saved items, search
+  history, price alerts per user; live listings upserted by URL so saved
+  items reference real listings. Restart-proven: saved item + history
+  survived a uvicorn restart.
+- No mock auth: **PASS** — the hardcoded mock user and prefilled demo
+  credentials are gone; an unreachable backend shows an honest error and
+  the app keeps working as a guest (localStorage store unchanged).
+- Sync behavior: **PASS** (code) / **UNVERIFIED** (browser) — session
+  restore on launch, pull+merge on login (guest work preserved, dedupe by
+  URL), write-through on save/unsave/alert/history with offline fallback.
+  No browser available locally for a click-through.
+- Tests/typecheck/build: **PASS** — frontend 167/167 (9 new T4), backend
+  10/10, `tsc` clean, `vite build` green.
+- Live e2e: **PASS** — register → save real listing → list → create alert
+  → history → delete, all 200/201; tampered token → 401.
+- Backend public deployment: **HUMAN-GATED** — stays local (no public
+  host; creating a new GitHub repo is not authorized). `JWT_SECRET` must
+  be set in the deploy environment when one exists.
+- Push: blocked on the approval tap; goes after the `t3` push (stack
+  t4 → t3 → t2 → e1).
+
 ## Next steps
 - T1: e1 preview smoke is SSO-blocked (HUMAN_TODO #3) → user disables
   preview Deployment Protection or supplies a bypass token → smoke →
