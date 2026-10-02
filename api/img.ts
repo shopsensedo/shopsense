@@ -32,6 +32,9 @@ const ALLOWED_HOSTS = new Set([
   'images.priceoye.pk',
   // T3: Telemart (telex.pk, Shopify) product images.
   'cdn.shopify.com',
+  // R8: eval labelling page query photos (Wikimedia Commons).
+  'commons.wikimedia.org',
+  'upload.wikimedia.org',
 ]);
 
 function isAllowedUrl(u: string): boolean {

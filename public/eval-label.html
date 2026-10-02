@@ -70,7 +70,7 @@ async function main() {
     div.className = 'q';
     const qhead = q.kind === 'photo'
       ? `<h2>Photo query: ${q.query} (subject: ${q.subject})</h2>
-         ${q.photoUrl ? `<img class="qphoto" src="${q.photoUrl}" alt="query photo" loading="lazy">` : ''}
+         ${q.photoUrl ? `<img class="qphoto" src="/api/img?url=${encodeURIComponent(q.photoUrl)}" alt="query photo" loading="lazy">` : ''}
          <div class="agent">marketplace query sent: <b>${q.marketplaceQuery}</b></div>`
       : `<h2>Text query: "${q.query}"</h2>
          <div class="agent">english: ${q.subject ?? ''} · marketplace query sent: <b>${q.marketplaceQuery}</b></div>`;
