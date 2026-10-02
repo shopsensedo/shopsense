@@ -253,51 +253,38 @@
   },
   {
    "kind": "photo",
-   "query": "seed_shoe_red_nike.jpg",
-   "subject": "red nike shoes",
+   "query": "sneakers_1.jpg",
+   "subject": "sneakers",
    "marketplaceQuery": "sneakers",
    "results": [
     {
+     "title": "Walkend || Sneakers for men || shoes for men || New stylish ",
+     "score": "yes",
+     "clip": 0.775
+    },
+    {
+     "title": "Dunkfusion Sneakers Shoes For Mens - Lieght Weight Breathabl",
+     "score": "yes",
+     "clip": 0.734
+    },
+    {
      "title": "Walkend || Sneakers for men || shoes for men ||",
-     "price": "Rs. 1,599",
-     "url": "https://www.daraz.pk/products/-i595485869.html",
-     "image": "https://pk-live-21.slatic.net/kf/Sb04cea1733b44c8281d9145e1801867dQ.jpg",
-     "agent_label": "yes",
-     "clip": 0.702
+     "score": "yes",
+     "clip": 0.728
     },
     {
-     "title": "Dunkfusion Sneakers Shoes For Mens - Lieght Weight Breathable Shoes For Mens - Multicolor Sneakers Shoes For Boys - Summer Dunk - Shoes - Mens Shoes",
-     "price": "Rs. 1,199",
-     "url": "https://www.daraz.pk/products/dunkfusion-sneakers-shoes-for-mens-lieght-weight-breathable-shoes-for-mens-multicolor-sneakers-shoes-for-boys-summer-dunk-shoes-mens-shoes-i847264945.html",
-     "image": "https://pk-live-21.slatic.net/kf/S66759324161e446ba27340145fdb19d1u.jpg",
-     "agent_label": "yes",
-     "clip": 0.7
+     "title": "Sneakers for men | shoes for men | joggers  for boys | new a",
+     "score": "yes",
+     "clip": 0.717
     },
     {
-     "title": "Black Camel Sneakers for Men All Season Knit Mesh Comfortable Sporty Fashionable Daily Wear Shoes, Available in Black, Blue & Grey Color",
-     "price": "Rs. 1,968",
-     "url": "https://www.daraz.pk/products/-i897674372.html",
-     "image": "https://static-01.daraz.pk/p/064ce420b1ce5dcc694c3d490166c153.jpg",
-     "agent_label": "yes",
-     "clip": 0.671
-    },
-    {
-     "title": "Sports Shoes for men || Shoes for men || Stylosh shoes for men || highly qualified shoes for men",
-     "price": "Rs. 789",
-     "url": "https://www.daraz.pk/products/-i928735500.html",
-     "image": "https://static-01.daraz.pk/p/df6ea904921885ab95a73c643b8b3c85.jpg",
-     "agent_label": "yes",
-     "clip": 0.67
-    },
-    {
-     "title": "Walkend || Sneakers for men || shoes for men || New stylish sneakers for men || Airjordans Premium Mens Sneakers",
-     "price": "Rs. 1,599",
-     "url": "https://www.daraz.pk/products/-i595514505.html",
-     "image": "https://static-01.daraz.pk/p/60cd73c9af37b55f6bd38c1a52a4c770.jpg",
-     "agent_label": "yes",
-     "clip": 0.655
+     "title": "Sneakers for Men, All Season PVC Casual Style Sports Hiking ",
+     "score": "yes",
+     "clip": 0.705
     }
-   ]
+   ],
+   "photoUrl": "https://commons.wikimedia.org/wiki/Special:FilePath/Bape_Roadsta_(2009-03-21_00.19.20_by_Christian_H.).jpg?width=800",
+   "photoLicence": "CC BY 2.0"
   },
   {
    "kind": "text",
