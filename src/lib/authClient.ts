@@ -59,6 +59,27 @@ export function getToken(): string | null {
   return readLS(TOKEN_KEY);
 }
 
+/**
+ * Lightweight backend reachability probe — never throws.
+ * Used by the UI to label the accounts surface "Demo" when no account
+ * server is configured/reachable (production default: none), instead of
+ * presenting a working-looking sign-in form.
+ */
+export async function isBackendReachable(timeoutMs = 2500): Promise<boolean> {
+  try {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), timeoutMs);
+    try {
+      const res = await fetch(`${API_BASE}/health`, { signal: ctl.signal });
+      return res.ok;
+    } finally {
+      clearTimeout(timer);
+    }
+  } catch {
+    return false;
+  }
+}
+
 export function getStoredUser(): BackendUser | null {
   const raw = readLS(USER_KEY);
   if (!raw) return null;

@@ -16,6 +16,7 @@ import {
   bestAvailablePrice,
 } from '../lib/liveNormalize';
 import { formatSourceStatus, type SourceStatus } from '../lib/liveSearch';
+import { isTelemartEnabled } from '../../api/live-search';
 
 // Real captured Telemart (telex.pk Shopify suggest API) product.
 const REAL_TELEMART_ITEM = {
@@ -248,5 +249,21 @@ describe('formatSourceStatus — Telemart', () => {
       telemart: { ok: false },
     };
     expect(formatSourceStatus(s)).toContain('Telemart: unavailable (blocked or timed out)');
+  });
+});
+
+describe('isTelemartEnabled (T3 feature flag)', () => {
+  test('defaults to OFF when the env var is absent', () => {
+    expect(isTelemartEnabled({})).toBe(false);
+  });
+
+  test('defaults to OFF for any value other than "1"', () => {
+    expect(isTelemartEnabled({ TELEMART_ENABLED: '0' })).toBe(false);
+    expect(isTelemartEnabled({ TELEMART_ENABLED: 'true' })).toBe(false);
+    expect(isTelemartEnabled({ TELEMART_ENABLED: '' })).toBe(false);
+  });
+
+  test('is ON only with TELEMART_ENABLED=1', () => {
+    expect(isTelemartEnabled({ TELEMART_ENABLED: '1' })).toBe(true);
   });
 });

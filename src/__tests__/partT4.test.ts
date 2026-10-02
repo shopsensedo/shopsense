@@ -9,6 +9,7 @@ import {
   BackendUnavailableError,
   getStoredUser,
   getToken,
+  isBackendReachable,
   isLoggedIn,
   login,
   logout,
@@ -165,4 +166,29 @@ test('listingToProduct rebuilds from the server snapshot without inventing data'
   expect(p.rating).toBe(0);
   expect(p.reviewsCount).toBe(0);
   expect(p.priceHistory).toEqual([]);
+});
+
+describe('isBackendReachable (demo labelling probe)', () => {
+  test('returns true when /health responds ok', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true }) as Response));
+    await expect(isBackendReachable(50)).resolves.toBe(true);
+    vi.unstubAllGlobals();
+  });
+
+  test('returns false when /health is not ok', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false }) as Response));
+    await expect(isBackendReachable(50)).resolves.toBe(false);
+    vi.unstubAllGlobals();
+  });
+
+  test('returns false (never throws) when fetch fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new TypeError('fetch failed');
+      }),
+    );
+    await expect(isBackendReachable(50)).resolves.toBe(false);
+    vi.unstubAllGlobals();
+  });
 });
