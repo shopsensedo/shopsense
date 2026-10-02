@@ -252,41 +252,6 @@
    "photoLicence": "CC0"
   },
   {
-   "kind": "photo",
-   "query": "sneakers_1.jpg",
-   "subject": "sneakers",
-   "marketplaceQuery": "sneakers",
-   "results": [
-    {
-     "title": "Walkend || Sneakers for men || shoes for men || New stylish ",
-     "score": "yes",
-     "clip": 0.775
-    },
-    {
-     "title": "Dunkfusion Sneakers Shoes For Mens - Lieght Weight Breathabl",
-     "score": "yes",
-     "clip": 0.734
-    },
-    {
-     "title": "Walkend || Sneakers for men || shoes for men ||",
-     "score": "yes",
-     "clip": 0.728
-    },
-    {
-     "title": "Sneakers for men | shoes for men | joggers  for boys | new a",
-     "score": "yes",
-     "clip": 0.717
-    },
-    {
-     "title": "Sneakers for Men, All Season PVC Casual Style Sports Hiking ",
-     "score": "yes",
-     "clip": 0.705
-    }
-   ],
-   "photoUrl": "https://commons.wikimedia.org/wiki/Special:FilePath/Bape_Roadsta_(2009-03-21_00.19.20_by_Christian_H.).jpg?width=800",
-   "photoLicence": "CC BY 2.0"
-  },
-  {
    "kind": "text",
    "query": "safaid kurta",
    "subject": null,

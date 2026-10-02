@@ -84,8 +84,8 @@ async function main() {
              onerror="this.style.visibility='hidden'">
         <div class="meta">
           <p class="title"><a href="${r.url}" target="_blank" rel="noopener">${r.title}</a></p>
-          <div class="price">${r.price}</div>
-          <div class="agent">agent label: ${r.agent_label} · clip: ${r.clip ?? '—'}</div>
+          ${r.price ? `<div class="price">${r.price}</div>` : ''}
+          <div class="agent">agent label: ${r.agent_label ?? r.score ?? '—'} · clip: ${r.clip ?? '—'}</div>
           <div class="btns">
             <button data-v="yes">yes</button>
             <button data-v="partly">partly</button>
