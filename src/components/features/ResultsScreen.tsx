@@ -2,13 +2,14 @@ import React, { useState, useMemo } from 'react';
 import { SlidersHorizontal, Sparkles, Layers, X, Filter, ChevronDown, RefreshCw, AlertTriangle } from 'lucide-react';
 import { Product, PlatformType, FilterOptions } from '../../types';
 import { ProductCard } from '../ui/ProductCard';
+import { GroupCard } from '../ui/GroupCard';
 import { SourceBadge } from '../ui/SourceBadge';
 import { EmptyState } from '../ui/EmptyState';
 import { Modal } from '../ui/Modal';
 import { formatPKR } from '../ui/PriceTag';
 import { handleImageError } from '../../utils/imageFallback';
 import { SourceStatus, formatSourceStatus, textSimilarityLabel } from '../../lib/liveSearch';
-import { formatFilterFunnel, type FilterFunnel } from '../../lib/liveNormalize';
+import { formatFilterFunnel, type FilterFunnel, groupByTitle } from '../../lib/liveNormalize';
 
 interface ResultsScreenProps {
   products: Product[];
@@ -41,6 +42,12 @@ interface ResultsScreenProps {
   filterFunnel?: FilterFunnel | null;
   /** Re-run the search bypassing the cache. */
   onRefresh?: () => void;
+  /** T2: Gemini description of the uploaded photo (null when basic recognition was used). */
+  imageDescription?: DescribedImage | null;
+  /** T2: true when describe failed and the on-device classification was used. */
+  describeFallback?: boolean;
+  /** T2: run a text search with the edited description. */
+  onDescribeEdit?: (text: string) => void;
 }
 
 const SORT_OPTIONS = [
@@ -50,6 +57,85 @@ const SORT_OPTIONS = [
   { value: 'price_high', label: 'Price: High to Low' },
   { value: 'similarity', label: 'Highest Similarity' },
 ];
+
+import { DescribedImage } from '../../lib/liveSearch';
+
+/** T2 chip: "We think this is: …" with an Edit button that runs a text
+ *  search, or "Basic recognition used" when the describe call fell back. */
+const DescribeChip: React.FC<{
+  description: DescribedImage | null;
+  fallback: boolean;
+  isUrduMode: boolean;
+  onEdit?: (text: string) => void;
+}> = ({ description, fallback, isUrduMode, onEdit }) => {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(description?.product_type ?? '');
+
+  if (fallback || !description) {
+    return (
+      <p className="text-[11px] text-smoke dark:text-fog mt-1.5">
+        {isUrduMode ? 'Bunyadi pehchan istemal hui' : 'Basic recognition used'}
+      </p>
+    );
+  }
+  const label = description.brand
+    ? `${description.product_type} (${description.brand})`
+    : description.product_type;
+  return (
+    <div className="mt-1.5">
+      {editing ? (
+        <form
+          className="flex items-center gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (draft.trim() && onEdit) onEdit(draft.trim());
+            setEditing(false);
+          }}
+        >
+          <input
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            className="text-xs px-2 py-1 rounded-lg border border-[#E5E5E1] dark:border-graphite bg-white dark:bg-carbon text-void dark:text-bone w-48"
+            aria-label={isUrduMode ? 'Tasveer ki wazahat' : 'Describe the photo'}
+          />
+          <button
+            type="submit"
+            className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-lime text-void"
+          >
+            {isUrduMode ? 'Talash' : 'Search'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditing(false)}
+            className="text-[11px] font-semibold text-smoke dark:text-fog px-1"
+          >
+            {isUrduMode ? 'Mansookh' : 'Cancel'}
+          </button>
+        </form>
+      ) : (
+        <p className="text-xs text-smoke dark:text-fog flex items-center gap-2 flex-wrap">
+          <span>
+            {isUrduMode ? 'Hamara khayal hai yeh hai: ' : 'We think this is: '}
+            <span className="font-semibold text-void dark:text-bone">{label}</span>
+          </span>
+          {onEdit && (
+            <button
+              type="button"
+              onClick={() => {
+                setDraft(description.product_type);
+                setEditing(true);
+              }}
+              className="text-[11px] font-bold px-2.5 py-1 rounded-full border border-[#E5E5E1] dark:border-graphite text-void dark:text-bone hover:bg-limetint dark:hover:bg-limedim"
+            >
+              {isUrduMode ? 'Tabdeel karein' : 'Edit'}
+            </button>
+          )}
+        </p>
+      )}
+    </div>
+  );
+};
 
 export const ResultsScreen: React.FC<ResultsScreenProps> = ({
   products,
@@ -72,6 +158,9 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
   totalResults = null,
   filterFunnel = null,
   onRefresh,
+  imageDescription = null,
+  describeFallback = false,
+  onDescribeEdit,
 }) => {
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -206,6 +295,13 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
 
     return list;
   }, [products, filters, activeCategory, searchKind, priceSort]);
+
+  // T3 cross-platform grouping: cluster the filtered, sorted list by title
+  // overlap. A cluster spanning ≥2 platforms renders as one comparison card
+  // (GroupCard); same-platform clusters keep the individual ProductCards.
+  // The group count is the honest "items" number — one card per product.
+  const displayGroups = useMemo(() => groupByTitle(filteredProducts), [filteredProducts]);
+  const groupCardCount = displayGroups.length;
 
   const togglePlatform = (p: PlatformType) => {
     setFilters((prev) => {
@@ -521,6 +617,16 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
                   )}
                 </p>
               )}
+              {/* T2: what the AI thinks the photo shows, with an Edit button
+                  that runs a text search; or "Basic recognition used". */}
+              {searchKind === 'image' && (imageDescription || describeFallback) && (
+                <DescribeChip
+                  description={imageDescription}
+                  fallback={describeFallback}
+                  isUrduMode={isUrduMode}
+                  onEdit={onDescribeEdit}
+                />
+              )}
               {cacheAt != null && (
                 <p className="text-xs text-smoke dark:text-fog mt-1 flex items-center gap-2">
                   <span>
@@ -599,25 +705,44 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
               )}
             </button>
             <span className="text-xs text-smoke dark:text-fog">
-              <strong className="text-void dark:text-bone tabular-nums">{filteredProducts.length}</strong> items
+              <strong className="text-void dark:text-bone tabular-nums">{groupCardCount}</strong> items
             </span>
           </div>
 
-          {/* Product Grid */}
-          {filteredProducts.length > 0 ? (
+          {/* Product Grid — cross-platform groups render as comparison cards */}
+          {displayGroups.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-5">
-              {filteredProducts.map((product, i) => (
-                <div key={product.id} className="animate-fade-up" style={{ animationDelay: `${Math.min(i, 8) * 0.04}s` }}>
-                  <ProductCard
-                    product={product}
-                    isSaved={savedItemIds.includes(product.id)}
-                    onToggleSave={onToggleSave}
-                    onSelect={onSelectProduct}
-                    onCompare={onCompareProduct}
-                    labelKind={searchKind}
-                  />
-                </div>
-              ))}
+              {displayGroups.flatMap((group, i) => {
+                const platforms = new Set(group.map((p) => p.platform));
+                const delay = { animationDelay: `${Math.min(i, 8) * 0.04}s` };
+                if (platforms.size > 1) {
+                  const best = group[0];
+                  return [
+                    <div key={group.map((p) => p.id).join('|')} className="animate-fade-up" style={delay}>
+                      <GroupCard
+                        members={group}
+                        isSaved={savedItemIds.includes(best.id)}
+                        onToggleSave={onToggleSave}
+                        onSelect={onSelectProduct}
+                        onCompare={onCompareProduct}
+                        labelKind={searchKind}
+                      />
+                    </div>,
+                  ];
+                }
+                return group.map((product) => (
+                  <div key={product.id} className="animate-fade-up" style={delay}>
+                    <ProductCard
+                      product={product}
+                      isSaved={savedItemIds.includes(product.id)}
+                      onToggleSave={onToggleSave}
+                      onSelect={onSelectProduct}
+                      onCompare={onCompareProduct}
+                      labelKind={searchKind}
+                    />
+                  </div>
+                ));
+              })}
             </div>
           ) : (
             <EmptyState
