@@ -62,10 +62,11 @@
     <ul>
       <li><strong>0 — Wrong:</strong> wrong product category entirely</li>
       <li><strong>1 — Partly:</strong> right category, but wrong colour, style, or type</li>
-      <li><strong>2 — Right:</strong> right category + colour + style match</li>
+      <li><strong>2 — Right:</strong> right category + colour + style match (use 2 for close matches — if a shopper would consider these the same product, it's a 2)</li>
     </ul>
     <p style="margin-top: 0.75rem; font-size: 0.85rem; color: #94a3b8;">
       Compare the candidate (right) against the query photo (left). Label blind — don't guess which ranking produced it.
+      When in doubt between 1 and 2: if the colour and style are close enough that a shopper would buy it as a match, give 2.
     </p>
   </div>
   <div id="queries"></div>
@@ -76,6 +77,27 @@ let data = null;
 let labels = {}; // itemKey -> {label, timestamp, annotator}
 let annotatorId = '';
 
+// Namespaced localStorage key per annotator (prevents overwrites across sessions)
+function labelsKey() {
+  return annotatorId ? `shopsense-labels-${annotatorId}` : 'shopsense-labels';
+}
+
+function saveLabels() {
+  try {
+    localStorage.setItem(labelsKey(), JSON.stringify(labels));
+  } catch {}
+}
+
+function loadLabels() {
+  try {
+    const saved = localStorage.getItem(labelsKey());
+    if (saved) labels = JSON.parse(saved);
+    else labels = {};
+  } catch {
+    labels = {};
+  }
+}
+
 async function load() {
   // Restore annotator ID
   annotatorId = localStorage.getItem('shopsense-annotator') || '';
@@ -83,6 +105,9 @@ async function load() {
   document.getElementById('annotatorId').addEventListener('change', (e) => {
     annotatorId = e.target.value.trim();
     localStorage.setItem('shopsense-annotator', annotatorId);
+    // Reload labels for the new annotator namespace
+    loadLabels();
+    render();
   });
 
   // Load additional items button
@@ -206,8 +231,8 @@ function render() {
       siblings.forEach((s) => s.classList.remove('selected-0', 'selected-1', 'selected-2'));
       btn.classList.add(`selected-${val}`);
       updateProgress();
-      // Save to localStorage
-      localStorage.setItem('shopsense-labels', JSON.stringify(labels));
+      // Save to localStorage (namespaced by annotator)
+      saveLabels();
       // Remind to export every 25 items
       const count = Object.keys(labels).length;
       if (count % 25 === 0) {
@@ -216,11 +241,8 @@ function render() {
     });
   });
 
-  // Restore from localStorage
-  try {
-    const saved = localStorage.getItem('shopsense-labels');
-    if (saved) labels = JSON.parse(saved);
-  } catch {}
+  // Restore from localStorage (namespaced by annotator)
+  loadLabels();
 
   updateProgress(total, done);
 }
