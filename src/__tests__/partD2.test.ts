@@ -144,21 +144,35 @@ describe('D2-2 filter funnel', () => {
       cap: 16,
       attempted: 16,
       usable: 14,
+      titleScored: 2,
       floored: 12,
       pooled: 8,
       shown: 8,
     });
     expect(f.capDropped).toBe(8);
     expect(f.shortlistDropped).toBe(4);
+    expect(f.titleScored).toBe(2);
     const text = formatFilterFunnel(f);
-    expect(text).toContain('returned 24');
-    expect(text).toContain('usable image 14');
-    expect(text).toContain('compared 16');
-    expect(text).toContain('below relevance floor 2');
-    expect(text).toContain('shown 8');
-    expect(text).toContain('16-thumbnail cap dropped 8');
-    expect(text).toContain('2 thumbnails failed to load');
-    expect(text).toContain('relevance shortlist dropped 4');
+    expect(text).toBe(
+      'returned 24 → images loaded 14 → title-scored 2 → below relevance floor 2 → shown 8 ' +
+        '(8 dropped by the 16-thumbnail cap; 2 kept with "Image unavailable" (scored by title match); 4 dropped by the relevance shortlist)',
+    );
+  });
+
+  test('chain without title-scored step when every thumbnail loaded', () => {
+    const f = buildFilterFunnel({
+      returned: 12,
+      cap: 16,
+      attempted: 12,
+      usable: 12,
+      titleScored: 0,
+      floored: 11,
+      pooled: 11,
+      shown: 11,
+    });
+    expect(formatFilterFunnel(f)).toBe(
+      'returned 12 → images loaded 12 → below relevance floor 1 → shown 11',
+    );
   });
 
   test('clean run has no parenthetical notes', () => {
@@ -172,7 +186,7 @@ describe('D2-2 filter funnel', () => {
       shown: 5,
     });
     expect(formatFilterFunnel(f)).toBe(
-      'returned 5, usable image 5, compared 5, below relevance floor 0, shown 5',
+      'returned 5 → images loaded 5 → below relevance floor 0 → shown 5',
     );
   });
 
@@ -217,11 +231,25 @@ function mkListing(price: number, priceText?: string): LiveListing {
 }
 
 describe('D2-3 noun cap refinement and ordering', () => {
-  test('noun cap is skipped when the title contains the typed brand', () => {
+  test('noun cap is skipped when the title contains the typed brand (no synonym in title)', () => {
     const brands = brandsInQuery('nike white sneakers', ['nike', 'white', 'sneakers']);
     expect(brands).toContain('nike');
-    // No "sneakers" word in the title — but Nike is the typed brand.
-    expect(nounCapTextLabel('Strong match', AF1_TITLE, 'sneakers', brands)).toBe(
+    // "Nike Dunk Low Panda": no "sneakers" word and no sneakers synonym —
+    // only the typed brand rescues it from the cap.
+    const dunk = 'Nike Dunk Low Panda';
+    const hasSynonym = nounVariants('sneakers').some((v) =>
+      dunk.toLowerCase().includes(v),
+    );
+    expect(hasSynonym).toBe(false);
+    expect(nounCapTextLabel('Strong match', dunk, 'sneakers', brands)).toBe(
+      'Strong match',
+    );
+  });
+
+  test('noun cap is skipped when the title contains a noun synonym (no brand)', () => {
+    // Synonym path, tested separately from the brand exception above.
+    const synonymTitle = 'Running Shoes for Men \u2014 Lightweight Trainers';
+    expect(nounCapTextLabel('Strong match', synonymTitle, 'sneakers', [])).toBe(
       'Strong match',
     );
   });
