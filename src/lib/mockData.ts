@@ -3,6 +3,14 @@ import sneakerImg from '../assets/images/pakistan_shoes_sneaker_1790799393681.jp
 import kurtaImg from '../assets/images/pakistan_kurta_dress_1790799410747.jpg';
 
 export const PLATFORMS_INFO: Record<PlatformType, PlatformInfo> = {
+  demo: {
+    id: 'demo',
+    name: 'Demo catalogue',
+    color: '#6b7280',
+    badgeBg: '#f3f4f6',
+    badgeText: '#374151',
+    trustedSellerRate: 0,
+  },
   daraz: {
     id: 'daraz',
     name: 'Daraz PK',

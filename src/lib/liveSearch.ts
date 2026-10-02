@@ -113,9 +113,9 @@ export interface LiveListing {
  * `skipped` — the UI shows "not searched (electronics only)".
  */
 export interface SourceStatus {
-  priceoye: { ok: true; count: number } | { ok: false; skipped?: boolean };
-  daraz: { ok: true; count: number } | { ok: false; skipped?: boolean };
-  telemart: { ok: true; count: number } | { ok: false; skipped?: boolean };
+  priceoye: { ok: true; count: number } | { ok: false; skipped?: boolean; disabled?: boolean };
+  daraz: { ok: true; count: number } | { ok: false; skipped?: boolean; disabled?: boolean };
+  telemart: { ok: true; count: number } | { ok: false; skipped?: boolean; disabled?: boolean };
 }
 
 export const EMPTY_SOURCES: SourceStatus = {
@@ -124,16 +124,20 @@ export const EMPTY_SOURCES: SourceStatus = {
   telemart: { ok: false },
 };
 
-type SourceState = { ok: true; count: number } | { ok: false; skipped?: boolean };
+type SourceState =
+  | { ok: true; count: number }
+  | { ok: false; skipped?: boolean; disabled?: boolean };
 
 /** "PriceOye: 8 results · Daraz: unavailable (blocked or timed out) · Telemart: 5 results" */
 export function formatSourceStatus(s: SourceStatus): string {
   const part = (name: string, st: SourceState, skippedNote = 'not searched') =>
     st.ok
       ? `${name}: ${st.count} result${st.count === 1 ? '' : 's'}`
-      : st.skipped
-        ? `${name}: ${skippedNote}`
-        : `${name}: unavailable (blocked or timed out)`;
+      : st.disabled
+        ? `${name}: disabled by site setting`
+        : st.skipped
+          ? `${name}: ${skippedNote}`
+          : `${name}: unavailable (blocked or timed out)`;
   return (
     `${part('PriceOye', s.priceoye, 'not searched (electronics only)')}` +
     ` · ${part('Daraz', s.daraz)} · ${part('Telemart', s.telemart)}`
@@ -189,7 +193,7 @@ export async function fetchLiveListings(
   fallbackQuery: string,
   siteQuery?: string,
   skipSource?: 'priceoye' | 'daraz' | 'telemart',
-): Promise<{ listings: LiveListing[]; sources: SourceStatus; returned: number }> {
+): Promise<{ listings: LiveListing[]; sources: SourceStatus; returned: number; liveSourcesDisabled: boolean }> {
   const sq = siteQuery
     ? { daraz: siteQuery, priceoye: siteQuery }
     : (SITE_QUERIES[category] ?? { daraz: fallbackQuery, priceoye: fallbackQuery });
@@ -204,7 +208,7 @@ export async function fetchLiveListings(
     d = await r.json();
   } catch {
     // The function itself failed — both sources are unknown/unavailable.
-    return { listings: [], sources: EMPTY_SOURCES, returned: 0 };
+    return { listings: [], sources: EMPTY_SOURCES, returned: 0, liveSourcesDisabled: false };
   }
   // `returned` = listings from the sources after URL dedupe, BEFORE the
   // thumbnail cap — this is the honest "M" in "Showing N of M".
@@ -212,14 +216,16 @@ export async function fetchLiveListings(
     (Array.isArray(d?.results) ? d.results : []) as LiveListing[],
   );
   const results = deduped.slice(0, MAX_CANDIDATES);
-  // /api/live-search reports per-source outcomes as count | 'error' | 'skipped'.
+  // /api/live-search reports per-source outcomes as count | 'error' | 'skipped' | 'disabled'.
   const src = d?.sources ?? {};
   const toStatus = (v: unknown): SourceState =>
     typeof v === 'number'
       ? { ok: true, count: v }
       : v === 'skipped'
         ? { ok: false, skipped: true }
-        : { ok: false };
+        : v === 'disabled'
+          ? { ok: false, disabled: true }
+          : { ok: false };
   return {
     listings: results,
     sources: {
@@ -228,6 +234,7 @@ export async function fetchLiveListings(
       telemart: toStatus(src.telemart),
     },
     returned: deduped.length,
+    liveSourcesDisabled: d?.liveSourcesEnabled === false,
   };
 }
 
@@ -794,9 +801,19 @@ export function categorizeKeywords(keywords: string[]): string {
 
 /** Product-type nouns, used to pick the "type" word for a short marketplace query. */
 const PRODUCT_NOUNS: Set<string> = new Set(
-  'shoes sneakers footwear boots heels sandals slippers joggers khussa pumps loafers wedges watch watches smartwatch kurta shalwar kameez shirt tshirt hoodie jacket jeans bag bags handbag backpack mobile smartphone phone laptop earbuds airpods headphones sunglasses clothes clothing dress suit frock abaya saree gown skirt maxi'.split(
-    ' ',
-  ),
+  ('shoes sneakers footwear boots heels sandals slippers joggers khussa pumps loafers wedges ' +
+    'watch watches smartwatch kurta shalwar kameez shirt tshirt hoodie jacket jeans ' +
+    'bag bags handbag backpack mobile smartphone phone laptop earbuds airpods headphones ' +
+    'sunglasses clothes clothing dress suit frock abaya saree gown skirt maxi ' +
+    'diapers wipes detergent soap shampoo').split(' '),
+);
+
+/**
+ * R7: quantity/packaging words. Dropped from the short marketplace query
+ * unless they are the only noun-like token (e.g. "pack of cards").
+ */
+const PACKAGING_WORDS: Set<string> = new Set(
+  'pack packs set sets piece pieces pcs dozen dozens box boxes bundle carton'.split(' '),
 );
 
 /** Canonical product noun per site-query category (fallback when the mapped
@@ -872,10 +889,16 @@ export function buildMarketplaceQuery(
   let noun = '';
   const modifiers: string[] = [];
   const seenMod = new Set<string>();
+  const packagingSeen: string[] = [];
   for (const tok of rawTokens) {
     if (brandTokens.has(tok)) continue;
     const mapped = mapToken(tok);
     if (colour && mapped.includes(colour)) continue;
+    // R7: packaging/quantity words are dropped unless they're the only noun.
+    if (PACKAGING_WORDS.has(tok)) {
+      if (!packagingSeen.includes(tok)) packagingSeen.push(tok);
+      continue;
+    }
     if (PRODUCT_NOUNS.has(tok) && mapped.includes(tok)) {
       if (tok.length > noun.length) noun = tok;
       continue;
@@ -892,10 +915,16 @@ export function buildMarketplaceQuery(
     }
   }
   if (!noun) {
-    noun =
+    const fallback =
       CATEGORY_NOUN[category] ??
       keywords[keywords.length - 1] ??
       '';
+    // R7: a packaging word never wins the fallback when a real word exists.
+    noun = PACKAGING_WORDS.has(fallback) && modifiers.length > 0 ? '' : fallback;
+  }
+  // R7: packaging word is the only noun-like token — keep it (e.g. "pack").
+  if (!noun && packagingSeen.length > 0 && modifiers.length === 0) {
+    noun = packagingSeen[0];
   }
 
   // Assemble: brand + colour + modifiers + noun, at most 3 words.
@@ -935,6 +964,8 @@ export async function searchLiveText(
   category: string;
   query: string;
   sources: SourceStatus;
+  /** R9: true when the server kill switch disabled live sources. */
+  liveSourcesDisabled: boolean;
   priceSort: PriceIntent;
   /** Results returned by the sources after URL dedupe — the "M" in "Showing N of M". */
   totalCandidates: number;
@@ -958,7 +989,7 @@ export async function searchLiveText(
   const skipSource = priceOyeSellsCategory(categoryKeyForText(keywords))
     ? undefined
     : 'priceoye';
-  const { listings, sources, returned } = await fetchLiveListings(
+  const { listings, sources, returned, liveSourcesDisabled } = await fetchLiveListings(
     category,
     english,
     marketplaceQuery,
@@ -969,6 +1000,7 @@ export async function searchLiveText(
     mappedQuery: english,
     marketplaceQuery,
     category,
+    liveSourcesDisabled,
     query: english,
     sources,
     priceSort: priceIntent,
@@ -1053,6 +1085,7 @@ export async function searchLiveText(
     category,
     query: english,
     sources,
+    liveSourcesDisabled,
     priceSort: priceIntent,
     // M = what the sources returned after URL dedupe — NOT the thumbnail
     // survivors. The funnel below accounts for every later drop.
@@ -1085,6 +1118,8 @@ export async function searchLive(
   category: string;
   query: string;
   sources: SourceStatus;
+  /** R9: true when the server kill switch disabled live sources. */
+  liveSourcesDisabled: boolean;
   described: DescribedImage | null;
 }> {
   // 1. embed the user's photo (downloads the CLIP model on first use)
@@ -1131,9 +1166,11 @@ export async function searchLive(
   const seenUrls = new Set<string>();
   const listings: LiveListing[] = [];
   let sources: SourceStatus = { ...EMPTY_SOURCES };
+  let liveSourcesDisabled = false;
   for (const q of siteQueries) {
     const r = await fetchLiveListings(category, q, undefined, skipSource);
     sources = mergeSourceStatus(sources, r.sources);
+    liveSourcesDisabled = liveSourcesDisabled || r.liveSourcesDisabled;
     for (const l of r.listings) {
       if (!seenUrls.has(l.url)) {
         seenUrls.add(l.url);
@@ -1142,7 +1179,7 @@ export async function searchLive(
     }
   }
   const query = siteQueries[0];
-  const empty = { products: [] as Product[], category, query, sources, described: describedOut };
+  const empty = { products: [] as Product[], category, query, sources, liveSourcesDisabled, described: describedOut };
   if (listings.length === 0) return empty;
 
   // 4+5. embed each product image (via proxy) and rank by visual similarity.
@@ -1171,6 +1208,7 @@ export async function searchLive(
     category,
     query,
     sources,
+    liveSourcesDisabled,
     described: describedOut,
   };
 }
