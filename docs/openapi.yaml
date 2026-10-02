@@ -1,0 +1,561 @@
+# ShopSense backend API — OpenAPI 3.1
+#
+# T6 mobile-readiness artifact. Describes the FastAPI backend
+# (~/workspace/shopsense-backend) that the Flutter app (FYP target) will
+# call. The backend is currently LOCAL-ONLY (no public deployment);
+# `servers` reflects that. Field names, limits and status codes below are
+# taken from the actual implementation (app/*.py) on 2026-10-02 — not
+# invented.
+#
+# Auth: JWT Bearer (HS256, 30-day TTL). Passwords are stored bcrypt-hashed;
+# the JWT secret comes from the JWT_SECRET env var and is never logged.
+
+openapi: 3.1.0
+info:
+  title: ShopSense Backend API
+  version: 1.0.0
+  description: >-
+    AI visual search & price intelligence for Pakistani e-commerce.
+    Image embedding (CLIP), visual/text similarity search over a pgvector
+    catalog, Roman-Urdu query mapping, and per-user persistence
+    (saved items, search history, price alerts) behind JWT auth.
+servers:
+  - url: http://localhost:8000
+    description: Local development (uvicorn). No public deployment yet.
+security: []  # most endpoints are public; secured ones declare bearerAuth
+
+paths:
+  /health:
+    get:
+      summary: Service health
+      operationId: health
+      responses:
+        '200':
+          description: Backend is up
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /embed:
+    post:
+      summary: Embed a product photo with CLIP
+      operationId: embedImage
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Product photo (any image/* type)
+      responses:
+        '200':
+          description: 512-dim L2-normalized CLIP embedding
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmbedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /search:
+    post:
+      summary: Visual search — similar catalog products for a photo
+      operationId: searchByImage
+      parameters:
+        - name: top_k
+          in: query
+          schema: { type: integer, default: 5, minimum: 1 }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Ranked similar products (cosine similarity)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageSearchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          description: Catalog database unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /search-text:
+    post:
+      summary: Text search with Roman-Urdu keyword mapping
+      operationId: searchByText
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TextSearchRequest'
+      responses:
+        '200':
+          description: Mapped keywords + ranked products
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TextSearchResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /auth/register:
+    post:
+      summary: Create an account
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Account created; returns JWT + user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/login:
+    post:
+      summary: Sign in
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Returns JWT + user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/me:
+    get:
+      summary: Validate the current session
+      operationId: getMe
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Session valid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/BackendUser'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /me/saved-items:
+    post:
+      summary: Save a listing to the account
+      operationId: saveItem
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListingIn'
+      responses:
+        '201':
+          description: Saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  listing_id: { type: integer }
+                  saved: { type: boolean }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      summary: List saved items
+      operationId: getSavedItems
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Saved listings, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ServerListing'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /me/saved-items/{listing_id}:
+    delete:
+      summary: Remove a saved item
+      operationId: deleteSavedItem
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: listing_id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ok'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /me/history:
+    post:
+      summary: Record a search query
+      operationId: addHistory
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HistoryIn'
+      responses:
+        '201':
+          description: Recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ok'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      summary: Recent search history
+      operationId: getHistory
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 30, minimum: 1, maximum: 100 }
+      responses:
+        '200':
+          description: History items, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/HistoryItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /me/alerts:
+    post:
+      summary: Create a price alert
+      operationId: addAlert
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertIn'
+      responses:
+        '201':
+          description: Alert created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: integer, description: Alert id }
+                  listing_id: { type: integer }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      summary: List price alerts
+      operationId: getAlerts
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Alerts with their listing snapshots
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ServerAlert'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /me/alerts/{alert_id}:
+    delete:
+      summary: Delete a price alert
+      operationId: deleteAlert
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: alert_id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ok'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT from /auth/register or /auth/login (HS256, 30-day TTL)
+
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status, service, version]
+      properties:
+        status: { type: string, example: ok }
+        service: { type: string, example: shopsense-backend }
+        version: { type: string, example: '1.0.0' }
+
+    EmbedResponse:
+      type: object
+      required: [dim, model, embed_time_ms, embedding]
+      properties:
+        dim: { type: integer, example: 512 }
+        model: { type: string, example: openai/clip-vit-base-patch32 }
+        embed_time_ms: { type: integer }
+        embedding:
+          type: array
+          items: { type: number, format: float }
+          description: L2-normalized image embedding vector
+
+    SearchResultItem:
+      type: object
+      required: [id, title, price_pkr, platform, purchase_link, image_file, category, score]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        price_pkr: { type: integer }
+        platform: { type: string, example: daraz }
+        purchase_link: { type: string, format: uri }
+        image_file: { type: string }
+        category: { type: string }
+        score:
+          type: number
+          format: float
+          description: Cosine similarity (image search) or keyword hit ratio (text search)
+
+    ImageSearchResponse:
+      type: object
+      required: [results, query_time_ms]
+      properties:
+        results:
+          type: array
+          items: { $ref: '#/components/schemas/SearchResultItem' }
+        query_time_ms: { type: integer }
+
+    TextSearchRequest:
+      type: object
+      required: [query]
+      properties:
+        query:
+          type: string
+          minLength: 1
+          example: kala joota
+          description: Roman Urdu or English query
+        top_k:
+          type: integer
+          default: 5
+          minimum: 1
+          maximum: 20
+
+    TextSearchResponse:
+      type: object
+      required: [mapped_keywords, results]
+      properties:
+        mapped_keywords:
+          type: array
+          items: { type: string }
+          description: English keywords the query was mapped to
+        results:
+          type: array
+          items: { $ref: '#/components/schemas/SearchResultItem' }
+
+    RegisterRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, minLength: 3, maxLength: 120, example: user@example.com }
+        password: { type: string, minLength: 6, maxLength: 128, format: password }
+        name: { type: string, default: '', maxLength: 80 }
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, minLength: 3, maxLength: 120 }
+        password: { type: string, minLength: 6, maxLength: 128, format: password }
+
+    BackendUser:
+      type: object
+      required: [id, email]
+      properties:
+        id: { type: integer }
+        email: { type: string }
+        name: { type: string }
+
+    TokenResponse:
+      type: object
+      required: [access_token, user]
+      properties:
+        access_token: { type: string, description: JWT, send as Authorization Bearer }
+        token_type: { type: string, default: bearer }
+        user: { $ref: '#/components/schemas/BackendUser' }
+
+    ListingIn:
+      type: object
+      required: [title, url]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 300 }
+        url: { type: string, minLength: 8, maxLength: 500, description: Canonical product URL; listings are upserted by URL }
+        price_pkr: { type: integer, default: 0, minimum: 0 }
+        image_url: { type: string, default: '', maxLength: 500 }
+        platform: { type: string, default: '', maxLength: 40 }
+
+    ServerListing:
+      allOf:
+        - $ref: '#/components/schemas/ListingIn'
+        - type: object
+          required: [id]
+          properties:
+            id: { type: integer }
+            saved_at: { type: integer, description: Unix timestamp }
+
+    HistoryIn:
+      type: object
+      required: [query_text]
+      properties:
+        query_text: { type: string, minLength: 1, maxLength: 200 }
+
+    HistoryItem:
+      type: object
+      required: [id, query_text]
+      properties:
+        id: { type: integer }
+        query_text: { type: string }
+        created_at: { type: integer, description: Unix timestamp }
+
+    AlertIn:
+      allOf:
+        - $ref: '#/components/schemas/ListingIn'
+        - type: object
+          required: [target_pkr]
+          properties:
+            target_pkr: { type: integer, exclusiveMinimum: 0, description: Alert fires at or below this PKR price }
+            channel: { type: string, default: whatsapp, maxLength: 20 }
+            contact: { type: string, default: '', maxLength: 120 }
+
+    ServerAlert:
+      allOf:
+        - $ref: '#/components/schemas/ServerListing'
+        - type: object
+          required: [alert_id, target_pkr]
+          properties:
+            alert_id: { type: integer, description: Alert row id (distinct from listing id) }
+            target_pkr: { type: integer }
+            channel: { type: string }
+            contact: { type: string }
+            is_active: { type: integer }
+            created_at: { type: integer, description: Unix timestamp }
+
+    Ok:
+      type: object
+      properties:
+        ok: { type: boolean, example: true }
+
+    Error:
+      type: object
+      properties:
+        detail: { type: string }
+
+  responses:
+    BadRequest:
+      description: Invalid input
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unauthorized:
+      description: Missing/invalid/expired JWT (tampered tokens are rejected)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: No such row for this user
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    ValidationError:
+      description: Request failed pydantic validation
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    ServerError:
+      description: Embedding/search failed server-side
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
