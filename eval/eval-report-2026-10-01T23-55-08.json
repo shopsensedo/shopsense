@@ -1,0 +1,261 @@
+{
+  "generatedAt": "2026-10-01T23:55:08.975Z",
+  "queries": 10,
+  "requestsMade": 10,
+  "totals": {
+    "results": 244,
+    "priceAvailable": 243,
+    "priceAvailableFrac": 1
+  },
+  "sources": {
+    "priceoye": {
+      "ok": 3,
+      "error": 0,
+      "skipped": 7
+    },
+    "daraz": {
+      "ok": 10,
+      "error": 0,
+      "skipped": 0
+    },
+    "telemart": {
+      "ok": 10,
+      "error": 0,
+      "skipped": 0
+    }
+  },
+  "perQuery": [
+    {
+      "query": "nike white sneakers",
+      "marketplaceQuery": "nike white sneakers",
+      "category": "shoes",
+      "skipSource": "priceoye",
+      "count": 22,
+      "sources": {
+        "priceoye": "skipped",
+        "daraz": 12,
+        "telemart": 10
+      },
+      "priceAvailable": 22,
+      "priceAvailableFrac": 1,
+      "imagesPresentFrac": 1,
+      "keywordRelevanceProxy": 1,
+      "topTitles": [
+        "“Men’s White Sneakers | Stylish Casual & Sports Shoes | Lightweight Comfortable Jogging & Walking Shoes”",
+        "“Men’s White Sneakers  Stylish Casual & Sports Shoes  Lightweight Comfortable Jogging & Walking Shoes”",
+        "Nike Air Force 1 White Sneakers for Men – Premium Comfortable Casual & Street Style Shoes",
+        "“Men’s White Sneakers | Stylish Casual & Sports Shoes | Lightweight Comfortable Jogging & Walking Shoes”",
+        "Nike Air Force 1 Low '07 – Triple White"
+      ]
+    },
+    {
+      "query": "kala joota",
+      "marketplaceQuery": "black shoes",
+      "category": "shoes",
+      "skipSource": "priceoye",
+      "count": 22,
+      "sources": {
+        "priceoye": "skipped",
+        "daraz": 12,
+        "telemart": 10
+      },
+      "priceAvailable": 22,
+      "priceAvailableFrac": 1,
+      "imagesPresentFrac": 1,
+      "keywordRelevanceProxy": 1,
+      "topTitles": [
+        "Black Camel Sneakers for Men All Season Knit Mesh Comfortable Sporty Fashionable Daily Wear Shoes, Available in Black, Blue & Grey Color",
+        "Toms syanno black canvas shoes Outdoor Running Shoes Casual Desert Sneakers",
+        "Formal Loafers Shoes For Men Summer Synthetic Leather Office Classic Style Multiple Color",
+        "Alpha Wear Black & White Sneakers for Men & Women | Unisex Casual Shoes | Lightweight Fashion Joggers with Thick Sole | Comfortable Walking Shoes for Daily Wear",
+        "Men's Fashion Formal Slip On Loafers Leather Office Business Shoes Comfortable Lightweight Walking Dress Shoes for Daily Use"
+      ]
+    },
+    {
+      "query": "sasta smartwatch",
+      "marketplaceQuery": "smartwatch",
+      "category": "watch",
+      "skipSource": null,
+      "count": 30,
+      "sources": {
+        "priceoye": 8,
+        "daraz": 12,
+        "telemart": 10
+      },
+      "priceAvailable": 30,
+      "priceAvailableFrac": 1,
+      "imagesPresentFrac": 1,
+      "keywordRelevanceProxy": 1,
+      "topTitles": [
+        "Zero Visionary Smartwatch",
+        "Zero Navigator Smartwatch",
+        "Zero Legacy Smartwatch",
+        "Zero Pixel Smartwatch",
+        "Zero Vision Smartwatch"
+      ]
+    },
+    {
+      "query": "audionic",
+      "marketplaceQuery": "audionic audionic",
+      "category": "",
+      "skipSource": "priceoye",
+      "count": 22,
+      "sources": {
+        "priceoye": "skipped",
+        "daraz": 12,
+        "telemart": 10
+      },
+      "priceAvailable": 22,
+      "priceAvailableFrac": 1,
+      "imagesPresentFrac": 1,
+      "keywordRelevanceProxy": 1,
+      "topTitles": [
+        "Audionic  Airbud Signature S680 Quad Mic, ENC Wireless Earbuds, Gaming mode Low Latency TWS Earbud With 40 Hours Playtime, IPx4 Water Proof Wireless Earphones W",
+        "Audionic Airbud 495 Wireless Earbuds | 40Hr Long Battery Budget Earbuds | Quad MIC Noise Cancelling Earbuds For Calling | Gaming Mode 50ms Low Latency | BT 5.3 ",
+        "Audionic Mark 1 Earphone | Hi-Fi Earphone Clear Treble Extra Bass Wired Stereo Handsfree With HD Mic | Wired hand free with 3.5 mm jack | premium quality earpho",
+        "Audionic Airbud 550 Quad MIC ENC Earbuds | Gaming Mode | IPx4 Water Proof TWS Wireless Earbuds With 26 Hour Playtime Bluetooth Ear buds And Headphones",
+        "Audionic Airbud 425 Quad Mic | ENC Wireless Earbuds | Gaming mode Low Latency TWS Earbud With 40 Hours Playtime | IPx4 Water Proof Wireless Earphones With Voice"
+      ]
+    },
+    {
+      "query": "milli sneakers",
+      "marketplaceQuery": "milli sneakers",
+      "category": "shoes",
+      "skipSource": "priceoye",
+      "count": 22,
+      "sources": {
+        "priceoye": "skipped",
+        "daraz": 12,
+        "telemart": 10
+      },
+      "priceAvailable": 22,
+      "priceAvailableFrac": 1,
+      "imagesPresentFrac": 1,
+      "keywordRelevanceProxy": 1,
+      "topTitles": [
+        "SOLE STORY BLK & WHT MENS SNEAKERS",
+        "Cheetah By SERVIS Casual Sneakers For Men For Men - Shoes For Men",
+        "Ace By SERVIS Men Sneakers For Men - Shoes For Men",
+        "Ace By SERVIS Women's Sneakers for Women Breathable Mesh Slip-On Casual Shoes with Memory Foam Insoles for Comfort",
+        "Ace By SERVIS Men Sneakers For Men - Shoes For Men"
+      ]
+    },
+    {
+      "query": "sneakers",
+      "marketplaceQuery": "sneakers",
+      "category": "shoes",
+      "skipSource": "priceoye",
+      "count": 22,
+      "sources": {
+        "priceoye": "skipped",
+        "daraz": 12,
+        "telemart": 10
+      },
+      "priceAvailable": 22,
+      "priceAvailableFrac": 1,
+      "imagesPresentFrac": 1,
+      "keywordRelevanceProxy": 1,
+      "topTitles": [
+        "Sports Shoes for men || Shoes for men || Stylosh shoes for men || highly qualified shoes for men",
+        "Walkend || Sneakers for men || shoes for men ||",
+        "Sneakers For Men - Shoes For Men - Sneakers For Boys - Shoes - Men Shoes - Sports Shoes For Men - Boys Shoes All-Season Casual Hiking Sneakers-Comfortable Walki",
+        "Sports  shoes for men High qualified  shoes for men Shoes for men",
+        "Black Camel Sneakers for Men All Season Knit Mesh Comfortable Sporty Fashionable Daily Wear Shoes, Available in Black, Blue & Grey Color"
+      ]
+    },
+    {
+      "query": "power bank",
+      "marketplaceQuery": "power bank bank",
+      "category": "",
+      "skipSource": null,
+      "count": 30,
+      "sources": {
+        "priceoye": 8,
+        "daraz": 12,
+        "telemart": 10
+      },
+      "priceAvailable": 30,
+      "priceAvailableFrac": 1,
+      "imagesPresentFrac": 1,
+      "keywordRelevanceProxy": 1,
+      "topTitles": [
+        "Redmi Power Bank (20000mAh)",
+        "Faster Power Core 20000 mAh Power Bank",
+        "Urpin P49 Power Bank 10000mAh",
+        "Urpin P50 Power Bank 20000mAh",
+        "Urpin P26 Power Bank 20000mAh"
+      ]
+    },
+    {
+      "query": "bachon ke kapray",
+      "marketplaceQuery": "kids clothes",
+      "category": "",
+      "skipSource": "priceoye",
+      "count": 22,
+      "sources": {
+        "priceoye": "skipped",
+        "daraz": 12,
+        "telemart": 10
+      },
+      "priceAvailable": 21,
+      "priceAvailableFrac": 0.95,
+      "imagesPresentFrac": 1,
+      "keywordRelevanceProxy": 1,
+      "topTitles": [
+        "Sweatshirt And Pajama Trousers For Kids Baby Boys And Baby Girls Dresses Tracksuit Imported Comfy Winter Warm Top Clothes Set Dresses Outfit Suit For Unisex Jan",
+        "MAMA,S Boy T-shirt And Shorts Pants For Kids Baby Boys And Baby Girls Dresses Short Sleeves Tee Top's Clothes Set's Dresses Outfit Suit For Unisex JHA Eid Colle",
+        "T shirt And Short Pant For Kids Baby Boys And Baby Girls Round Neck Short Sleeve Tee Tops Clothes Sets Dresses Outfit",
+        "T-shirt And Shorts Pants For Kids Baby Boys And Baby Girls Dresses Short Sleeves Tee Top's Clothes Set's Dresses Outfit Suit For Unisex Jannat Place T-shirt And",
+        "T-shirts And Shorts Pants For Kids Baby Boys And Baby Girls Dresses Short Sleeves Tee Top's Clothes Set's Dresses Outfit Suit For Unisex Jannat Store T-shirt An"
+      ]
+    },
+    {
+      "query": "laptop",
+      "marketplaceQuery": "laptop",
+      "category": "laptop",
+      "skipSource": null,
+      "count": 30,
+      "sources": {
+        "priceoye": 8,
+        "daraz": 12,
+        "telemart": 10
+      },
+      "priceAvailable": 30,
+      "priceAvailableFrac": 1,
+      "imagesPresentFrac": 1,
+      "keywordRelevanceProxy": 0.38,
+      "topTitles": [
+        "HP LAPTOP AI 15 fd2098TU Intel Core Ultra 7 255U (16GB DDR5 - 512GB SSD)",
+        "HP 15 FD2100TU AI Laptop Intel Core Ultra 5 225U Processor (16GB RAM - 512GB SSD)",
+        "HP Victus 15-FA2787NR Core i7-13620H Gaming Laptop (16GB-512GB SSD) RTX 5060 8GB",
+        "Lenovo Legion Pro 7 Ultra 9 275HX (64GB-2TB SSD) RTX 5090 24GB 240Hz",
+        "Lenovo IdeaPad Slim 3 Core i5 13th Gen"
+      ]
+    },
+    {
+      "query": "perfume",
+      "marketplaceQuery": "perfume perfume",
+      "category": "",
+      "skipSource": "priceoye",
+      "count": 22,
+      "sources": {
+        "priceoye": "skipped",
+        "daraz": 12,
+        "telemart": 10
+      },
+      "priceAvailable": 22,
+      "priceAvailableFrac": 1,
+      "imagesPresentFrac": 1,
+      "keywordRelevanceProxy": 0.75,
+      "topTitles": [
+        "Dior - SAUVAGE IMPRESSION Perfume and long lasting perfume and good fragrance and best for men and best for gift - 100ml",
+        "Gold Edition Impression Eau de Parfum for Men – 100ml | Premium Long-Lasting Fragrance | Luxurious Golden Bottle with Bold Black Box | Warm Woody Amber Scent wi",
+        "Brut Classic by Brut Faberge perfume for men long lasting perfume premium luxury perfume high-quality branded perfume good fragrance and best scent Classic bott",
+        "POUR FEMME 100ML MINIATURE PINK 100ML Perfume For Women and Girls Our impression Best For Gift",
+        "Impression Premium Long Lasting Perfume for Men – 35ml | Strong Impression Fragrance with High Projection & All-Day Performance | Signature Fresh & Masculine Sc"
+      ]
+    }
+  ],
+  "gatesFailed": [],
+  "pass": true
+}

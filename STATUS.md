@@ -175,6 +175,51 @@ black-shoes probe). Plus 4 CDN gate-verification fetches through /api/img
 - Push: blocked on the approval tap; goes after the `t3` push (stack
   t4 → t3 → t2 → e1).
 
+## T5 plan (3–5 lines)
+1. New `scripts/eval.mjs` + `npm run eval`: spawns the real-handler local
+   API server, runs a fixed 10-query set (English + Roman Urdu + brands:
+   "nike white sneakers", "kala joota", "sasta smartwatch", "audionic",
+   "milli sneakers", "sneakers", "power bank", "bachon ke kapray",
+   "laptop", "perfume") with ≥2s between requests (30 marketplace calls,
+   inside the 100 budget).
+2. Per query records: total count, per-source counts, price-available
+   fraction (same rule as `isPriceAvailable`), image-present fraction, and
+   a keyword relevance proxy (fraction of top-8 titles containing a query
+   content token — labeled as a proxy, never as human judgment).
+3. Hard gates → non-zero exit: every query returns ≥1 result; no source in
+   `error` for all queries; overall price-available fraction ≥ 40%.
+   Prints a table + writes timestamped `eval/eval-report-*.json`.
+4. Run it, fix failures (max 3 cycles), record the graded evaluation in
+   STATUS.md. Branch `t5` stacked on `t4`.
+
+## T5 self-evaluation (2026-10-02 ~06:00 PKT)
+
+- Harness built: **PASS** — `npm run eval` (scripts/eval.mjs +
+  scripts/evalQuery.ts) sends exactly what the app sends, via the real
+  client query pipeline bundled with esbuild; no hand-written query
+  guesses. 10 queries, ≥2s spacing, ~66 marketplace calls total (inside
+  the 100 budget).
+- Gates: **PASS** — EVAL PASS, all green: every query ≥1 result (244
+  total), zero source errors, price-available 100% (one query 95% — a
+  single honestly-labeled "Price unavailable"), images present 100%.
+- Relevance (keyword proxy, English mapped query): **PASS** — 8/10
+  queries score 1.00 on top-8 titles; laptop 0.38 and perfume 0.75 are
+  proxy artifacts (titles like "Lenovo Legion Pro 7" / "Eau de Parfum"
+  omit the keyword while being the right product — verified by reading
+  the titles). Spot-checked top-5 titles for 3 queries: all the correct
+  product type, zero electronics-in-sneakers class errors.
+- Observations (not gates, for future work): `buildMarketplaceQuery`
+  doubles tokens for brand-only/single-noun queries ("audionic
+  audionic", "perfume perfume", "power bank bank") — harmless to results
+  but sloppy; PriceOye correctly skipped for 7/10 non-electronics
+  queries via category routing.
+- Tests/typecheck/build: **PASS** — 167/167, tsc clean, build green.
+- What eval does NOT measure: **UNVERIFIED** — the final ranked UX (the
+  in-browser CLIP rerank can't run in node); human relevance judgment.
+  The report labels the proxy as what it is.
+- Push: blocked on the approval tap; goes after t3/t4 (stack
+  t5 → t4 → t3 → t2 → e1).
+
 ## Next steps
 - T1: e1 preview smoke is SSO-blocked (HUMAN_TODO #3) → user disables
   preview Deployment Protection or supplies a bypass token → smoke →
