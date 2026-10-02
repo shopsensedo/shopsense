@@ -18,10 +18,12 @@ import {
   embedTextQuery,
   cosineSim,
   getCategoryEmbeddings,
+  getPhraseEmbeddings,
   type CategoryTextEmbedding,
 } from './clipEmbed';
 import { parseQuery, isPriceWord, STOPWORDS, romanUrduMap, type PriceIntent } from './localSearch';
 import { IMAGE_CATEGORIES } from '../data/imageCategories';
+import { QUERY_PHRASES, PHRASE_TEMPLATES } from '../data/queryPhrases';
 import brandsRaw from '../data/brands.json';
 import coloursRaw from '../data/colours.json';
 import categorySourcesRaw from '../data/categorySources.json';
@@ -1148,16 +1150,22 @@ export async function searchLive(
     siteQueries = describedOut.queries.slice(0, 2);
     skipSource = describedSkipSource(describedOut);
   } else {
-    // Category text embeddings are encoded once with the in-browser CLIP
-    // text tower (preloaded on home idle).
-    const categoryEmbeddings = await getCategoryEmbeddings(IMAGE_CATEGORIES);
-    const cls = classifyImage(queryVec, categoryEmbeddings);
-    category = cls.category;
-    siteQueries = [cls.query];
-    // 3. live listings from the sites. Source routing by detected category:
-    // PriceOye is queried only for electronics/appliances; everything else is
-    // Daraz + Telemart (general stores, incl. fashion).
-    skipSource = priceOyeSellsCategory(cls.category) ? undefined : 'priceoye';
+    // Phrase embeddings: classify directly against marketplace query phrases
+    // (Claude 2026-10-02). The winning phrase is the marketplace query.
+    // Prompt ensembling (3 templates) is baked into getPhraseEmbeddings.
+    const phraseEmbeddings = await getPhraseEmbeddings(QUERY_PHRASES, PHRASE_TEMPLATES);
+    // classifyImage expects CategoryTextEmbedding[]; phrases adapt via key=phrase
+    const phraseAsCategory = phraseEmbeddings.map((p) => ({
+      key: p.phrase,
+      embedding: p.embedding,
+    }));
+    const cls = classifyImage(queryVec, phraseAsCategory);
+    // Look up the parent category for the winning phrase
+    const winner = phraseEmbeddings.find((p) => p.phrase === cls.category);
+    category = winner?.category ?? cls.category;
+    siteQueries = [cls.category]; // the phrase itself is the query
+    // Source routing by parent category
+    skipSource = priceOyeSellsCategory(category) ? undefined : 'priceoye';
   }
 
   // 3. live listings from the sites — one fetch per query, merged and

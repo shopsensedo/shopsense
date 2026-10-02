@@ -183,6 +183,53 @@ export async function getCategoryEmbeddings(
   return categoryEmbeddingsCache;
 }
 
+/**
+ * Phrase embeddings for marketplace query classification (Claude 2026-10-02).
+ * Each phrase gets 3 prompt templates, embeddings averaged (prompt ensembling).
+ * Returns phrase -> averaged embedding, plus the parent category for each phrase.
+ */
+export interface PhraseEmbedding {
+  phrase: string;
+  category: string;
+  embedding: number[];
+}
+
+let phraseEmbeddingsCache: PhraseEmbedding[] | null = null;
+
+export async function getPhraseEmbeddings(
+  phrases: { phrase: string; category: string }[],
+  templates: string[],
+): Promise<PhraseEmbedding[]> {
+  if (!phraseEmbeddingsCache) {
+    // Build all prompts: for each phrase, for each template
+    const allPrompts: string[] = [];
+    const phraseIndex: number[] = []; // maps prompt idx -> phrase idx
+    phrases.forEach((p, pi) => {
+      templates.forEach((t) => {
+        allPrompts.push(t.replace('{x}', p.phrase));
+        phraseIndex.push(pi);
+      });
+    });
+    const vectors = await embedTextBatch(allPrompts);
+    // Average embeddings per phrase
+    const n = templates.length;
+    phraseEmbeddingsCache = phrases.map((p, pi) => {
+      const vecs = vectors.filter((_, vi) => phraseIndex[vi] === pi);
+      const avg = vecs[0].map((_, di) =>
+        vecs.reduce((sum, v) => sum + v[di], 0) / vecs.length
+      );
+      // L2-normalize the averaged vector
+      const norm = Math.sqrt(avg.reduce((s, x) => s + x * x, 0));
+      return {
+        phrase: p.phrase,
+        category: p.category,
+        embedding: avg.map((x) => x / norm),
+      };
+    });
+  }
+  return phraseEmbeddingsCache;
+}
+
 // ---------------------------------------------------------------------------
 // Background preload (cold-start mitigation).
 // Both CLIP towers (vision ~85MB + text ~62MB, q8) are downloaded once, in
