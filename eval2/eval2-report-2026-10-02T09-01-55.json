@@ -1,0 +1,2625 @@
+{
+ "generatedAt": "2026-10-02T08:59:21.836Z",
+ "clip": {
+  "runtime": "node",
+  "library": "@huggingface/transformers",
+  "model": "Xenova/clip-vit-base-patch32",
+  "dtype": "q8",
+  "loadMs": 1307,
+  "note": "Same weights as the in-browser build (q8 ONNX export). NOT a headless browser; preprocessing equivalent."
+ },
+ "budget": {
+  "liveRequests": 3,
+  "max": 100,
+  "gapMs": 2000
+ },
+ "queries": [
+  {
+   "kind": "photo",
+   "file": "sneakers_1.jpg",
+   "subject": "sneakers",
+   "classifiedAs": "sneakers",
+   "classifiedScore": 0.259,
+   "marketplaceQuery": "sneakers",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 3107,
+   "embedMs": 252,
+   "cold": true,
+   "top5": [
+    {
+     "title": "Walkend || Sneakers for men || shoes for men || New stylish ",
+     "score": "yes",
+     "clip": 0.775
+    },
+    {
+     "title": "Dunkfusion Sneakers Shoes For Mens - Lieght Weight Breathabl",
+     "score": "yes",
+     "clip": 0.734
+    },
+    {
+     "title": "Walkend || Sneakers for men || shoes for men ||",
+     "score": "yes",
+     "clip": 0.728
+    },
+    {
+     "title": "Sneakers for men | shoes for men | joggers  for boys | new a",
+     "score": "yes",
+     "clip": 0.717
+    },
+    {
+     "title": "Sneakers for Men, All Season PVC Casual Style Sports Hiking ",
+     "score": "yes",
+     "clip": 0.705
+    }
+   ]
+  },
+  {
+   "kind": "photo",
+   "file": "sneakers_2.jpg",
+   "subject": "sneakers",
+   "classifiedAs": "sandals",
+   "classifiedScore": 0.272,
+   "marketplaceQuery": "sandals",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 0.2,
+   "precisionAt10": 0.25,
+   "titleKeywordCoverage": 0.13,
+   "latencyMs": 2621,
+   "embedMs": 102,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Calza BLACK Mens Chappal For Men - SS26",
+     "score": "no",
+     "clip": 0.778
+    },
+    {
+     "title": "Sandals For Men  New Stylish and Tranding Sandals For Boys  ",
+     "score": "no",
+     "clip": 0.764
+    },
+    {
+     "title": "Liza Women's Bubble Sheet Sandals For Women - LIME SANDAL Fo",
+     "score": "yes",
+     "clip": 0.744
+    },
+    {
+     "title": "Sandal Best Qulity For Mens And Boys",
+     "score": "no",
+     "clip": 0.715
+    },
+    {
+     "title": "Beautiful Artificial Flower Flats for Women - Lightweight Ou",
+     "score": "no",
+     "clip": 0.712
+    }
+   ]
+  },
+  {
+   "kind": "photo",
+   "file": "sneakers_3.jpg",
+   "subject": "sneakers",
+   "classifiedAs": "sneakers",
+   "classifiedScore": 0.266,
+   "marketplaceQuery": "sneakers",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 2004,
+   "embedMs": 103,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Walkend || Sneakers for men || shoes for men || New stylish ",
+     "score": "yes",
+     "clip": 0.767
+    },
+    {
+     "title": "Sneakers For Men - Shoes For Men - Sneakers For Boys - Shoes",
+     "score": "yes",
+     "clip": 0.76
+    },
+    {
+     "title": "Sports Shoes for men || Shoes for men || Stylosh shoes for m",
+     "score": "yes",
+     "clip": 0.757
+    },
+    {
+     "title": "Walkend || Sneakers for men || shoes for men ||",
+     "score": "yes",
+     "clip": 0.756
+    },
+    {
+     "title": "Sneakers for Men, All Season PVC Casual Style Sports Hiking ",
+     "score": "yes",
+     "clip": 0.754
+    }
+   ]
+  },
+  {
+   "kind": "photo",
+   "file": "handbag_1.jpg",
+   "subject": "handbag",
+   "classifiedAs": "handbag",
+   "classifiedScore": 0.286,
+   "marketplaceQuery": "handbag",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1943,
+   "embedMs": 285,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Handbag for girls Bags for girls Leather Bag for women Cat H",
+     "score": "yes",
+     "clip": 0.667
+    },
+    {
+     "title": "Fashion Club Handbag for Girls, Girls Handbag, Ladies Handba",
+     "score": "yes",
+     "clip": 0.658
+    },
+    {
+     "title": "Richlook Handbag for Girls, Girls Handbag, Ladies Handbag, W",
+     "score": "yes",
+     "clip": 0.655
+    },
+    {
+     "title": "Style Hub Large Capacity Handbag for Girls - Multi-Zipper PU",
+     "score": "yes",
+     "clip": 0.629
+    },
+    {
+     "title": "Handbag For Girls Bags For Girls Leather Bag For Women Shoul",
+     "score": "yes",
+     "clip": 0.603
+    }
+   ]
+  },
+  {
+   "kind": "photo",
+   "file": "handbag_2.jpg",
+   "subject": "handbag",
+   "classifiedAs": "handbag",
+   "classifiedScore": 0.288,
+   "marketplaceQuery": "handbag",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1848,
+   "embedMs": 173,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Richlook Handbag for Girls, Girls Handbag, Ladies Handbag, W",
+     "score": "yes",
+     "clip": 0.818
+    },
+    {
+     "title": "Fashion Club Handbag for Girls, Girls Handbag, Ladies Handba",
+     "score": "yes",
+     "clip": 0.803
+    },
+    {
+     "title": "Handbag for girls Bags for girls Leather Bag for women Cat H",
+     "score": "yes",
+     "clip": 0.792
+    },
+    {
+     "title": "Style Hub Large Capacity Handbag for Girls - Multi-Zipper PU",
+     "score": "yes",
+     "clip": 0.789
+    },
+    {
+     "title": "Women’s Casual Multi-Purpose Nylon Tote Bag – Lightweight Cr",
+     "score": "yes",
+     "clip": 0.778
+    }
+   ]
+  },
+  {
+   "kind": "photo",
+   "file": "handbag_3.jpg",
+   "subject": "handbag",
+   "classifiedAs": "wallet",
+   "classifiedScore": 0.257,
+   "marketplaceQuery": "wallet",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 0.7,
+   "precisionAt10": 0.75,
+   "titleKeywordCoverage": 0.5,
+   "latencyMs": 2565,
+   "embedMs": 96,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Brown Genuine Leather Wallet For Men/Premium Quality Leather",
+     "score": "partly",
+     "clip": 0.734
+    },
+    {
+     "title": "LV Style Leather Wallet for Men Premium Embossed Bifold | Ge",
+     "score": "yes",
+     "clip": 0.706
+    },
+    {
+     "title": "Best Leather Multicolor wallet for men stylish leather purse",
+     "score": "yes",
+     "clip": 0.667
+    },
+    {
+     "title": "Men’s Slim Leather Wallet – 6 Card Slots, ID Window & Cash P",
+     "score": "partly",
+     "clip": 0.65
+    },
+    {
+     "title": "Premium Slim and Lightweight Long Wallet for Men | Stylish P",
+     "score": "partly",
+     "clip": 0.649
+    }
+   ]
+  },
+  {
+   "kind": "photo",
+   "file": "watch_1.jpg",
+   "subject": "wristwatch",
+   "classifiedAs": "watch",
+   "classifiedScore": 0.289,
+   "marketplaceQuery": "watch",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 2082,
+   "embedMs": 272,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Watch for boys High Quality Watches For men , Durabile Watch",
+     "score": "yes",
+     "clip": 0.789
+    },
+    {
+     "title": "LED Display Electronic Watch Novelty Red Blue LED Lava Digit",
+     "score": "yes",
+     "clip": 0.705
+    },
+    {
+     "title": "Top Hot Selling  Watch for Man Boys-Sports Watches Rubber St",
+     "score": "yes",
+     "clip": 0.693
+    },
+    {
+     "title": "2PCS Men’s Quartz Watch + Wallet Combo | Luxury Analog Wrist",
+     "score": "yes",
+     "clip": 0.666
+    },
+    {
+     "title": "Men Watch Good Looking Dile Good Quality Date Silicone Strap",
+     "score": "yes",
+     "clip": 0.665
+    }
+   ]
+  },
+  {
+   "kind": "photo",
+   "file": "watch_2.jpg",
+   "subject": "wristwatch",
+   "classifiedAs": "watch",
+   "classifiedScore": 0.296,
+   "marketplaceQuery": "watch",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1651,
+   "embedMs": 57,
+   "cold": false,
+   "top5": [
+    {
+     "title": "LED Display Electronic Watch Novelty Red Blue LED Lava Digit",
+     "score": "yes",
+     "clip": 0.703
+    },
+    {
+     "title": "Top Hot Selling  Watch for Man Boys-Sports Watches Rubber St",
+     "score": "yes",
+     "clip": 0.597
+    },
+    {
+     "title": "Watch for boys High Quality Watches For men , Durabile Watch",
+     "score": "yes",
+     "clip": 0.59
+    },
+    {
+     "title": "TANK Watch OLD MONEY Top Trending Watch for Men Boys - Premi",
+     "score": "yes",
+     "clip": 0.579
+    },
+    {
+     "title": "Pack of 4 Black Watch, Chain Bracelet, Ring, Bar Locket Set ",
+     "score": "yes",
+     "clip": 0.534
+    }
+   ]
+  },
+  {
+   "kind": "photo",
+   "file": "watch_3.jpg",
+   "subject": "wristwatch",
+   "classifiedAs": "watch",
+   "classifiedScore": 0.292,
+   "marketplaceQuery": "watch",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1486,
+   "embedMs": 91,
+   "cold": false,
+   "top5": [
+    {
+     "title": "TANK Watch OLD MONEY Top Trending Watch for Men Boys - Premi",
+     "score": "yes",
+     "clip": 0.782
+    },
+    {
+     "title": "Watch for boys High Quality Watches For men , Durabile Watch",
+     "score": "yes",
+     "clip": 0.765
+    },
+    {
+     "title": "2PCS Men’s Quartz Watch + Wallet Combo | Luxury Analog Wrist",
+     "score": "yes",
+     "clip": 0.72
+    },
+    {
+     "title": "LED Display Electronic Watch Novelty Red Blue LED Lava Digit",
+     "score": "yes",
+     "clip": 0.694
+    },
+    {
+     "title": "Men Watch Good Looking Dile Good Quality Date Silicone Strap",
+     "score": "yes",
+     "clip": 0.69
+    }
+   ]
+  },
+  {
+   "kind": "photo",
+   "file": "sunglasses_1.jpg",
+   "subject": "sunglasses",
+   "classifiedAs": "sunglasses",
+   "classifiedScore": 0.287,
+   "marketplaceQuery": "sunglasses",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1689,
+   "embedMs": 174,
+   "cold": false,
+   "top5": [
+    {
+     "title": "POLICE Men's Sunglasses - Unrivaled Elegance & Protection\" \"",
+     "score": "yes",
+     "clip": 0.763
+    },
+    {
+     "title": "Jaguaar Decorated Arms Rectangle Sunglasses for Men and Wome",
+     "score": "yes",
+     "clip": 0.755
+    },
+    {
+     "title": "Solar Sunglasses for Men – Classic UV400 Protection Eyewear,",
+     "score": "yes",
+     "clip": 0.705
+    },
+    {
+     "title": "Luxury Rimless Sunglasses for Men – Stylish rectangle Design",
+     "score": "yes",
+     "clip": 0.7
+    },
+    {
+     "title": "Classic Retro Square Sunglasses for Men and Women Vintage Sq",
+     "score": "yes",
+     "clip": 0.68
+    }
+   ]
+  },
+  {
+   "kind": "photo",
+   "file": "sunglasses_2.jpg",
+   "subject": "sunglasses",
+   "classifiedAs": "sunglasses",
+   "classifiedScore": 0.249,
+   "marketplaceQuery": "sunglasses",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1701,
+   "embedMs": 98,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Solar Sunglasses for Men – Classic UV400 Protection Eyewear,",
+     "score": "yes",
+     "clip": 0.678
+    },
+    {
+     "title": "POLICE Men's Sunglasses - Unrivaled Elegance & Protection\" \"",
+     "score": "yes",
+     "clip": 0.639
+    },
+    {
+     "title": "Luxury Rimless Sunglasses for Men – Stylish rectangle Design",
+     "score": "yes",
+     "clip": 0.617
+    },
+    {
+     "title": "Classic Retro Square Sunglasses for Men and Women Vintage Sq",
+     "score": "yes",
+     "clip": 0.603
+    },
+    {
+     "title": "Jaguaar Decorated Arms Rectangle Sunglasses for Men and Wome",
+     "score": "yes",
+     "clip": 0.597
+    }
+   ]
+  },
+  {
+   "kind": "photo",
+   "file": "sunglasses_3.jpg",
+   "subject": "sunglasses",
+   "classifiedAs": "sunglasses",
+   "classifiedScore": 0.277,
+   "marketplaceQuery": "sunglasses",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1772,
+   "embedMs": 99,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Classic Retro Square Sunglasses for Men and Women Vintage Sq",
+     "score": "yes",
+     "clip": 0.802
+    },
+    {
+     "title": "Solar Sunglasses for Men – Classic UV400 Protection Eyewear,",
+     "score": "yes",
+     "clip": 0.796
+    },
+    {
+     "title": "Luxury Rimless Sunglasses for Men – Stylish rectangle Design",
+     "score": "yes",
+     "clip": 0.787
+    },
+    {
+     "title": "Vintage Oval Metal Frame Sunglasses for Women – Retro Small ",
+     "score": "yes",
+     "clip": 0.777
+    },
+    {
+     "title": "POLICE Men's Sunglasses - Unrivaled Elegance & Protection\" \"",
+     "score": "yes",
+     "clip": 0.773
+    }
+   ]
+  },
+  {
+   "kind": "photo",
+   "file": "headphones_1.jpg",
+   "subject": "headphones",
+   "classifiedAs": "laptop",
+   "classifiedScore": 0.234,
+   "marketplaceQuery": "laptop",
+   "skipSource": null,
+   "returned": 20,
+   "shown": 10,
+   "precisionAt5": 0,
+   "precisionAt10": 0,
+   "titleKeywordCoverage": 0,
+   "latencyMs": 3101,
+   "embedMs": 131,
+   "cold": false,
+   "top5": [
+    {
+     "title": "HP 15 FD2100TU AI Laptop Intel Core Ultra 5 225U Processor (",
+     "score": "no",
+     "clip": 0.426
+    },
+    {
+     "title": "Acer c732 touch screen chromebook , 4gb ram 32gb ssd , plays",
+     "score": "no",
+     "clip": 0.423
+    },
+    {
+     "title": "ASUS TUF GAMING A14 FA-401WU RYZEN AI 9 HX370 (32GB-1TB SSD)",
+     "score": "no",
+     "clip": 0.42
+    },
+    {
+     "title": "HP LAPTOP AI 15 fd2098TU Intel Core Ultra 7 255U (16GB DDR5 ",
+     "score": "no",
+     "clip": 0.416
+    },
+    {
+     "title": "HP VICTUS 15-FB3093DX R7-7445HS (16GB 512GB) RTX-4050-6GB",
+     "score": "no",
+     "clip": 0.404
+    }
+   ]
+  },
+  {
+   "kind": "photo",
+   "file": "headphones_2.jpg",
+   "subject": "headphones",
+   "classifiedAs": "headphones",
+   "classifiedScore": 0.266,
+   "marketplaceQuery": "headphones",
+   "skipSource": null,
+   "returned": 20,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 2740,
+   "embedMs": 235,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Sport Bluetooth Headphone OTE-10\nWireless Stereo Headset Min",
+     "score": "yes",
+     "clip": 0.547
+    },
+    {
+     "title": "Nothing CMF Headphones Pro",
+     "score": "yes",
+     "clip": 0.535
+    },
+    {
+     "title": "Awei AT6 Wireless Headphones",
+     "score": "yes",
+     "clip": 0.519
+    },
+    {
+     "title": "INRELAX Wireless Bluetooth Headphones",
+     "score": "yes",
+     "clip": 0.515
+    },
+    {
+     "title": "Zero Storm Headphones",
+     "score": "yes",
+     "clip": 0.502
+    }
+   ]
+  },
+  {
+   "kind": "photo",
+   "file": "headphones_3.jpg",
+   "subject": "headphones",
+   "classifiedAs": "speaker",
+   "classifiedScore": 0.263,
+   "marketplaceQuery": "speaker",
+   "skipSource": null,
+   "returned": 20,
+   "shown": 10,
+   "precisionAt5": 0.5,
+   "precisionAt10": 0.5,
+   "titleKeywordCoverage": 0,
+   "latencyMs": 2365,
+   "embedMs": 163,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Xiaomi Bluetooth Speaker Essential",
+     "score": "partly",
+     "clip": 0.613
+    },
+    {
+     "title": "Audionic AD-7000 Plus Multimedia Speaker | 2.1 Channel Bluet",
+     "score": "partly",
+     "clip": 0.579
+    },
+    {
+     "title": "Wireless Portable Bluetooth Speaker with built-In Mic",
+     "score": "partly",
+     "clip": 0.577
+    },
+    {
+     "title": "Ultra Mini Boost Bluetooth Speaker, Metal Electroplated Desi",
+     "score": "partly",
+     "clip": 0.575
+    },
+    {
+     "title": "FT-165/2031 New Prime USB Multimedia Speaker for Laptop, Com",
+     "score": "partly",
+     "clip": 0.572
+    }
+   ]
+  },
+  {
+   "kind": "photo",
+   "file": "backpack_1.jpg",
+   "subject": "backpack",
+   "classifiedAs": "backpack",
+   "classifiedScore": 0.27,
+   "marketplaceQuery": "backpack",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1907,
+   "embedMs": 204,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Umrah Chapal Bag || Multipurpose Parachute Dori Bag for Scho",
+     "score": "yes",
+     "clip": 0.716
+    },
+    {
+     "title": "Bageek Academic Year Essential Durable Water-Resistant Polye",
+     "score": "yes",
+     "clip": 0.691
+    },
+    {
+     "title": "Water-Resistant Polyester Laptop Bag – 3-Pocket Foam-Padded ",
+     "score": "yes",
+     "clip": 0.687
+    },
+    {
+     "title": "School Bag for Girls – All-Season Nylon Korean Fashion Stude",
+     "score": "yes",
+     "clip": 0.684
+    },
+    {
+     "title": "SHEMOSHI Anti-Theft Laptop Backpack with USB Charging Port  ",
+     "score": "yes",
+     "clip": 0.681
+    }
+   ]
+  },
+  {
+   "kind": "photo",
+   "file": "backpack_2.jpg",
+   "subject": "backpack",
+   "classifiedAs": "bottle",
+   "classifiedScore": 0.287,
+   "marketplaceQuery": "bottle",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 0,
+   "precisionAt10": 0,
+   "titleKeywordCoverage": 0,
+   "latencyMs": 1569,
+   "embedMs": 91,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Ghar Kart Premium NICE 400ml Glass Water Bottle – Insulated ",
+     "score": "no",
+     "clip": 0.651
+    },
+    {
+     "title": "Water Bottles, Glass/Plastic 400 ML Water bottles, Sports wa",
+     "score": "no",
+     "clip": 0.647
+    },
+    {
+     "title": "Water Bottles, Water bottle for Girls, Insulated Glass/Plast",
+     "score": "no",
+     "clip": 0.63
+    },
+    {
+     "title": "500ml/750ml/1000ml Glass Water Bottle with Time Marker | Lea",
+     "score": "no",
+     "clip": 0.627
+    },
+    {
+     "title": "Improt Healthy Plastic Water Bottle 500ml (1 Pack) - BPA Fre",
+     "score": "no",
+     "clip": 0.625
+    }
+   ]
+  },
+  {
+   "kind": "photo",
+   "file": "backpack_3.jpg",
+   "subject": "backpack",
+   "classifiedAs": "backpack",
+   "classifiedScore": 0.258,
+   "marketplaceQuery": "backpack",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1744,
+   "embedMs": 114,
+   "cold": false,
+   "top5": [
+    {
+     "title": "SHEMOSHI Anti-Theft Laptop Backpack with USB Charging Port  ",
+     "score": "yes",
+     "clip": 0.651
+    },
+    {
+     "title": "Durable Polyester Laptop Bag For Men's & Boys - Multi-Compar",
+     "score": "yes",
+     "clip": 0.65
+    },
+    {
+     "title": "Water-Resistant Polyester Laptop Bag – 3-Pocket Foam-Padded ",
+     "score": "yes",
+     "clip": 0.633
+    },
+    {
+     "title": "Bageek Academic Year Essential Durable Water-Resistant Polye",
+     "score": "yes",
+     "clip": 0.631
+    },
+    {
+     "title": "Umrah Chapal Bag || Multipurpose Parachute Dori Bag for Scho",
+     "score": "yes",
+     "clip": 0.624
+    }
+   ]
+  },
+  {
+   "kind": "photo",
+   "file": "perfume_1.jpg",
+   "subject": "perfume bottle",
+   "classifiedAs": "perfume",
+   "classifiedScore": 0.27,
+   "marketplaceQuery": "perfume",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 2503,
+   "embedMs": 159,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Royal Ramba Perfume 100ml for Men & Women - Soft Scent & Lon",
+     "score": "yes",
+     "clip": 0.696
+    },
+    {
+     "title": "Emty 5ml Perfume Refill - Perfume Refill Bottle - Perfume At",
+     "score": "yes",
+     "clip": 0.627
+    },
+    {
+     "title": "Dunhil Desire Blue Impression Men’s Perfume 100ml – Ultra St",
+     "score": "yes",
+     "clip": 0.582
+    },
+    {
+     "title": "Perfume For Men - Gold Edition - Luxuary perfume Impression ",
+     "score": "yes",
+     "clip": 0.574
+    },
+    {
+     "title": "Impression Premium Long Lasting Perfume for Men – 35ml | Str",
+     "score": "yes",
+     "clip": 0.561
+    }
+   ]
+  },
+  {
+   "kind": "photo",
+   "file": "perfume_2.jpg",
+   "subject": "perfume bottle",
+   "classifiedAs": "perfume",
+   "classifiedScore": 0.298,
+   "marketplaceQuery": "perfume",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1918,
+   "embedMs": 82,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Royal Ramba Perfume 100ml for Men & Women - Soft Scent & Lon",
+     "score": "yes",
+     "clip": 0.707
+    },
+    {
+     "title": "Dunhil Desire Blue Impression Men’s Perfume 100ml – Ultra St",
+     "score": "yes",
+     "clip": 0.675
+    },
+    {
+     "title": "Dior - SAUVAGE IMPRESSION Perfume and long lasting perfume a",
+     "score": "yes",
+     "clip": 0.659
+    },
+    {
+     "title": "Emty 5ml Perfume Refill - Perfume Refill Bottle - Perfume At",
+     "score": "yes",
+     "clip": 0.621
+    },
+    {
+     "title": "Louis Vuitton Imagination perfume for men & perfume for wome",
+     "score": "yes",
+     "clip": 0.615
+    }
+   ]
+  },
+  {
+   "kind": "photo",
+   "file": "perfume_3.jpg",
+   "subject": "perfume bottle",
+   "classifiedAs": "perfume",
+   "classifiedScore": 0.269,
+   "marketplaceQuery": "perfume",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1768,
+   "embedMs": 147,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Royal Ramba Perfume 100ml for Men & Women - Soft Scent & Lon",
+     "score": "yes",
+     "clip": 0.715
+    },
+    {
+     "title": "Dunhil Desire Blue Impression Men’s Perfume 100ml – Ultra St",
+     "score": "yes",
+     "clip": 0.632
+    },
+    {
+     "title": "Perfume For Men - Gold Edition - Luxuary perfume Impression ",
+     "score": "yes",
+     "clip": 0.594
+    },
+    {
+     "title": "Emty 5ml Perfume Refill - Perfume Refill Bottle - Perfume At",
+     "score": "yes",
+     "clip": 0.591
+    },
+    {
+     "title": "Impression Premium Long Lasting Perfume for Men – 35ml | Str",
+     "score": "yes",
+     "clip": 0.561
+    }
+   ]
+  },
+  {
+   "kind": "photo",
+   "file": "dress_1.jpg",
+   "subject": "dress",
+   "classifiedAs": "dress",
+   "classifiedScore": 0.274,
+   "marketplaceQuery": "dress",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 0.6,
+   "precisionAt10": 0.65,
+   "titleKeywordCoverage": 0.5,
+   "latencyMs": 1916,
+   "embedMs": 115,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Women’s 2 Piece Printed Lawn Suit | Stitched Kurti Trouser S",
+     "score": "yes",
+     "clip": 0.699
+    },
+    {
+     "title": "Women's Elegant 2 Piece Shirt Trouser Set | Luxury Co-Ord Ou",
+     "score": "no",
+     "clip": 0.695
+    },
+    {
+     "title": "New Trendy Readymade 2pc Suit for Girls & Women - Stitched C",
+     "score": "yes",
+     "clip": 0.683
+    },
+    {
+     "title": "Saya Printed Embroidered Khaddar Stitched 2 Piece (Shirt/Tro",
+     "score": "yes",
+     "clip": 0.682
+    },
+    {
+     "title": "Soft and Comfortable Full Sleeve T-shirt paired with Flapper",
+     "score": "no",
+     "clip": 0.657
+    }
+   ]
+  },
+  {
+   "kind": "photo",
+   "file": "dress_2.jpg",
+   "subject": "dress",
+   "classifiedAs": "sweater",
+   "classifiedScore": 0.248,
+   "marketplaceQuery": "sweater",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 0,
+   "precisionAt10": 0,
+   "titleKeywordCoverage": 0,
+   "latencyMs": 1645,
+   "embedMs": 99,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Sweaters for men Stylish And luxury Sweaters For men Premium",
+     "score": "no",
+     "clip": 0.77
+    },
+    {
+     "title": "Sweaters for men Grey color sweaters stylish sweater for men",
+     "score": "no",
+     "clip": 0.759
+    },
+    {
+     "title": "Men's Best Sweater long Bazoo",
+     "score": "no",
+     "clip": 0.751
+    },
+    {
+     "title": "Sweater Men",
+     "score": "no",
+     "clip": 0.724
+    },
+    {
+     "title": "Sweater Men",
+     "score": "no",
+     "clip": 0.715
+    }
+   ]
+  },
+  {
+   "kind": "photo",
+   "file": "dress_3.jpg",
+   "subject": "dress",
+   "classifiedAs": "dress",
+   "classifiedScore": 0.252,
+   "marketplaceQuery": "dress",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 0.5,
+   "precisionAt10": 0.65,
+   "titleKeywordCoverage": 0.5,
+   "latencyMs": 1736,
+   "embedMs": 170,
+   "cold": false,
+   "top5": [
+    {
+     "title": "2pcs lawn cotton new design 2026",
+     "score": "no",
+     "clip": 0.733
+    },
+    {
+     "title": "Women's Elegant 2 Piece Shirt Trouser Set | Luxury Co-Ord Ou",
+     "score": "no",
+     "clip": 0.73
+    },
+    {
+     "title": "New Trendy Readymade 2pc Suit for Girls & Women - Stitched C",
+     "score": "yes",
+     "clip": 0.684
+    },
+    {
+     "title": "Cotton 2 piece suit new latest design fabric soft lawn cotto",
+     "score": "partly",
+     "clip": 0.678
+    },
+    {
+     "title": "Saya Printed Embroidered Khaddar Stitched 2 Piece (Shirt/Tro",
+     "score": "yes",
+     "clip": 0.663
+    }
+   ]
+  },
+  {
+   "kind": "photo",
+   "file": "seed_shoe_black_slipon.webp",
+   "subject": "black slip-on shoes",
+   "classifiedAs": "sneakers",
+   "classifiedScore": 0.261,
+   "marketplaceQuery": "sneakers",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1866,
+   "embedMs": 162,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Black Camel Sneakers for Men All Season Knit Mesh Comfortabl",
+     "score": "yes",
+     "clip": 0.917
+    },
+    {
+     "title": "Walkend || Sneakers for men || shoes for men ||",
+     "score": "yes",
+     "clip": 0.746
+    },
+    {
+     "title": "Sneakers for men | shoes for men | joggers  for boys | new a",
+     "score": "yes",
+     "clip": 0.732
+    },
+    {
+     "title": "Walkend || Sneakers for men || shoes for men || New stylish ",
+     "score": "yes",
+     "clip": 0.73
+    },
+    {
+     "title": "Sports Shoes for men || Shoes for men || Stylosh shoes for m",
+     "score": "yes",
+     "clip": 0.714
+    }
+   ]
+  },
+  {
+   "kind": "photo",
+   "file": "seed_shoe_red_nike.jpg",
+   "subject": "red nike shoes",
+   "classifiedAs": "sneakers",
+   "classifiedScore": 0.26,
+   "marketplaceQuery": "sneakers",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1746,
+   "embedMs": 125,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Walkend || Sneakers for men || shoes for men ||",
+     "score": "yes",
+     "clip": 0.702
+    },
+    {
+     "title": "Dunkfusion Sneakers Shoes For Mens - Lieght Weight Breathabl",
+     "score": "yes",
+     "clip": 0.7
+    },
+    {
+     "title": "Black Camel Sneakers for Men All Season Knit Mesh Comfortabl",
+     "score": "yes",
+     "clip": 0.671
+    },
+    {
+     "title": "Sports Shoes for men || Shoes for men || Stylosh shoes for m",
+     "score": "yes",
+     "clip": 0.67
+    },
+    {
+     "title": "Walkend || Sneakers for men || shoes for men || New stylish ",
+     "score": "yes",
+     "clip": 0.655
+    }
+   ]
+  },
+  {
+   "kind": "photo",
+   "file": "seed_shoe_white_nike.jpg",
+   "subject": "white nike shoes",
+   "classifiedAs": "sneakers",
+   "classifiedScore": 0.271,
+   "marketplaceQuery": "sneakers",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1930,
+   "embedMs": 104,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Dunkfusion Sneakers Shoes For Mens - Lieght Weight Breathabl",
+     "score": "yes",
+     "clip": 0.841
+    },
+    {
+     "title": "Sneakers For Men - Shoes For Men - Sneakers For Boys - Shoes",
+     "score": "yes",
+     "clip": 0.801
+    },
+    {
+     "title": "Walkend || Sneakers for men || shoes for men ||",
+     "score": "yes",
+     "clip": 0.795
+    },
+    {
+     "title": "Sneakers for Men, All Season PVC Casual Style Sports Hiking ",
+     "score": "yes",
+     "clip": 0.786
+    },
+    {
+     "title": "Walkend || Sneakers for men || shoes for men || New stylish ",
+     "score": "yes",
+     "clip": 0.786
+    }
+   ]
+  },
+  {
+   "kind": "photo",
+   "file": "seed_watch_round.jpg",
+   "subject": "round wristwatch",
+   "classifiedAs": "watch",
+   "classifiedScore": 0.3,
+   "marketplaceQuery": "watch",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1441,
+   "embedMs": 82,
+   "cold": false,
+   "top5": [
+    {
+     "title": "LED Display Electronic Watch Novelty Red Blue LED Lava Digit",
+     "score": "yes",
+     "clip": 0.705
+    },
+    {
+     "title": "Watch for boys High Quality Watches For men , Durabile Watch",
+     "score": "yes",
+     "clip": 0.696
+    },
+    {
+     "title": "TANK Watch OLD MONEY Top Trending Watch for Men Boys - Premi",
+     "score": "yes",
+     "clip": 0.692
+    },
+    {
+     "title": "2PCS Men’s Quartz Watch + Wallet Combo | Luxury Analog Wrist",
+     "score": "yes",
+     "clip": 0.671
+    },
+    {
+     "title": "4PCS Men’s Fashion Quartz Watch & Accessories Set | Classic ",
+     "score": "yes",
+     "clip": 0.645
+    }
+   ]
+  },
+  {
+   "kind": "photo",
+   "file": "seed_bag_leather.jpg",
+   "subject": "leather handbag",
+   "classifiedAs": "handbag",
+   "classifiedScore": 0.287,
+   "marketplaceQuery": "handbag",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1895,
+   "embedMs": 106,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Leather Underarm Shoulder Bag for Women – Large Capacity Sum",
+     "score": "yes",
+     "clip": 0.832
+    },
+    {
+     "title": "Richlook Handbag for girls Leather Bag for women Shoulder ba",
+     "score": "yes",
+     "clip": 0.827
+    },
+    {
+     "title": "Richlook Handbag for Girls, Girls Handbag, Ladies Handbag, W",
+     "score": "yes",
+     "clip": 0.809
+    },
+    {
+     "title": "Handbag for girls Bags for girls Leather Bag for women Cat H",
+     "score": "yes",
+     "clip": 0.806
+    },
+    {
+     "title": "Women’s Casual Multi-Purpose Nylon Tote Bag – Lightweight Cr",
+     "score": "yes",
+     "clip": 0.797
+    }
+   ]
+  },
+  {
+   "kind": "photo",
+   "file": "seed_shoe_sneaker_blue.jpg",
+   "subject": "blue sneakers",
+   "classifiedAs": "sneakers",
+   "classifiedScore": 0.28,
+   "marketplaceQuery": "sneakers",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1816,
+   "embedMs": 101,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Walkend || Sneakers for men || shoes for men ||",
+     "score": "yes",
+     "clip": 0.807
+    },
+    {
+     "title": "Dunkfusion Sneakers Shoes For Mens - Lieght Weight Breathabl",
+     "score": "yes",
+     "clip": 0.753
+    },
+    {
+     "title": "Sneakers For Men - Shoes For Men - Sneakers For Boys - Shoes",
+     "score": "yes",
+     "clip": 0.749
+    },
+    {
+     "title": "Sneakers for Men, All Season PVC Casual Style Sports Hiking ",
+     "score": "yes",
+     "clip": 0.744
+    },
+    {
+     "title": "Sports Shoes for men || Shoes for men || Stylosh shoes for m",
+     "score": "yes",
+     "clip": 0.74
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "nike white sneakers",
+   "english": "white sneakers shoes nike",
+   "category": "shoes",
+   "marketplaceQuery": "nike white sneakers",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1835,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Nike Air Force 1 Low '07 – Triple White",
+     "score": "yes",
+     "clip": 0.317
+    },
+    {
+     "title": "Nike Mind Men's White Sports Running Shoes – Lightweight Bre",
+     "score": "yes",
+     "clip": 0.316
+    },
+    {
+     "title": "“Men’s White Sneakers | Stylish Casual & Sports Shoes | Ligh",
+     "score": "yes",
+     "clip": 0.308
+    },
+    {
+     "title": "“Men’s White Sneakers  Stylish Casual & Sports Shoes  Lightw",
+     "score": "yes",
+     "clip": 0.308
+    },
+    {
+     "title": "Nike Air Force 1 '07 Low Black White Men's Shoes - Casual & ",
+     "score": "yes",
+     "clip": 0.302
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "audionic",
+   "english": "audionic",
+   "category": "",
+   "marketplaceQuery": "audionic",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 8245,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Audionic Max-230 2.1 Channel Bluetooth Speaker | 16W Multime",
+     "score": "yes",
+     "clip": 0.276
+    },
+    {
+     "title": "Audionic Max 550 BT Plus 2.1 Channel Bluetooth Speaker | 20W",
+     "score": "yes",
+     "clip": 0.267
+    },
+    {
+     "title": "Audionic Roar Pro 2.1 Channel Bluetooth Speaker | Subwoofer ",
+     "score": "yes",
+     "clip": 0.264
+    },
+    {
+     "title": "Audionic AD-7000 Plus Multimedia Speaker | 2.1 Channel Bluet",
+     "score": "yes",
+     "clip": 0.261
+    },
+    {
+     "title": "Audionic Airbud 425 Quad Mic | ENC Wireless Earbuds | Gaming",
+     "score": "yes",
+     "clip": 0.26
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "milli sneakers",
+   "english": "milli shoes sneakers footwear",
+   "category": "shoes",
+   "marketplaceQuery": "milli sneakers",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 0.9,
+   "precisionAt10": 0.95,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1993,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Cheetah By SERVIS LAce-up Sneakers for Men For Men - Shoes F",
+     "score": "yes",
+     "clip": 0.28
+    },
+    {
+     "title": "Cheetah By SERVIS Stylish Sneakers For Men",
+     "score": "partly",
+     "clip": 0.28
+    },
+    {
+     "title": "Ace By SERVIS Men Sneakers For Men - Shoes For Men",
+     "score": "yes",
+     "clip": 0.279
+    },
+    {
+     "title": "Ace By SERVIS Men Sneakers For Men - Shoes For Men",
+     "score": "yes",
+     "clip": 0.274
+    },
+    {
+     "title": "Ace By SERVIS Women's Sneakers for Women Breathable Mesh Sli",
+     "score": "yes",
+     "clip": 0.274
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "sneakers",
+   "english": "shoes sneakers footwear",
+   "category": "shoes",
+   "marketplaceQuery": "sneakers",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 0.8,
+   "precisionAt10": 0.8,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 2016,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Sneakers For Men - Shoes For Men - Sneakers For Boys - Shoes",
+     "score": "yes",
+     "clip": 0.289
+    },
+    {
+     "title": "Sports  shoes for men High qualified  shoes for men Shoes fo",
+     "score": "partly",
+     "clip": 0.286
+    },
+    {
+     "title": "Sneakers for Men, All Season PVC Casual Style Sports Hiking ",
+     "score": "partly",
+     "clip": 0.285
+    },
+    {
+     "title": "Dunkfusion Sneakers Shoes For Mens - Lieght Weight Breathabl",
+     "score": "yes",
+     "clip": 0.282
+    },
+    {
+     "title": "Sherry Wears Stylish Sneakers Shoes for Men Women Boys Girls",
+     "score": "yes",
+     "clip": 0.282
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "power bank",
+   "english": "power bank",
+   "category": "",
+   "marketplaceQuery": "power bank",
+   "skipSource": null,
+   "returned": 20,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 7910,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Power Bank 2450 mah Ultra Slim Card Size Pockit Mobile Power",
+     "score": "yes",
+     "clip": 0.331
+    },
+    {
+     "title": "Urpin P26 Power Bank 20000mAh",
+     "score": "yes",
+     "clip": 0.301
+    },
+    {
+     "title": "Original 20000mAh Fast Charging Power Bank Portable Power Ba",
+     "score": "yes",
+     "clip": 0.284
+    },
+    {
+     "title": "B150 Power Bank   20000mAh Power Bank   Fast Charging   Port",
+     "score": "yes",
+     "clip": 0.273
+    },
+    {
+     "title": "“Xiaomi Redmi 20000mAh Portable Power Bank – Fast Charging H",
+     "score": "yes",
+     "clip": 0.272
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "laptop",
+   "english": "laptop",
+   "category": "laptop",
+   "marketplaceQuery": "laptop",
+   "skipSource": null,
+   "returned": 20,
+   "shown": 10,
+   "precisionAt5": 0.4,
+   "precisionAt10": 0.5,
+   "titleKeywordCoverage": 0.38,
+   "latencyMs": 2766,
+   "cold": false,
+   "top5": [
+    {
+     "title": "HP 15 FD2100TU AI Laptop Intel Core Ultra 5 225U Processor (",
+     "score": "yes",
+     "clip": 0.291
+    },
+    {
+     "title": "ASUS TUF GAMING A14 FA-401WU RYZEN AI 9 HX370 (32GB-1TB SSD)",
+     "score": "no",
+     "clip": 0.286
+    },
+    {
+     "title": "HP LAPTOP AI 15 fd2098TU Intel Core Ultra 7 255U (16GB DDR5 ",
+     "score": "yes",
+     "clip": 0.285
+    },
+    {
+     "title": "HP VICTUS 15-FB3093DX R7-7445HS (16GB 512GB) RTX-4050-6GB",
+     "score": "no",
+     "clip": 0.282
+    },
+    {
+     "title": "HP Victus 15-fa2391TX Core i7 13620H (16GB RAM - 512 GB SSD)",
+     "score": "no",
+     "clip": 0.281
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "perfume",
+   "english": "perfume",
+   "category": "",
+   "marketplaceQuery": "perfume",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1822,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Royal Ramba Perfume 100ml for Men & Women - Soft Scent & Lon",
+     "score": "yes",
+     "clip": 0.311
+    },
+    {
+     "title": "Louis Vuitton Imagination perfume for men & perfume for wome",
+     "score": "yes",
+     "clip": 0.309
+    },
+    {
+     "title": "Impression Premium Long Lasting Perfume for Men – 35ml | Str",
+     "score": "yes",
+     "clip": 0.303
+    },
+    {
+     "title": "Emty 5ml Perfume Refill - Perfume Refill Bottle - Perfume At",
+     "score": "yes",
+     "clip": 0.295
+    },
+    {
+     "title": "Dunhil Desire Blue Impression Men’s Perfume 100ml – Ultra St",
+     "score": "yes",
+     "clip": 0.29
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "leather handbag",
+   "english": "leather handbag bag bags",
+   "category": "handbag",
+   "marketplaceQuery": "leather handbag",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1795,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Richlook Handbag for girls Leather Bag for women Shoulder ba",
+     "score": "yes",
+     "clip": 0.309
+    },
+    {
+     "title": "Fashion Club Handbag for Girls, Girls Handbag, Ladies Handba",
+     "score": "yes",
+     "clip": 0.307
+    },
+    {
+     "title": "Handbag for girls Bags for girls Leather Bag for women Cat H",
+     "score": "yes",
+     "clip": 0.303
+    },
+    {
+     "title": "Handbag for girls Luxury Designer Women's Crossbody PU Leath",
+     "score": "yes",
+     "clip": 0.302
+    },
+    {
+     "title": "Style Hub Large Capacity Handbag for Girls - Multi-Zipper PU",
+     "score": "yes",
+     "clip": 0.297
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "smartwatch",
+   "english": "watch smartwatch",
+   "category": "watch",
+   "marketplaceQuery": "smartwatch",
+   "skipSource": null,
+   "returned": 20,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 0.9,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 2480,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Zero Vision Smartwatch",
+     "score": "yes",
+     "clip": 0.314
+    },
+    {
+     "title": "Zero Infinity Smartwatch",
+     "score": "yes",
+     "clip": 0.312
+    },
+    {
+     "title": "Zero Delta Smartwatch",
+     "score": "yes",
+     "clip": 0.305
+    },
+    {
+     "title": "Zero Pixel Smartwatch",
+     "score": "yes",
+     "clip": 0.304
+    },
+    {
+     "title": "Zero Visionary Smartwatch",
+     "score": "yes",
+     "clip": 0.301
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "sunglasses",
+   "english": "sunglasses glasses",
+   "category": "sunglasses",
+   "marketplaceQuery": "sunglasses",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1634,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Premium Sunglasses for Men – Stylish Black Fashion Glasses w",
+     "score": "yes",
+     "clip": 0.297
+    },
+    {
+     "title": "Classic Retro Square Sunglasses for Men and Women Vintage Sq",
+     "score": "yes",
+     "clip": 0.293
+    },
+    {
+     "title": "Luxury Rimless Sunglasses for Men – Stylish rectangle Design",
+     "score": "yes",
+     "clip": 0.287
+    },
+    {
+     "title": "Premium Square Frame Sunglasses for Men | Matte Black Fashio",
+     "score": "yes",
+     "clip": 0.287
+    },
+    {
+     "title": "Vintage Oval Metal Frame Sunglasses for Women – Retro Small ",
+     "score": "yes",
+     "clip": 0.286
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "kala joota",
+   "english": "black shoes sneakers footwear",
+   "category": "shoes",
+   "marketplaceQuery": "black shoes",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 0.8,
+   "precisionAt10": 0.9,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 2407,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Men's Fashion Formal Slip On Loafers Leather Office Business",
+     "score": "partly",
+     "clip": 0.296
+    },
+    {
+     "title": "Formal Loafers Shoes For Men Summer Synthetic Leather Office",
+     "score": "partly",
+     "clip": 0.293
+    },
+    {
+     "title": "Black Tomas Shoes",
+     "score": "yes",
+     "clip": 0.29
+    },
+    {
+     "title": "FLK SPOT Black Mens Excercise Running Sneakers Casual shoes ",
+     "score": "yes",
+     "clip": 0.287
+    },
+    {
+     "title": "New Men's Fashionable Comfortable Running Shoes Light Weight",
+     "score": "yes",
+     "clip": 0.283
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "sasta smartwatch dikhao",
+   "english": "watch smartwatch",
+   "category": "watch",
+   "marketplaceQuery": "smartwatch",
+   "skipSource": null,
+   "returned": 20,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 0.9,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 2494,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Zero Vision Smartwatch",
+     "score": "yes",
+     "clip": 0.314
+    },
+    {
+     "title": "Zero Infinity Smartwatch",
+     "score": "yes",
+     "clip": 0.312
+    },
+    {
+     "title": "Zero Delta Smartwatch",
+     "score": "yes",
+     "clip": 0.305
+    },
+    {
+     "title": "Zero Pixel Smartwatch",
+     "score": "yes",
+     "clip": 0.304
+    },
+    {
+     "title": "Zero Visionary Smartwatch",
+     "score": "yes",
+     "clip": 0.301
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "bachon ke kapray",
+   "english": "kids children baby clothes clothing",
+   "category": "",
+   "marketplaceQuery": "kids clothes",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 0.9,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1776,
+   "cold": false,
+   "top5": [
+    {
+     "title": "T-shirts And Shorts Pants For Kids Baby Boys And Baby Girls ",
+     "score": "yes",
+     "clip": 0.302
+    },
+    {
+     "title": "T-shirt And Shorts Pants For Kids Baby Boys And Baby Girls D",
+     "score": "yes",
+     "clip": 0.302
+    },
+    {
+     "title": "Sweatshirt And Pajama Trousers For Kids Baby Boys And Baby G",
+     "score": "yes",
+     "clip": 0.29
+    },
+    {
+     "title": "MAMA,S Boy T-shirt And Shorts Pants For Kids Baby Boys And B",
+     "score": "yes",
+     "clip": 0.289
+    },
+    {
+     "title": "T-shirt And Short Pant For Kids Baby Boys And Baby Girls Rou",
+     "score": "yes",
+     "clip": 0.287
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "safaid kurta",
+   "english": "white kurta ethnic dress",
+   "category": "kurta",
+   "marketplaceQuery": "white kurta",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1880,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Shalwar Kameez For Boys Fashion Clothing Suits-Fabric Soft C",
+     "score": "yes",
+     "clip": 0.308
+    },
+    {
+     "title": "boys white kurta shalwar kameez",
+     "score": "yes",
+     "clip": 0.294
+    },
+    {
+     "title": "Off-White Kurta Pajama for Men: A Timeless and Elegant Tradi",
+     "score": "yes",
+     "clip": 0.287
+    },
+    {
+     "title": "KIDS FOR Boys Fashion Clothing 4 Pieces Suits (Kurta Shalwar",
+     "score": "yes",
+     "clip": 0.284
+    },
+    {
+     "title": "Shalwar kamiz for boys self design white kurta shalwar",
+     "score": "yes",
+     "clip": 0.275
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "sasti ghari",
+   "english": "watch watches",
+   "category": "watch",
+   "marketplaceQuery": "watch",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1648,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Watch for boys High Quality Watches For men , Durabile Watch",
+     "score": "yes",
+     "clip": 0.27
+    },
+    {
+     "title": "Top Hot Selling  Watch for Man Boys-Sports Watches Rubber St",
+     "score": "yes",
+     "clip": 0.263
+    },
+    {
+     "title": "LED Display Electronic Watch Novelty Red Blue LED Lava Digit",
+     "score": "yes",
+     "clip": 0.263
+    },
+    {
+     "title": "Fashionable 4pcs Men's Quartz Watch Set with Calendar Functi",
+     "score": "yes",
+     "clip": 0.258
+    },
+    {
+     "title": "Men Watch Good Looking Dile Good Quality Date Silicone Strap",
+     "score": "yes",
+     "clip": 0.254
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "lal handbag",
+   "english": "red handbag bag bags",
+   "category": "handbag",
+   "marketplaceQuery": "red handbag",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1870,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Richlook Handbag for Girls | Stylish PU Leather Shoulder Bag",
+     "score": "yes",
+     "clip": 0.309
+    },
+    {
+     "title": "Richlook Handbag for girls Leather Bag for women Shoulder ba",
+     "score": "yes",
+     "clip": 0.308
+    },
+    {
+     "title": "Meerab Style Stylish Side Bag Handbag for Girls - Premium Qu",
+     "score": "yes",
+     "clip": 0.302
+    },
+    {
+     "title": "Meerab Style Half Moon Bag Handbag for girls - Bags for girl",
+     "score": "yes",
+     "clip": 0.299
+    },
+    {
+     "title": "Richlook Half Moon Bag Handbag for girls - Bags for girls - ",
+     "score": "yes",
+     "clip": 0.299
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "neela backpack",
+   "english": "blue backpack",
+   "category": "backpack",
+   "marketplaceQuery": "blue backpack",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1624,
+   "cold": false,
+   "top5": [
+    {
+     "title": "SKYBAGS FELIX 01 SCHOOL BAG BACKPACK BLUE",
+     "score": "yes",
+     "clip": 0.32
+    },
+    {
+     "title": "Navy Blue Backpack with Orange Zipper Pulls",
+     "score": "yes",
+     "clip": 0.316
+    },
+    {
+     "title": "Quality bags, Blue, Grey and Black colors",
+     "score": "yes",
+     "clip": 0.291
+    },
+    {
+     "title": "Nylon Laptop Backpack with Multiple Compartments for Men",
+     "score": "yes",
+     "clip": 0.281
+    },
+    {
+     "title": "Laptop Bag Value Backpack Multicolor Quality BAG for Laptop,",
+     "score": "yes",
+     "clip": 0.279
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "sasta perfume",
+   "english": "perfume",
+   "category": "",
+   "marketplaceQuery": "perfume",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1979,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Royal Ramba Perfume 100ml for Men & Women - Soft Scent & Lon",
+     "score": "yes",
+     "clip": 0.311
+    },
+    {
+     "title": "Louis Vuitton Imagination perfume for men & perfume for wome",
+     "score": "yes",
+     "clip": 0.309
+    },
+    {
+     "title": "Impression Premium Long Lasting Perfume for Men – 35ml | Str",
+     "score": "yes",
+     "clip": 0.303
+    },
+    {
+     "title": "Emty 5ml Perfume Refill - Perfume Refill Bottle - Perfume At",
+     "score": "yes",
+     "clip": 0.295
+    },
+    {
+     "title": "Dunhil Desire Blue Impression Men’s Perfume 100ml – Ultra St",
+     "score": "yes",
+     "clip": 0.29
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "mujhe kala joota chahiye",
+   "english": "black shoes sneakers footwear",
+   "category": "shoes",
+   "marketplaceQuery": "black shoes",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 0.8,
+   "precisionAt10": 0.9,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 2317,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Men's Fashion Formal Slip On Loafers Leather Office Business",
+     "score": "partly",
+     "clip": 0.296
+    },
+    {
+     "title": "Formal Loafers Shoes For Men Summer Synthetic Leather Office",
+     "score": "partly",
+     "clip": 0.293
+    },
+    {
+     "title": "Black Tomas Shoes",
+     "score": "yes",
+     "clip": 0.29
+    },
+    {
+     "title": "FLK SPOT Black Mens Excercise Running Sneakers Casual shoes ",
+     "score": "yes",
+     "clip": 0.287
+    },
+    {
+     "title": "New Men's Fashionable Comfortable Running Shoes Light Weight",
+     "score": "yes",
+     "clip": 0.283
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "charger dikhao",
+   "english": "charger",
+   "category": "mobile",
+   "marketplaceQuery": "charger smartphone",
+   "skipSource": null,
+   "returned": 20,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 2385,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Magnetic Wireless Fast Charger USB-C | Strong Magnetic Align",
+     "score": "yes",
+     "clip": 0.291
+    },
+    {
+     "title": "Original Samsung 25W Super Fast Charger with cable | Samsung",
+     "score": "yes",
+     "clip": 0.289
+    },
+    {
+     "title": "Original 45W Fast Charger For Infinix Mobiles – USB Type-C P",
+     "score": "yes",
+     "clip": 0.286
+    },
+    {
+     "title": "[Original] Tecno 70W Ultra Fast Charger For Camon 30 POVA 6 ",
+     "score": "yes",
+     "clip": 0.28
+    },
+    {
+     "title": "Original 33W Turbo Charger For Xiaomi & Redmi | Quick Charge",
+     "score": "yes",
+     "clip": 0.276
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "AC wala cooler",
+   "english": "air conditioner cooler",
+   "category": "",
+   "marketplaceQuery": "air cooler",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 24780,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Portable Air Conditioner Fan,900ML Personal Air Conditioner ",
+     "score": "yes",
+     "clip": 0.306
+    },
+    {
+     "title": "Portable Air Conditioner Fan,900ML Personal Air Conditioner ",
+     "score": "yes",
+     "clip": 0.298
+    },
+    {
+     "title": "Portable Air Conditioner Fan, Mini Evaporative Air Cooler wi",
+     "score": "yes",
+     "clip": 0.289
+    },
+    {
+     "title": "Portable Air Conditioner Mist Fan Big Size  3-in-1 Mini AC F",
+     "score": "yes",
+     "clip": 0.272
+    },
+    {
+     "title": "Cherry Air Cooler CR-5100 , AC-220V Fully Large Size , Super",
+     "score": "yes",
+     "clip": 0.272
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "sunehri watch",
+   "english": "sunehri watch watches",
+   "category": "watch",
+   "marketplaceQuery": "sunehri watch",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 0.5,
+   "precisionAt10": 0.5,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1705,
+   "cold": false,
+   "top5": [
+    {
+     "title": "New square large screen watch, retro sports electronic watch",
+     "score": "partly",
+     "clip": 0.283
+    },
+    {
+     "title": "New Fashion Sun Moon Star Diamond  Men's Quartz Watch+Bracle",
+     "score": "partly",
+     "clip": 0.282
+    },
+    {
+     "title": "New Fashion Luxury Sun Moon Star Diamond  Men's Quartz Watch",
+     "score": "partly",
+     "clip": 0.278
+    },
+    {
+     "title": "Snake Watch In Golden & Golden Silver Chain In Green,black &",
+     "score": "partly",
+     "clip": 0.272
+    },
+    {
+     "title": "Premium Men's Black Luxury Watch - Sunburst Dial with Moon P",
+     "score": "partly",
+     "clip": 0.271
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "adidas running shoes",
+   "english": "running shoes sneakers adidas",
+   "category": "shoes",
+   "marketplaceQuery": "adidas running shoes",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 0.9,
+   "precisionAt10": 0.85,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1930,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Adidas Samba OG Sneakers For Men | Casual Sports Shoes | Siz",
+     "score": "yes",
+     "clip": 0.312
+    },
+    {
+     "title": "Men’s Ultra Boost Running Sneakers | Lightweight Sports Jogg",
+     "score": "yes",
+     "clip": 0.309
+    },
+    {
+     "title": "Adidas Ultraboost Light Boost – White/Black Running Shoes",
+     "score": "yes",
+     "clip": 0.301
+    },
+    {
+     "title": "Joggers Shoes for men  Sports Shoes for men  Shoes for men  ",
+     "score": "partly",
+     "clip": 0.289
+    },
+    {
+     "title": "Adidas Samba OG High Quality | 3 Color variety -- Shoes For ",
+     "score": "yes",
+     "clip": 0.289
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "dawlance fridge",
+   "english": "dawlance refrigerator fridge",
+   "category": "",
+   "marketplaceQuery": "dawlance refrigerator fridge",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 1,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1655,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Dawlance Refrigerator 9178 M-Chrome/Metallic Silver/12 CFT/1",
+     "score": "yes",
+     "clip": 0.305
+    },
+    {
+     "title": "Dawlance Refrigerator 9173 WB M-Chrome/Metallic Silver/12 CF",
+     "score": "yes",
+     "clip": 0.3
+    },
+    {
+     "title": "Dawlance Refrigerator 9149 M-Chrome/Metallic Silver/9 CFT/12",
+     "score": "yes",
+     "clip": 0.299
+    },
+    {
+     "title": "Dawlance Refrigerator 9173 WB Chrome Pro/Hairline Silver/12 ",
+     "score": "yes",
+     "clip": 0.291
+    },
+    {
+     "title": "Dawlance Refrigerator 9178 M-Chrome/Metallic Silver/12 CFT/1",
+     "score": "yes",
+     "clip": 0.281
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "haier washing machine",
+   "english": "washing machine haier",
+   "category": "",
+   "marketplaceQuery": "haier",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 0.6,
+   "precisionAt10": 0.6,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 2029,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Haier 1.5 Ton / RF Series / HSU-19 RFP (Smart DC Inverter+Se",
+     "score": "partly",
+     "clip": 0.217
+    },
+    {
+     "title": "Haier (T3 Plus Series) 1.5 Ton DC Inverter - HSU-20HFTEX(DG)",
+     "score": "partly",
+     "clip": 0.217
+    },
+    {
+     "title": "Haier Black 5L Air Fryer - HAF50DB - Digital - Stylish Color",
+     "score": "partly",
+     "clip": 0.21
+    },
+    {
+     "title": "Candy - The Italian Style by Haier 32 - C32H5X - Google TV -",
+     "score": "partly",
+     "clip": 0.208
+    },
+    {
+     "title": "Haier 10 Kg- Twin Tub Semi Automatic Washing Machine- HTW 10",
+     "score": "yes",
+     "clip": 0.207
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "sasta iphone cover",
+   "english": "iphone apple cover",
+   "category": "mobile",
+   "marketplaceQuery": "iphone cover smartphone",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 0.7,
+   "precisionAt10": 0.65,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1382,
+   "cold": false,
+   "top5": [
+    {
+     "title": "1-2Pcs Black Webcam Cover for IPhone Anti-hacker Shutter Pri",
+     "score": "yes",
+     "clip": 0.287
+    },
+    {
+     "title": "Phone case For IPhone,s, Oppo,Infinix hot 8, 5 ,10et, infini",
+     "score": "partly",
+     "clip": 0.275
+    },
+    {
+     "title": "5Pcs Type C Dust Plug With Cleaning Brush Anti Dust Charging",
+     "score": "yes",
+     "clip": 0.271
+    },
+    {
+     "title": "Universal Ladies Fancy Mobile Phone Cover",
+     "score": "partly",
+     "clip": 0.269
+    },
+    {
+     "title": "7inch Mobile Phone Armband Outdoor Sports Smartphone Holder ",
+     "score": "partly",
+     "clip": 0.267
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "kurti lawn",
+   "english": "kurti lawn ethnic",
+   "category": "kurta",
+   "marketplaceQuery": "kurti lawn kurta",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 1,
+   "precisionAt10": 0.95,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1491,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Stitched 1 Piece Plain lawn Shirt  Straight cut shirt with f",
+     "score": "yes",
+     "clip": 0.317
+    },
+    {
+     "title": "Women Solid lawn desighner Kurta maroon color Embellished Ro",
+     "score": "yes",
+     "clip": 0.307
+    },
+    {
+     "title": "Women Classic Lawn 1-Piece Kurti - Off-White Self-Designed C",
+     "score": "yes",
+     "clip": 0.299
+    },
+    {
+     "title": "lawn summer wear Stylish black color kurta Best for Girls An",
+     "score": "yes",
+     "clip": 0.297
+    },
+    {
+     "title": "Mehroon color Half Placket Shirt Kurta Best for Girls And Wo",
+     "score": "yes",
+     "clip": 0.286
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "khussa shoes",
+   "english": "khussa ethnic shoes",
+   "category": "kurta",
+   "marketplaceQuery": "khussa",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 0.5,
+   "precisionAt10": 0.5,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1715,
+   "cold": false,
+   "top5": [
+    {
+     "title": "Black khussa for girls with beats work",
+     "score": "partly",
+     "clip": 0.233
+    },
+    {
+     "title": "black embroidery khussa for woman's and girls and female bla",
+     "score": "partly",
+     "clip": 0.228
+    },
+    {
+     "title": "Stylish Red Multan Khussa Perfect for Women & Girls Luxuriou",
+     "score": "partly",
+     "clip": 0.227
+    },
+    {
+     "title": "Pink colour multani khussa for woman and girl pink color khu",
+     "score": "partly",
+     "clip": 0.221
+    },
+    {
+     "title": "PEACH KHUSSA FOR DESI GIRLS",
+     "score": "partly",
+     "clip": 0.219
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "shalwar kameez",
+   "english": "shalwar kameez ethnic dress",
+   "category": "kurta",
+   "marketplaceQuery": "shalwar",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 0.7,
+   "precisionAt10": 0.7,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 1769,
+   "cold": false,
+   "top5": [
+    {
+     "title": "White Trousers for Men / Pajama for Men / Shalwar for Men in",
+     "score": "partly",
+     "clip": 0.244
+    },
+    {
+     "title": "WHITE SHALWAR FOR MEN",
+     "score": "partly",
+     "clip": 0.233
+    },
+    {
+     "title": "Mmart-Pro Shalwar 100% Cotton for Men (White)",
+     "score": "partly",
+     "clip": 0.226
+    },
+    {
+     "title": "Men’s STITCHED Shalwar Kameez made from soft cotton blend fa",
+     "score": "yes",
+     "clip": 0.22
+    },
+    {
+     "title": "Wash n Wear light Colors unstitched fabrics | Soft , Smooth ",
+     "score": "yes",
+     "clip": 0.219
+    }
+   ]
+  },
+  {
+   "kind": "text",
+   "query": "baby diapers pack",
+   "english": "baby kids diapers pack",
+   "category": "",
+   "marketplaceQuery": "pack",
+   "skipSource": "priceoye",
+   "returned": 12,
+   "shown": 10,
+   "precisionAt5": 0.5,
+   "precisionAt10": 0.5,
+   "titleKeywordCoverage": 1,
+   "latencyMs": 2069,
+   "cold": false,
+   "top5": [
+    {
+     "title": "3Pcs with cream secure secret packing Secure packaging for f",
+     "score": "partly",
+     "clip": 0.248
+    },
+    {
+     "title": "50 & 20 Pack Clear Self-Seal Plastic Bags for Packaging & Gi",
+     "score": "partly",
+     "clip": 0.244
+    },
+    {
+     "title": "Pack of 25 Transparent Resealable Plastic Bags With Tape, Bo",
+     "score": "partly",
+     "clip": 0.241
+    },
+    {
+     "title": "20 PCS Anti-oxidation Jewelry Bag Transparent Jewellery Pack",
+     "score": "partly",
+     "clip": 0.234
+    },
+    {
+     "title": "Bundle of 50 – Eco-Friendly Recycled LDPE Packing Flyer Bags",
+     "score": "partly",
+     "clip": 0.232
+    }
+   ]
+  }
+ ],
+ "summary": {
+  "photo": {
+   "n": 30,
+   "meanP5": 0.82,
+   "meanP10": 0.83,
+   "meanLatencyMs": 2003
+  },
+  "text": {
+   "n": 30,
+   "meanP5": 0.87,
+   "meanP10": 0.87,
+   "meanLatencyMs": 3113
+  },
+  "sourceSuccess": {
+   "priceoye": 1,
+   "daraz": 1,
+   "telemart": 1
+  },
+  "thumbnails": {
+   "ok": 784,
+   "failed": 3,
+   "failureRate": 0.004
+  },
+  "labelsAreAgentMade": true
+ },
+ "gatesFailed": [],
+ "pass": true
+}

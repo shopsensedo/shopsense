@@ -11,7 +11,9 @@ shopsensedo/shopsense. The items below are NOT authorized — they land here.
    — DONE 2026-10-02: push confirmed, remote `33d7957`, Vercel check green,
    preview deployed (smoke still blocked — see item 3).
 
-2. **Tap the GitHub approval cards for the `t3`, `t4`, `t5` branch pushes**
+2. ~~**Tap the GitHub approval cards for the `t3`, `t4`, `t5` branch pushes**~~
+   — DONE 2026-10-02 (R1/R2): all merged to main (`6cb98672`, `617aef92`,
+   `9d34335e`); production smoke PASS after each.
    (say "ready" and I fire them back-to-back, one card per branch, stack
    order t3 → t4 → t5).
    - `t3` (tip `7f75352`): Telemart fashion source + cross-platform
@@ -49,7 +51,10 @@ shopsensedo/shopsense. The items below are NOT authorized — they land here.
    Until this is done, photo search works exactly as before with the
    on-device classifier; nothing breaks.
 
-4. **Unblock the T1 preview smoke test** (branch `e1` is deployed and the
+4. ~~**Unblock the T1 preview smoke test**~~ — SUPERSEDED 2026-10-02 (R2):
+   T1/T2 content verified byte-identical in main; merged via the T3 squash.
+   Preview smoke stays dropped (Vercel SSO); local verification replaces it.
+   (branch `e1` is deployed and the
    Vercel build check is green, but I cannot run the smoke test).
    The preview at https://shopsense-git-e1-shopsense.vercel.app has Vercel
    Authentication (SSO login) enabled, so every page redirects to a login
@@ -63,6 +68,27 @@ shopsensedo/shopsense. The items below are NOT authorized — they land here.
       flow (never paste it in chat), and I will run smoke with it.
    Until one of these happens, `e1` stays unmerged and production
    unchanged — nothing is broken, the merge is simply waiting.
+
+5. **Deploy the FastAPI backend publicly** (human-gated — R4). The backend
+   runs local-only today. Exact steps when you're ready:
+   a. Pick a host (Render / Railway / HuggingFace Spaces / a VPS —
+      all have free tiers; no choice made yet).
+   b. Set environment variables on the host: `JWT_SECRET` (long random
+      string — generate with `openssl rand -hex 32`, never commit it),
+      optionally `USERS_DB` (path to the SQLite file) and
+      `SEARCH_CACHE_TTL_S` (default 900).
+   c. Deploy from `~/workspace/shopsense-backend/` (Dockerfile included).
+      The SQLite file `data/users.db` must be on persistent storage, or
+      users/alerts/history are wiped on redeploy.
+   d. Note the prototype split (see `docs/DATABASE.md`): accounts, price
+      history and the search cache live in SQLite; the product catalog
+      uses Postgres+pgvector when available, JSON seed files otherwise.
+      The FYP proposal's single-Postgres store is the migration path.
+   e. After deploy, tell me the public URL — I will set `VITE_API_URL`,
+      verify the demo banner disappears, and re-run the auth e2e against
+      the public backend.
+   f. For production: put the host behind HTTPS, replace the in-memory
+      auth rate limiter with Redis, and tighten CORS (currently `*`).
 
 ## Never authorized for the agent
 

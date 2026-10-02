@@ -11,7 +11,9 @@
     "lint": "tsc --noEmit",
     "test": "vitest run",
     "smoke": "node scripts/smoke.mjs",
-    "eval": "node scripts/eval.mjs"
+    "eval": "node scripts/eval.mjs",
+    "eval2": "node scripts/eval2.mjs",
+    "eval2:photos": "node scripts/eval2/fetchPhotos.mjs"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.3.0",
