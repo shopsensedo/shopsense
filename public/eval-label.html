@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>ShopSense eval hand-labelling (internal)</title>
+<style>
+  :root { color-scheme: light; }
+  body { font-family: system-ui, sans-serif; max-width: 960px; margin: 0 auto; padding: 16px; background: #f7f7f8; color: #1a1a1a; }
+  .guide { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; }
+  .guide h1 { font-size: 1.2rem; margin: 0 0 8px; }
+  .guide li { margin: 4px 0; }
+  .q { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; }
+  .q h2 { font-size: 1rem; margin: 0 0 8px; }
+  .qphoto { max-width: 220px; max-height: 220px; border-radius: 6px; border: 1px solid #ccc; }
+  .res { display: flex; gap: 12px; align-items: flex-start; border-top: 1px solid #eee; padding: 10px 0; }
+  .res img.thumb { width: 96px; height: 96px; object-fit: cover; border-radius: 6px; border: 1px solid #ccc; background: #eee; }
+  .res .meta { flex: 1; min-width: 0; }
+  .res .title { font-size: .9rem; margin: 0 0 4px; }
+  .res .price { font-weight: 600; font-size: .9rem; }
+  .res .agent { font-size: .75rem; color: #666; }
+  .btns { display: flex; gap: 8px; margin-top: 6px; }
+  .btns button { padding: 8px 14px; border-radius: 6px; border: 1px solid #bbb; background: #fff; cursor: pointer; font-size: .85rem; }
+  .btns button.sel-yes { background: #d7f0d7; border-color: #2a7a2a; }
+  .btns button.sel-partly { background: #fff3cd; border-color: #a07c00; }
+  .btns button.sel-no { background: #f8d7da; border-color: #a02020; }
+  .toolbar { position: sticky; top: 0; background: #f7f7f8; padding: 8px 0; display: flex; gap: 8px; align-items: center; }
+  .toolbar button { padding: 8px 14px; border-radius: 6px; border: 1px solid #888; background: #1a1a1a; color: #fff; cursor: pointer; }
+  #progress { font-size: .9rem; color: #444; }
+  a { color: #0b5bd3; }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <button id="dl">Download labels CSV</button>
+  <button id="clear" style="background:#fff;color:#1a1a1a">Clear my labels</button>
+  <span id="progress"></span>
+</div>
+<div class="guide">
+  <h1>Hand-labelling guide (ShopSense eval2, 12 sampled queries)</h1>
+  <ul>
+    <li><b>yes</b> = same product type <i>and</i> similar look to the query.</li>
+    <li><b>partly</b> = same product type but different look, or an accessory of it.</li>
+    <li><b>no</b> = anything else (wrong type, unrelated).</li>
+  </ul>
+  <p>Labels are kept in this browser's localStorage only. When done, download the CSV and send it back so it can be merged into the eval report.</p>
+</div>
+<div id="list">Loading…</div>
+<script>
+const KEY = 'shopsense-eval-labels-v1';
+let labels = {};
+try { labels = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch { labels = {}; }
+const save = () => localStorage.setItem(KEY, JSON.stringify(labels));
+
+function keyFor(qi, ri) { return qi + ':' + ri; }
+
+async function main() {
+  const data = await (await fetch('eval-label-data.json')).json();
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+  const total = data.items.reduce((n, q) => n + q.results.length, 0);
+  const updateProgress = () => {
+    const n = Object.keys(labels).length;
+    document.getElementById('progress').textContent = `${n} / ${total} labelled`;
+  };
+
+  data.items.forEach((q, qi) => {
+    const div = document.createElement('div');
+    div.className = 'q';
+    const qhead = q.kind === 'photo'
+      ? `<h2>Photo query: ${q.query} (subject: ${q.subject})</h2>
+         ${q.photoUrl ? `<img class="qphoto" src="${q.photoUrl}" alt="query photo" loading="lazy">` : ''}
+         <div class="agent">marketplace query sent: <b>${q.marketplaceQuery}</b></div>`
+      : `<h2>Text query: "${q.query}"</h2>
+         <div class="agent">english: ${q.subject ?? ''} · marketplace query sent: <b>${q.marketplaceQuery}</b></div>`;
+    div.innerHTML = qhead;
+    q.results.forEach((r, ri) => {
+      const k = keyFor(qi, ri);
+      const row = document.createElement('div');
+      row.className = 'res';
+      row.innerHTML = `
+        <img class="thumb" src="/api/img?url=${encodeURIComponent(r.image)}" alt="" loading="lazy"
+             onerror="this.style.visibility='hidden'">
+        <div class="meta">
+          <p class="title"><a href="${r.url}" target="_blank" rel="noopener">${r.title}</a></p>
+          <div class="price">${r.price}</div>
+          <div class="agent">agent label: ${r.agent_label} · clip: ${r.clip ?? '—'}</div>
+          <div class="btns">
+            <button data-v="yes">yes</button>
+            <button data-v="partly">partly</button>
+            <button data-v="no">no</button>
+          </div>
+        </div>`;
+      const btns = row.querySelectorAll('button');
+      const paint = () => btns.forEach(b => {
+        b.classList.toggle('sel-yes', labels[k] === 'yes' && b.dataset.v === 'yes');
+        b.classList.toggle('sel-partly', labels[k] === 'partly' && b.dataset.v === 'partly');
+        b.classList.toggle('sel-no', labels[k] === 'no' && b.dataset.v === 'no');
+      });
+      btns.forEach(b => b.onclick = () => { labels[k] = b.dataset.v; save(); paint(); updateProgress(); });
+      paint();
+      div.appendChild(row);
+    });
+    list.appendChild(div);
+  });
+  updateProgress();
+
+  document.getElementById('dl').onclick = () => {
+    const rows = [['query_kind', 'query', 'rank', 'title', 'hand_label']];
+    data.items.forEach((q, qi) => q.results.forEach((r, ri) => {
+      rows.push([q.kind, q.query, ri + 1, '"' + r.title.replace(/"/g, '""') + '"', labels[keyFor(qi, ri)] ?? '']);
+    }));
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = 'eval-hand-labels.csv';
+    a.click();
+  };
+  document.getElementById('clear').onclick = () => {
+    if (confirm('Clear all your labels?')) { labels = {}; save(); location.reload(); }
+  };
+}
+main();
+</script>
+</body>
+</html>

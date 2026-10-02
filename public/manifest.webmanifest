@@ -1,0 +1,19 @@
+{
+  "background_color": "#0C0C0C",
+  "description": "Search Pakistani stores by photo or text. Live results from Daraz and PriceOye.",
+  "display": "standalone",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "name": "ShopSense \u2014 Visual Search & Price Comparison",
+  "orientation": "portrait",
+  "scope": "/",
+  "short_name": "ShopSense",
+  "start_url": "/",
+  "theme_color": "#0C0C0C"
+}
