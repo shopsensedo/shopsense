@@ -188,7 +188,10 @@ async function main() {
     for (const [s, v] of Object.entries(api.sources ?? {})) {
       if (sourceStats[s]) { sourceStats[s].total++; if (v !== 'error') sourceStats[s].ok++; }
     }
-    const listings = (api.results ?? []).map((r) => ({ title: r.title, price: r.price, url: r.url, image: r.image }));
+    const listings = (api.results ?? []).map((r) => ({ title: r.title, price: r.price, priceText: r.priceText, url: r.url, image: r.image }));
+    // R8: baseline P@5 in the marketplace's original (pre-CLIP) order.
+    const baselineLabeled = listings.map((r) => ({ ...r, rubric: labelTitle(r.title, pq.yes, pq.partly) }));
+    const baselineP5 = +precisionAt(baselineLabeled, 5).toFixed(2);
     const ranked = await rankWithClip(qvec, listings);
     const labeled = ranked.map((r) => ({ ...r, rubric: labelTitle(r.title, pq.yes, pq.partly) }));
     const shown = labeled.slice(0, 10);
@@ -198,10 +201,11 @@ async function main() {
       marketplaceQuery: plan.marketplaceQuery, skipSource: plan.skipSource ?? null,
       returned: listings.length, shown: shown.length,
       precisionAt5: +precisionAt(labeled, 5).toFixed(2),
+      baselineP5,
       precisionAt10: +precisionAt(labeled, 10).toFixed(2),
       titleKeywordCoverage: +titleKeywordCoverage(labeled, pq.yes).toFixed(2),
       latencyMs: Date.now() - t0, embedMs, cold: !coldDone,
-      top5: shown.slice(0, 5).map((r) => ({ title: r.title.slice(0, 60), score: r.rubric.label, clip: +r.clipScore.toFixed(3) })),
+      top5: shown.slice(0, 5).map((r) => ({ title: r.title, priceText: r.priceText ?? (r.price != null ? `Rs ${r.price}` : 'Price unavailable'), url: r.url, image: r.image, score: r.rubric.label, clip: +r.clipScore.toFixed(3) })),
     });
     coldDone = true;
     console.log(`photo ${pq.file}: cls=${cls.category} n=${listings.length} P@5=${report.queries.at(-1).precisionAt5} P@10=${report.queries.at(-1).precisionAt10}`);
@@ -216,26 +220,30 @@ async function main() {
     for (const [s, v] of Object.entries(api.sources ?? {})) {
       if (sourceStats[s]) { sourceStats[s].total++; if (v !== 'error') sourceStats[s].ok++; }
     }
-    const listings = (api.results ?? []).map((r) => ({ title: r.title, price: r.price, url: r.url, image: r.image }));
+    const listings = (api.results ?? []).map((r) => ({ title: r.title, price: r.price, priceText: r.priceText, url: r.url, image: r.image }));
     const ranked = await rankWithClip(qvec, listings);
     // Expectations for text queries: derive from the English mapped query.
     const toks = plan.english.split(/\s+/).filter((w) => w.length > 2);
-    const labeled = ranked.map((r) => {
-      const t = r.title.toLowerCase();
+    const labelOne = (title) => {
+      const t = title.toLowerCase();
       const hit = toks.filter((tk) => t.includes(tk)).length;
       const score = toks.length === 0 ? 0 : hit / toks.length >= 0.5 ? 1 : hit > 0 ? 0.5 : 0;
-      return { ...r, rubric: { score, label: score === 1 ? 'yes' : score === 0.5 ? 'partly' : 'no' } };
-    });
+      return { score, label: score === 1 ? 'yes' : score === 0.5 ? 'partly' : 'no' };
+    };
+    // R8: baseline P@5 in the marketplace's original (pre-CLIP) order.
+    const baselineP5 = +precisionAt(listings.map((r) => ({ ...r, rubric: labelOne(r.title) })), 5).toFixed(2);
+    const labeled = ranked.map((r) => ({ ...r, rubric: labelOne(r.title) }));
     const shown = labeled.slice(0, 10);
     report.queries.push({
       kind: 'text', query, english: plan.english, category: plan.category,
       marketplaceQuery: plan.marketplaceQuery, skipSource: plan.skipSource ?? null,
       returned: listings.length, shown: shown.length,
       precisionAt5: +precisionAt(labeled, 5).toFixed(2),
+      baselineP5,
       precisionAt10: +precisionAt(labeled, 10).toFixed(2),
       titleKeywordCoverage: +titleKeywordCoverage(labeled, toks).toFixed(2),
       latencyMs: Date.now() - t0, cold: false,
-      top5: shown.slice(0, 5).map((r) => ({ title: r.title.slice(0, 60), score: r.rubric.label, clip: +r.clipScore.toFixed(3) })),
+      top5: shown.slice(0, 5).map((r) => ({ title: r.title, priceText: r.priceText ?? (r.price != null ? `Rs ${r.price}` : 'Price unavailable'), url: r.url, image: r.image, score: r.rubric.label, clip: +r.clipScore.toFixed(3) })),
     });
     console.log(`text "${query}": n=${listings.length} P@5=${report.queries.at(-1).precisionAt5} P@10=${report.queries.at(-1).precisionAt10}`);
   }
@@ -248,8 +256,8 @@ async function main() {
   const photos = report.queries.filter((q) => q.kind === 'photo');
   const texts = report.queries.filter((q) => q.kind === 'text');
   report.summary = {
-    photo: { n: photos.length, meanP5: +avg(photos.map((q) => q.precisionAt5)).toFixed(2), meanP10: +avg(photos.map((q) => q.precisionAt10)).toFixed(2), meanLatencyMs: Math.round(avg(photos.map((q) => q.latencyMs))) },
-    text: { n: texts.length, meanP5: +avg(texts.map((q) => q.precisionAt5)).toFixed(2), meanP10: +avg(texts.map((q) => q.precisionAt10)).toFixed(2), meanLatencyMs: Math.round(avg(texts.map((q) => q.latencyMs))) },
+    photo: { n: photos.length, meanP5: +avg(photos.map((q) => q.precisionAt5)).toFixed(2), meanBaselineP5: +avg(photos.map((q) => q.baselineP5)).toFixed(2), meanClipGain: +(avg(photos.map((q) => q.precisionAt5)) - avg(photos.map((q) => q.baselineP5))).toFixed(2), meanP10: +avg(photos.map((q) => q.precisionAt10)).toFixed(2), meanLatencyMs: Math.round(avg(photos.map((q) => q.latencyMs))) },
+    text: { n: texts.length, meanP5: +avg(texts.map((q) => q.precisionAt5)).toFixed(2), meanBaselineP5: +avg(texts.map((q) => q.baselineP5)).toFixed(2), meanClipGain: +(avg(texts.map((q) => q.precisionAt5)) - avg(texts.map((q) => q.baselineP5))).toFixed(2), meanP10: +avg(texts.map((q) => q.precisionAt10)).toFixed(2), meanLatencyMs: Math.round(avg(texts.map((q) => q.latencyMs))) },
     sourceSuccess: Object.fromEntries(Object.entries(sourceStats).map(([k, v]) => [k, v.total ? +(v.ok / v.total).toFixed(2) : null])),
     thumbnails: { ok: thumbOk, failed: thumbFail, failureRate: +((thumbFail / (thumbOk + thumbFail || 1))).toFixed(3) },
     labelsAreAgentMade: true,

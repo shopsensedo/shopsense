@@ -1,94 +1,79 @@
 # HUMAN_TODO.md — actions only the user can take
 
-Standing rule (2026-10-02): the agent is authorized to create/commit/push
-branches, run Vercel preview deploys, merge to main after a passing preview
-smoke test, install deps, run tests/builds/smoke, and edit files in
-shopsensedo/shopsense. The items below are NOT authorized — they land here.
+Rewritten 2026-10-02 (S1). Finished items removed. The agent cannot do the
+items below (secrets, your accounts, your laptop, your supervisor).
 
-## Pending (needs the user's own action)
+## 1. Add GEMINI_API_KEY to Vercel (fixes photo descriptions)
 
-1. ~~**Tap the GitHub approval card for the `e1` branch push** (T1/E1 work)~~
-   — DONE 2026-10-02: push confirmed, remote `33d7957`, Vercel check green,
-   preview deployed (smoke still blocked — see item 3).
+Photo search currently falls back to the on-device classifier because
+`/api/describe-image` returns 503 without a key.
+a. Create a free key at Google AI Studio (free tier is enough).
+b. Vercel dashboard → `shopsense` project → Settings → Environment Variables.
+c. Add `GEMINI_API_KEY` (the key), for **Production** (Preview optional).
+d. Redeploy (or push any commit) so it takes effect.
+e. Tell me "key is live" — I will re-run the describe-eval and production smoke.
+Never paste the key in chat or commit it.
 
-2. ~~**Tap the GitHub approval cards for the `t3`, `t4`, `t5` branch pushes**~~
-   — DONE 2026-10-02 (R1/R2): all merged to main (`6cb98672`, `617aef92`,
-   `9d34335e`); production smoke PASS after each.
-   (say "ready" and I fire them back-to-back, one card per branch, stack
-   order t3 → t4 → t5).
-   - `t3` (tip `7f75352`): Telemart fashion source + cross-platform
-     grouping (Telemart via telex.pk public Shopify suggest API; GroupCard
-     UI). Tests 158/158, live 15/15 budget, EVAL-relevant.
-   - `t4` (tip `978ec12`): real accounts (bcrypt + JWT, `JWT_SECRET` env)
-     + per-user persistence (SQLite `data/users.db`); mock auth removed;
-     10/10 backend pytest, 167/167 vitest; live e2e incl. restart
-     persistence proven. Backend public deploy stays human-gated.
-   - `t5` (tip `23b3d6f`): `npm run eval` harness using the real client
-     query pipeline; EVAL PASS — 244 results, 100% prices, 100% images.
-   The push tool (`github push_files`) always raises an approval card
-   (~10 min expiry) that only you can tap — direct `git push` has no
-   credentials in this environment and SSH is proxy-blocked.
-   After you tap: Vercel auto-deploys a preview per branch → I run
-   `npm run smoke` on each preview → merge in stack order (only if smoke
-   passes). If a card expired, tell me "continue" and I will re-trigger.
+## 2. Hand-label the eval (30 min) — production URL
 
-3. **Enable the T2 photo-description endpoint with a free Gemini API key**
-   (needed for the "We think this is: …" description on photo searches;
-   without it the app silently uses the basic on-device recognition).
-   Steps:
-   a. Create a free Gemini API key in Google AI Studio (free tier is
-      enough for this feature).
-   b. Open the Vercel dashboard → your `shopsense` project → Settings →
-      Environment Variables.
-   c. Add a variable named `GEMINI_API_KEY` with the key as its value,
-      for both **Preview** and **Production** environments.
-   d. Optional: add `GEMINI_MODEL` with value `gemini-2.5-flash`
-      (this is already the default, so you can skip this).
-   e. Redeploy the project (or push any commit) so the new variable
-      takes effect.
-   f. Never paste the key into chat or commit it to the repo — it lives
-      only in Vercel's environment-variable settings.
-   Until this is done, photo search works exactly as before with the
-   on-device classifier; nothing breaks.
+The labelling page is live at https://shopsense-teal.vercel.app/eval-label.html
+(after the R8 merge; until then it 404s — I will tell you when it's up).
+a. Open it on your phone or laptop browser.
+b. 12 queries × 5 results: tap yes / partly / no for each.
+c. Tap "Export CSV" and send me the file.
+I will compute real P@5 (baseline vs CLIP) and add it to docs/EVALUATION.md,
+reported honestly even if CLIP shows no gain.
 
-4. ~~**Unblock the T1 preview smoke test**~~ — SUPERSEDED 2026-10-02 (R2):
-   T1/T2 content verified byte-identical in main; merged via the T3 squash.
-   Preview smoke stays dropped (Vercel SSO); local verification replaces it.
-   (branch `e1` is deployed and the
-   Vercel build check is green, but I cannot run the smoke test).
-   The preview at https://shopsense-git-e1-shopsense.vercel.app has Vercel
-   Authentication (SSO login) enabled, so every page redirects to a login
-   screen and `npm run smoke` cannot reach the app. Either:
-   a. In the Vercel dashboard → `shopsense` project → Settings →
-      Deployment Protection, temporarily turn OFF "Vercel Authentication"
-      for Preview deployments (Production stays as it is), then tell me
-      "smoke the preview" — I will run the smoke test and merge `e1` to
-      `main` only if it passes; or
-   b. Give me a Protection Bypass token through the secure credentials
-      flow (never paste it in chat), and I will run smoke with it.
-   Until one of these happens, `e1` stays unmerged and production
-   unchanged — nothing is broken, the merge is simply waiting.
+## 3. Deploy the FastAPI backend (human-gated)
 
-5. **Deploy the FastAPI backend publicly** (human-gated — R4). The backend
-   runs local-only today. Exact steps when you're ready:
-   a. Pick a host (Render / Railway / HuggingFace Spaces / a VPS —
-      all have free tiers; no choice made yet).
-   b. Set environment variables on the host: `JWT_SECRET` (long random
-      string — generate with `openssl rand -hex 32`, never commit it),
-      optionally `USERS_DB` (path to the SQLite file) and
-      `SEARCH_CACHE_TTL_S` (default 900).
-   c. Deploy from `~/workspace/shopsense-backend/` (Dockerfile included).
-      The SQLite file `data/users.db` must be on persistent storage, or
-      users/alerts/history are wiped on redeploy.
-   d. Note the prototype split (see `docs/DATABASE.md`): accounts, price
-      history and the search cache live in SQLite; the product catalog
-      uses Postgres+pgvector when available, JSON seed files otherwise.
-      The FYP proposal's single-Postgres store is the migration path.
-   e. After deploy, tell me the public URL — I will set `VITE_API_URL`,
-      verify the demo banner disappears, and re-run the auth e2e against
-      the public backend.
-   f. For production: put the host behind HTTPS, replace the in-memory
-      auth rate limiter with Redis, and tighten CORS (currently `*`).
+Safe Hugging Face Space steps (rewritten S5 — cannot leak secrets):
+a. Create a free Hugging Face account. CPU Basic (2 vCPU / 16 GB) is free.
+   Note: free Spaces are **public** — a private Space needs a paid plan.
+   Our backend has no secrets in code, so public is acceptable; user data
+   stays in your own SQLite/Postgres, not in the Space.
+b. New Space → SDK **Docker** → hardware CPU Basic → Create.
+c. Push ONLY `backend/` (it has its own `.gitignore` excluding `*.db`,
+   `.env`, `.venv`, `data/onnx_clip/`). Do NOT push `data/users.db` —
+   it is git-ignored; the Space starts with an empty DB.
+d. In the Space → Settings → Variables and secrets: add `JWT_SECRET`
+   (generate: `openssl rand -hex 32`) as a **secret**, never in code.
+e. Add env var `CORS_ORIGINS=https://shopsense-teal.vercel.app`
+   (the backend reads this; default is `*` — do not leave `*` in production).
+f. Note: free Space storage is ephemeral — SQLite **will be wiped** on
+   restart. Acceptable for the demo; for real users attach a persistent
+   Postgres (see `backend/docs/DATABASE.md`).
+g. Smoke-test: `curl -X POST https://<space-url>/search/image -F photo=@test.jpg`
+h. Tell me the URL — I will wire the Flutter app's `--dart-define=FASTAPI_BASE`.
+
+## 4. Compile the Flutter app on your laptop (it can't compile here)
+
+a. Install Flutter 3.47.6+ on your laptop.
+b. `cd mobile && flutter pub get && flutter run --dart-define=FASTAPI_BASE=<space-url>`
+c. If it fails, paste the errors into `mobile/ERRORS.md` and send it to me —
+   I will fix them in loops (see `mobile/REVIEW.md` for the static review).
+
+## 5. PWA icons (optional, for full installability)
+
+The manifest uses `/icon.svg` (pushable as text). For the full install
+prompt, Chrome wants PNG 192/512. Upload `icon-192.png` / `icon-512.png`
+via the GitHub web UI (I cannot push binaries), then tell me and I will
+switch the manifest back to PNG.
+
+## 6. Supervisor (forward `supervisor-brief.md`)
+
+Three questions for Nosheen Fatima: (1) live-data posture for the demo —
+keep live with disclosure, seek written permission, or curated catalogue
+only; (2) Flutter APK vs installable PWA for the defense; (3) the exact
+submission/defense date.
+
+## Flip the live-data kill switch
+
+`LIVE_SOURCES_ENABLED` is a Vercel env var (R9). Default ON.
+To disable all store contact: Vercel → Settings → Environment Variables →
+add `LIVE_SOURCES_ENABLED=0` → redeploy. The API returns
+`liveSourcesEnabled: false`, 0 results, all sources `disabled`, and the UI
+shows "Live sources are disabled". Remove the variable (or set `1`) and
+redeploy to re-enable.
 
 ## Never authorized for the agent
 

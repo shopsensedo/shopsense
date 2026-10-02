@@ -1,0 +1,31 @@
+# ShopSense backend — never commit these.
+# S2 (2026-10-02): verified via `git ls-files backend/` that none of these
+# are tracked.
+
+# SQLite databases (local only; recreated by seed scripts)
+*.db
+*.sqlite
+*.sqlite3
+data/users.db
+
+# Environment files and secrets
+.env
+.env.*
+*.pem
+*.key
+secrets/
+
+# Python virtualenvs and caches
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+
+# Downloaded ML model binaries (147MB+; re-downloaded via huggingface_hub)
+data/onnx_clip/
+
+# OS noise
+.DS_Store

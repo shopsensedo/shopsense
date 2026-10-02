@@ -1,6 +1,6 @@
 import type { TextSimilarityLabel } from '../lib/liveSearch';
 
-export type PlatformType = 'daraz' | 'telemart' | 'bagallery' | 'priceoye' | 'elo' | 'shophive' | 'gulahmed';
+export type PlatformType = 'daraz' | 'telemart' | 'bagallery' | 'priceoye' | 'elo' | 'shophive' | 'gulahmed' | 'demo';
 
 export interface PlatformInfo {
   id: PlatformType;

@@ -1,0 +1,4 @@
+id,title,price_pkr,image_url,product_url,category
+demo-001,Example sneaker (REPLACE with your real product),1999,https://your-site.com/photos/sneaker1.jpg,https://your-site.com/products/sneaker1,shoes
+demo-002,Example watch (REPLACE with your real product),5499,https://your-site.com/photos/watch1.jpg,https://your-site.com/products/watch1,watch
+demo-003,Example handbag (REPLACE with your real product),3299,https://your-site.com/photos/bag1.jpg,https://your-site.com/products/bag1,handbag

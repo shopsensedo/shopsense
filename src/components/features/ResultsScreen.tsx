@@ -26,6 +26,11 @@ interface ResultsScreenProps {
   onRetry?: () => void;
   /** Per-source outcome of the live fetch — shown after every search. */
   sourceStatus?: SourceStatus | null;
+  /** R9: true when the server kill switch (LIVE_SOURCES_ENABLED=0) disabled live sources. */
+  liveSourcesDisabled?: boolean;
+  /** R9: name of the loaded demo catalogue — when set, ONLY demo items are
+   *  shown with a visible badge, never mixed with live results. */
+  demoCatalogueName?: string | null;
   /** Mapped English query for live text search ("kala joota" → "black shoes"). */
   mappedQuery?: string | null;
   /** Short query actually sent to Daraz/PriceOye (brand + colour + type). */
@@ -150,6 +155,8 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
   searchError = null,
   onRetry,
   sourceStatus = null,
+  liveSourcesDisabled = false,
+  demoCatalogueName = null,
   mappedQuery = null,
   marketplaceQuery = null,
   priceSort = null,
@@ -523,14 +530,32 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
         </div>
       </div>
 
-      {/* Per-source status — shown after EVERY search, never skipping a failed source */}
-      {sourceStatus && (
+      {/* R9: demo catalogue badge — demo items are NEVER mixed with live results */}
+      {demoCatalogueName && (
         <p
-          className="text-xs text-smoke dark:text-fog mb-6 tabular-nums"
+          className="text-sm font-bold text-center mb-4 px-4 py-2 rounded-lg bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100"
+          data-testid="demo-badge"
+        >
+          Demo catalogue: {demoCatalogueName} — hand-curated items, not live store results.
+        </p>
+      )}
+      {/* Per-source status — shown after EVERY search, never skipping a failed source */}
+      {sourceStatus && !demoCatalogueName && (
+        <p
+          className="text-xs text-smoke dark:text-fog mb-1 tabular-nums"
           data-testid="source-status"
         >
           {formatSourceStatus(sourceStatus)}
         </p>
+      )}
+      {/* R9: prototype note + kill-switch state, always visible on results */}
+      {!demoCatalogueName && (
+      <p className="text-xs text-smoke dark:text-fog mb-6" data-testid="prototype-note">
+        Prototype: results come from public store search at low volume; every
+        result links to the store.
+        {liveSourcesDisabled &&
+          ' Live sources are disabled by the site setting — no store was contacted.'}
+      </p>
       )}
 
       {/* Honest result funnel — every dropped listing is counted somewhere */}

@@ -67,6 +67,17 @@ export function isTelemartEnabled(
 ): boolean {
   return env.TELEMART_ENABLED === '1';
 }
+
+/**
+ * R9: master kill switch for live sources. Default ON (today's behaviour).
+ * Set LIVE_SOURCES_ENABLED=0 to disable: /api/live-search then returns a
+ * clean "live sources are disabled" state WITHOUT contacting any store.
+ */
+export function isLiveSourcesEnabled(
+  env: Record<string, string | undefined> = process.env,
+): boolean {
+  return env.LIVE_SOURCES_ENABLED !== '0';
+}
 async function fetchTelemart(query: string): Promise<LiveItem[]> {
   const params = new URLSearchParams({
     q: query,
@@ -88,15 +99,31 @@ export default async function handler(req: any, res: any) {
   res.setHeader('Cache-Control', 'public, max-age=120');
 
   const q = String(req.query?.q ?? '').trim().slice(0, 60);
-  // PriceOye's suggest API responds better to different phrasing than Daraz;
-  // `pq` lets the client tune each site separately (defaults to `q`).
-  const pq = String(req.query?.pq ?? '').trim().slice(0, 60) || q;
   // Category routing: the client may skip a source entirely
   // (`skip=priceoye` — PriceOye sells electronics/appliances only).
   // Telemart is a general store (electronics + fashion), so it is queried
   // with the same keyword query as Daraz unless skipped explicitly.
   // A skipped source is reported as 'skipped', never as an error.
   const skip = String(req.query?.skip ?? '').trim().toLowerCase();
+  if (!q) {
+    res.status(400).json({ error: 'missing q' });
+    return;
+  }
+  // R9: kill switch — when OFF, return a clean disabled state without
+  // contacting any store.
+  if (!isLiveSourcesEnabled()) {
+    res.status(200).json({
+      query: q,
+      count: 0,
+      liveSourcesEnabled: false,
+      sources: { priceoye: 'disabled', daraz: 'disabled', telemart: 'disabled' },
+      fetchedAt: new Date().toISOString(),
+      results: [],
+    });
+    return;
+  }
+  // `pq` lets the client tune each site separately (defaults to `q`).
+  const pq = String(req.query?.pq ?? '').trim().slice(0, 60) || q;
   if (!q) {
     res.status(400).json({ error: 'missing q' });
     return;

@@ -1,0 +1,27 @@
+# Core API
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pydantic>=2.0
+python-multipart>=0.0.9
+
+# Images / ML (heavy — installed in Colab or on the server, not needed for /health)
+pillow>=10.0
+numpy>=1.26
+torch>=2.0
+transformers>=4.40
+
+# Database (Phase 3: PostgreSQL + pgvector, psycopg3)
+psycopg[binary,pool]>=3.1
+pgvector>=0.3
+
+# Auth + per-user persistence (T4: SQLite userstore, JWT)
+bcrypt>=4.0
+pyjwt>=2.8
+
+# R11: server-side CLIP re-rank (quantized ONNX, no torch needed)
+onnxruntime>=1.18
+huggingface_hub>=0.23
+
+# Tests
+pytest>=8.0
+httpx>=0.27

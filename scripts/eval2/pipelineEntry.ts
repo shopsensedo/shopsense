@@ -16,7 +16,7 @@ export interface TextPlan {
   category: string;
   marketplaceQuery: string;
   skipSource: 'priceoye' | undefined;
-  priceIntent: boolean;
+  priceIntent: 'asc' | 'desc' | null;
 }
 
 export function planTextQuery(raw: string): TextPlan {

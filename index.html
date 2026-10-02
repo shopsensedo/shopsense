@@ -8,6 +8,7 @@
     <link rel="canonical" href="https://shopsense-teal.vercel.app/" />
     <meta name="theme-color" content="#0C0C0C" />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230C0C0C'/%3E%3Ccircle cx='27' cy='27' r='13' fill='none' stroke='%23B9C006' stroke-width='6'/%3E%3Cline x1='36' y1='36' x2='50' y2='50' stroke='%23B9C006' stroke-width='7' stroke-linecap='round'/%3E%3C/svg%3E" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230C0C0C'/%3E%3Ccircle cx='27' cy='27' r='13' fill='none' stroke='%23B9C006' stroke-width='6'/%3E%3Cline x1='36' y1='36' x2='50' y2='50' stroke='%23B9C006' stroke-width='7' stroke-linecap='round'/%3E%3C/svg%3E" />
     <meta property="og:title" content="ShopSense Pakistan - Visual Search & Price Comparison" />
     <meta property="og:description" content="AI-powered visual search and multi-platform price comparison platform for Pakistani online shoppers across Daraz, Telemart, Bagallery, and local stores." />
@@ -21,6 +22,13 @@
   <body class="bg-[#F5F5F5] text-[#0C0C0C] antialiased">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+      <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
   </body>
 </html>
 

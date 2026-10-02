@@ -91,6 +91,47 @@ describe('buildMarketplaceQuery', () => {
     expect(buildMarketplaceQuery('sasta smartwatch dikhao', keywords, 'watch')).toBe('smartwatch');
   });
 
+  // ---------- R7: packaging words dropped, most-specific noun kept ----------
+  const r7 = (raw: string) => {
+    const { keywords } = parseQuery(raw);
+    return buildMarketplaceQuery(raw, keywords, '');
+  };
+  it('R7: "baby diapers pack" -> "baby diapers" (pack dropped)', () => {
+    expect(r7('baby diapers pack')).toBe('baby diapers');
+  });
+  it('R7: "diapers set" -> "diapers" (set dropped)', () => {
+    expect(r7('diapers set')).toBe('diapers');
+  });
+  it('R7: "pack" alone is kept (only noun)', () => {
+    expect(r7('pack')).toBe('pack');
+  });
+  it('R7: "sasta pack" -> "pack" (only noun)', () => {
+    expect(r7('sasta pack')).toBe('pack');
+  });
+  it('R7: "baby wipes pack of 12" keeps wipes, drops pack', () => {
+    expect(r7('baby wipes pack')).toBe('baby wipes');
+  });
+  it('R7: "laptop" stays "laptop" (most specific noun)', () => {
+    expect(r7('laptop')).toBe('laptop');
+  });
+  it('R7: "khussa shoes" -> "khussa" (most specific noun wins)', () => {
+    expect(r7('khussa shoes')).toBe('khussa');
+  });
+  it('R7: "dozen eggs" -> "eggs" (dozen dropped)', () => {
+    expect(r7('dozen eggs')).toBe('eggs');
+  });
+  it('R7: "pcs" alone is kept (only noun)', () => {
+    expect(r7('pcs')).toBe('pcs');
+  });
+  it('R7: "nike white sneakers" unchanged by R7', () => {
+    expect(r7('nike white sneakers')).toBe('nike white sneakers');
+  });
+  it('R7: "shampoo bottle pack" -> "shampoo bottle" or "shampoo"', () => {
+    const mq = r7('shampoo bottle pack');
+    expect(mq).not.toContain('pack');
+    expect(mq).toContain('shampoo');
+  });
+
   it('R6: never duplicates a token ("audionic" -> "audionic", not "audionic audionic")', () => {
     const { keywords } = q('audionic');
     const mq = buildMarketplaceQuery('audionic', keywords, '');
