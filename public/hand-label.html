@@ -47,6 +47,13 @@
     <div id="progress">0 / 0 labelled</div>
     <div id="progressBar"><div id="progressFill" style="width: 0%"></div></div>
   </div>
+  <div style="display: flex; gap: 1rem; align-items: center;">
+    <label style="font-size: 0.9rem; color: #94a3b8;">Annotator:
+      <input type="text" id="annotatorId" placeholder="Your name/ID" style="background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 0.4rem 0.8rem; border-radius: 6px; margin-left: 0.5rem;">
+    </label>
+    <button id="loadMoreBtn" style="background: #475569; color: white; padding: 0.4rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">Load Additional Items</button>
+    <input type="file" id="additionalFile" accept=".json" style="display: none;">
+  </div>
 </header>
 <main>
   <div class="rubric">
@@ -65,11 +72,72 @@
 </main>
 <script>
 let data = null;
-let labels = {}; // itemKey -> 0/1/2
+let labels = {}; // itemKey -> {label, timestamp, annotator}
+let annotatorId = '';
 
 async function load() {
-  const res = await fetch('hand-label-data.json');
-  data = await res.json();
+  // Restore annotator ID
+  annotatorId = localStorage.getItem('shopsense-annotator') || '';
+  document.getElementById('annotatorId').value = annotatorId;
+  document.getElementById('annotatorId').addEventListener('change', (e) => {
+    annotatorId = e.target.value.trim();
+    localStorage.setItem('shopsense-annotator', annotatorId);
+  });
+
+  // Load additional items button
+  document.getElementById('loadMoreBtn').addEventListener('click', () => {
+    document.getElementById('additionalFile').click();
+  });
+  document.getElementById('additionalFile').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const text = await file.text();
+    const additional = JSON.parse(text);
+    // Merge additional items, skipping already-labelled
+    let added = 0;
+    additional.queries.forEach((q) => {
+      const existing = data.queries.find((eq) => eq.file === q.file);
+      if (existing) {
+        q.items.forEach((item) => {
+          const key = itemKey(q.file, item.url);
+          if (!existing.items.find((i) => i.url === item.url) && labels[key] === undefined) {
+            existing.items.push(item);
+            added++;
+          }
+        });
+      } else {
+        // New query entirely
+        const newItems = q.items.filter((item) => labels[itemKey(q.file, item.url)] === undefined);
+        if (newItems.length > 0) {
+          data.queries.push({ ...q, items: newItems });
+          added += newItems.length;
+        }
+      }
+    });
+    alert(`Added ${added} new unlabelled items`);
+    render();
+  });
+
+  // Check for assignment parameter (?assignment=a)
+  const params = new URLSearchParams(window.location.search);
+  const assignment = params.get('assignment');
+
+  if (assignment) {
+    // Load specific annotator assignment
+    const res = await fetch(`assignments/annotator-${assignment}.json`);
+    const assignmentData = await res.json();
+    data = assignmentData;
+    // Pre-fill annotator ID from assignment
+    if (!annotatorId) {
+      annotatorId = assignmentData.annotator.toUpperCase();
+      document.getElementById('annotatorId').value = annotatorId;
+      localStorage.setItem('shopsense-annotator', annotatorId);
+    }
+    document.title = `ShopSense Labelling - Annotator ${assignment.toUpperCase()}`;
+  } else {
+    const res = await fetch('hand-label-data.json');
+    data = await res.json();
+  }
   render();
 }
 
@@ -97,7 +165,9 @@ function render() {
     shuffled.forEach((item) => {
       total++;
       const key = itemKey(q.file, item.url);
-      if (labels[key] !== undefined) done++;
+      const saved = labels[key];
+      const savedVal = saved !== undefined ? (typeof saved === 'object' ? saved.label : saved) : undefined;
+      if (savedVal !== undefined) done++;
       const div = document.createElement('div');
       div.className = 'item';
       div.innerHTML = `
@@ -108,9 +178,9 @@ function render() {
           <a href="${escapeHtml(item.url)}" target="_blank">View listing</a>
         </div>
         <div class="label-btns">
-          <button class="btn-0 ${labels[key]===0?'selected-0':''}" data-key="${escapeHtml(key)}" data-val="0">0 — Wrong</button>
-          <button class="btn-1 ${labels[key]===1?'selected-1':''}" data-key="${escapeHtml(key)}" data-val="1">1 — Partly</button>
-          <button class="btn-2 ${labels[key]===2?'selected-2':''}" data-key="${escapeHtml(key)}" data-val="2">2 — Right</button>
+          <button class="btn-0 ${savedVal===0?'selected-0':''}" data-key="${escapeHtml(key)}" data-val="0">0 — Wrong</button>
+          <button class="btn-1 ${savedVal===1?'selected-1':''}" data-key="${escapeHtml(key)}" data-val="1">1 — Partly</button>
+          <button class="btn-2 ${savedVal===2?'selected-2':''}" data-key="${escapeHtml(key)}" data-val="2">2 — Right</button>
         </div>`;
       itemsDiv.appendChild(div);
     });
@@ -120,7 +190,16 @@ function render() {
     btn.addEventListener('click', () => {
       const key = btn.dataset.key;
       const val = parseInt(btn.dataset.val);
-      labels[key] = val;
+      if (!annotatorId) {
+        alert('Please enter your annotator ID at the top first');
+        document.getElementById('annotatorId').focus();
+        return;
+      }
+      labels[key] = {
+        label: val,
+        timestamp: new Date().toISOString(),
+        annotator: annotatorId
+      };
       // Update visual
       const siblings = btn.parentElement.querySelectorAll('button');
       siblings.forEach((s) => s.classList.remove('selected-0', 'selected-1', 'selected-2'));
@@ -128,6 +207,11 @@ function render() {
       updateProgress();
       // Save to localStorage
       localStorage.setItem('shopsense-labels', JSON.stringify(labels));
+      // Remind to export every 25 items
+      const count = Object.keys(labels).length;
+      if (count % 25 === 0) {
+        alert(`You've labelled ${count} items. Please export your CSV now as a backup (localStorage can be cleared).`);
+      }
     });
   });
 
@@ -152,9 +236,16 @@ function escapeHtml(s) {
 }
 
 document.getElementById('exportBtn').addEventListener('click', () => {
-  const rows = [['query_file', 'item_url', 'item_title', 'label']];
-  Object.entries(labels).forEach(([key, label]) => {
+  if (!annotatorId) {
+    alert('Please enter your annotator ID first');
+    return;
+  }
+  const rows = [['query_file', 'item_url', 'item_title', 'label', 'annotator_id', 'timestamp']];
+  Object.entries(labels).forEach(([key, val]) => {
     const [qfile, url] = key.split('||');
+    const label = typeof val === 'object' ? val.label : val;
+    const timestamp = typeof val === 'object' ? val.timestamp : new Date().toISOString();
+    const annotator = typeof val === 'object' ? val.annotator : annotatorId;
     // Find title
     let title = '';
     data.queries.forEach((q) => {
@@ -163,13 +254,13 @@ document.getElementById('exportBtn').addEventListener('click', () => {
         if (item) title = item.title;
       }
     });
-    rows.push([qfile, url, `"${title.replace(/"/g, '""')}"`, label]);
+    rows.push([qfile, url, `"${title.replace(/"/g, '""')}"`, label, annotator, timestamp]);
   });
   const csv = rows.map((r) => r.join(',')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `hand-labels-${new Date().toISOString().slice(0,10)}.csv`;
+  a.download = `hand-labels-${annotatorId}-${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
 });
 
