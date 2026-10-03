@@ -70,6 +70,61 @@ export async function describeImage(jpegDataUrl: string): Promise<DescribeResult
   }
 }
 
+/** Outfit item with optional suggested crop box (normalized 0-1000). */
+export interface OutfitItem {
+  type: string;
+  location: string;
+  colours: string[];
+  attributes: string[];
+  brand: string | null;
+  queries: string[];
+  confidence: number;
+  box?: { x: number; y: number; width: number; height: number };
+}
+
+export interface OutfitDescription {
+  photoType: 'person' | 'product';
+  apparentGender: 'men' | 'women' | null;
+  items: OutfitItem[];
+}
+
+export type OutfitResult =
+  | { ok: true; outfit: OutfitDescription }
+  | { ok: false; reason: string };
+
+/**
+ * Ask the server for outfit decomposition (Phase A). Never throws.
+ * Behind the shopsense-outfit flag (default OFF).
+ */
+export async function describeOutfit(jpegDataUrl: string): Promise<OutfitResult> {
+  try {
+    const r = await fetch('/api/describe-image', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ image: jpegDataUrl, mode: 'outfit' }),
+    });
+    const j = (await r.json().catch(() => null)) as {
+      outfit?: OutfitDescription;
+      error?: string;
+    } | null;
+    if (r.ok && j?.outfit && Array.isArray(j.outfit.items)) {
+      return { ok: true, outfit: j.outfit };
+    }
+    return { ok: false, reason: j?.error ?? `http ${r.status}` };
+  } catch (e) {
+    return { ok: false, reason: e instanceof Error ? e.message : 'network failed' };
+  }
+}
+
+/** Outfit-analysis flag (localStorage, default OFF). */
+export function isOutfitEnabled(): boolean {
+  try {
+    return localStorage.getItem('shopsense-outfit') === '1';
+  } catch {
+    return false;
+  }
+}
+
 /** One-time privacy notice bookkeeping. */
 export function describeNoticeSeen(): boolean {
   try {
