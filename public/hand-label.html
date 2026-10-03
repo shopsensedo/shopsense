@@ -24,10 +24,17 @@
   .item img { width: 180px; height: 180px; object-fit: cover; border-radius: 8px; background: #334155; cursor: zoom-in; }
   .item img:hover { outline: 2px solid #60a5fa; }
   /* Lightbox for enlarged view */
-  #lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 100; cursor: zoom-out; }
+  #lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.92); display: none; justify-content: center; align-items: center; z-index: 100; overflow: hidden; }
   #lightbox.show { display: flex; }
-  #lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 12px; object-fit: contain; }
-  #lightbox .lb-caption { position: absolute; bottom: 2rem; color: #94a3b8; font-size: 0.9rem; background: rgba(0,0,0,0.7); padding: 0.5rem 1rem; border-radius: 8px; }
+  #lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 12px; object-fit: contain; transition: transform 0.1s; cursor: grab; user-select: none; }
+  #lightbox img.dragging { cursor: grabbing; transition: none; }
+  #lightbox .lb-caption { position: absolute; bottom: 2rem; color: #94a3b8; font-size: 0.9rem; background: rgba(0,0,0,0.7); padding: 0.5rem 1rem; border-radius: 8px; z-index: 102; }
+  #lightbox .lb-controls { position: absolute; top: 1.5rem; right: 1.5rem; display: flex; gap: 0.5rem; z-index: 102; }
+  #lightbox .lb-controls button { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 0.5rem 0.9rem; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 600; }
+  #lightbox .lb-controls button:hover { background: rgba(255,255,255,0.25); }
+  #lightbox .lb-controls button.active { background: #2563eb; border-color: #2563eb; }
+  #lightbox .lb-hint { position: absolute; bottom: 2rem; left: 1.5rem; color: #64748b; font-size: 0.8rem; z-index: 102; }
+  #cropOverlay { position: absolute; border: 2px dashed #22c55e; background: rgba(34,197,94,0.1); display: none; z-index: 101; pointer-events: none; }
   .item-info h4 { font-size: 0.95rem; margin-bottom: 0.25rem; }
   .item-info p { font-size: 0.85rem; color: #94a3b8; }
   .item-info a { color: #60a5fa; font-size: 0.8rem; }
@@ -45,18 +52,6 @@
   .rubric { background: #1e293b; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; }
   .rubric h2 { font-size: 1rem; margin-bottom: 0.75rem; }
   .rubric li { margin-left: 1.5rem; margin-bottom: 0.4rem; font-size: 0.9rem; color: #cbd5e1; }
-  .tab-btn { background: transparent; color: #94a3b8; border: none; padding: 0.6rem 1.2rem; font-size: 0.95rem; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; }
-  .tab-btn.active { color: #e2e8f0; border-bottom-color: #2563eb; }
-  .tab-btn:hover { color: #e2e8f0; }
-  .tab-content { display: none; }
-  .tab-content.active { display: block; }
-  .data-card { background: #1e293b; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
-  .data-card h2 { font-size: 1.1rem; margin-bottom: 0.75rem; }
-  .data-card p { font-size: 0.9rem; color: #94a3b8; margin-bottom: 1rem; }
-  .dl-link { display: inline-block; background: #334155; color: #e2e8f0; padding: 0.6rem 1.2rem; border-radius: 8px; text-decoration: none; margin: 0.25rem 0.5rem 0.25rem 0; font-size: 0.9rem; }
-  .dl-link:hover { background: #475569; }
-  .upload-zone { border: 2px dashed #475569; border-radius: 12px; padding: 2rem; text-align: center; cursor: pointer; }
-  .upload-zone:hover { border-color: #2563eb; background: #1e293b; }
   .hidden { display: none; }
 </style>
 </head>
@@ -68,17 +63,14 @@
     <div id="progressBar"><div id="progressFill" style="width: 0%"></div></div>
   </div>
   <div style="display: flex; gap: 1rem; align-items: center;">
-    <div style="display: flex; gap: 0.25rem;">
-      <button class="tab-btn active" data-tab="labelTab">Label</button>
-      <button class="tab-btn" data-tab="dataTab">Data</button>
-    </div>
     <label style="font-size: 0.9rem; color: #94a3b8;">Annotator:
       <input type="text" id="annotatorId" placeholder="Your name/ID" style="background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 0.4rem 0.8rem; border-radius: 6px; margin-left: 0.5rem;">
     </label>
+    <button id="loadMoreBtn" style="background: #475569; color: white; padding: 0.4rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">Load Additional Items</button>
+    <input type="file" id="additionalFile" accept=".json" style="display: none;">
   </div>
 </header>
 <main>
-<div id="labelTab" class="tab-content active">
   <div class="rubric">
     <h2>Rubric (arm identity hidden — judge only what you see)</h2>
     <ul>
@@ -92,37 +84,19 @@
   </div>
   <div id="queries"></div>
   <button id="exportBtn">Export Labels as CSV</button>
-</div><!-- /labelTab -->
-<div id="dataTab" class="tab-content">
-  <div class="data-card">
-    <h2>📥 Download Assignment Files</h2>
-    <p>Download the labelling data files, then re-import them via the upload box below (or share with annotators).</p>
-    <a class="dl-link" href="assignments/annotator-a.json" download="annotator-a.json">⬇ Annotator A (78 items)</a>
-    <a class="dl-link" href="assignments/annotator-b.json" download="annotator-b.json">⬇ Annotator B (78 items)</a>
-    <a class="dl-link" href="assignments/annotator-c.json" download="annotator-c.json">⬇ Annotator C (80 items)</a>
-  </div>
-  <div class="data-card">
-    <h2>📤 Load Data from Computer</h2>
-    <p>Upload a labelling JSON file (same format as the assignment files). New items are merged in; already-labelled items are skipped.</p>
-    <div class="upload-zone" id="uploadZone">
-      <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">📁 Click to choose a JSON file</p>
-      <p style="font-size: 0.85rem;">or drag &amp; drop here</p>
-    </div>
-    <input type="file" id="dataFileInput" accept=".json" style="display: none;">
-    <p id="uploadStatus" style="margin-top: 1rem; font-size: 0.9rem;"></p>
-  </div>
-  <div class="data-card">
-    <h2>💾 Backup / Restore Labels</h2>
-    <p>Download your current labels as JSON backup, or restore from a backup file.</p>
-    <button class="dl-link" id="backupLabelsBtn" style="border: none; cursor: pointer;">⬇ Backup Labels (JSON)</button>
-    <button class="dl-link" id="restoreLabelsBtn" style="border: none; cursor: pointer;">⬆ Restore Labels</button>
-    <input type="file" id="restoreFileInput" accept=".json" style="display: none;">
-  </div>
-</div><!-- /dataTab -->
 </main>
-<div id="lightbox" onclick="this.classList.remove('show')">
-  <img id="lightboxImg" src="" alt="">
+<div id="lightbox">
+  <img id="lightboxImg" src="" alt="" draggable="false">
+  <div id="cropOverlay"></div>
+  <div class="lb-controls">
+    <button id="lbZoomIn" title="Zoom in (+)">+</button>
+    <button id="lbZoomOut" title="Zoom out (-)">−</button>
+    <button id="lbReset" title="Reset (0)">⟲</button>
+    <button id="lbCrop" title="Crop mode: drag on image to select region">✂ Crop</button>
+    <button id="lbClose" title="Close (Esc)">✕</button>
+  </div>
   <div class="lb-caption" id="lightboxCaption"></div>
+  <div class="lb-hint">Scroll to zoom • Drag to pan • Double-click to reset</div>
 </div>
 <script>
 let data = null;
@@ -138,97 +112,38 @@ async function load() {
     localStorage.setItem('shopsense-annotator', annotatorId);
   });
 
-  // Tab switching
-  document.querySelectorAll('.tab-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach((c) => c.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById(btn.dataset.tab).classList.add('active');
-    });
+  // Load additional items button
+  document.getElementById('loadMoreBtn').addEventListener('click', () => {
+    document.getElementById('additionalFile').click();
   });
-
-  // Data tab: upload JSON file (click or drag & drop)
-  const uploadZone = document.getElementById('uploadZone');
-  const dataFileInput = document.getElementById('dataFileInput');
-  const uploadStatus = document.getElementById('uploadStatus');
-  uploadZone.addEventListener('click', () => dataFileInput.click());
-  uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.style.borderColor = '#2563eb'; });
-  uploadZone.addEventListener('dragleave', () => { uploadZone.style.borderColor = '#475569'; });
-  uploadZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    uploadZone.style.borderColor = '#475569';
-    if (e.dataTransfer.files.length) handleDataFile(e.dataTransfer.files[0]);
-  });
-  dataFileInput.addEventListener('change', (e) => {
-    if (e.target.files[0]) handleDataFile(e.target.files[0]);
-    e.target.value = '';
-  });
-  async function handleDataFile(file) {
-    try {
-      const text = await file.text();
-      const additional = JSON.parse(text);
-      if (!additional.queries || !Array.isArray(additional.queries)) throw new Error('Invalid format: missing queries array');
-      let added = 0;
-      additional.queries.forEach((q) => {
-        const existing = data.queries.find((eq) => eq.file === q.file);
-        if (existing) {
-          q.items.forEach((item) => {
-            const key = itemKey(q.file, item.url);
-            if (!existing.items.find((i) => i.url === item.url) && labels[key] === undefined) {
-              existing.items.push(item);
-              added++;
-            }
-          });
-        } else {
-          const newItems = (q.items || []).filter((item) => labels[itemKey(q.file, item.url)] === undefined);
-          if (newItems.length > 0) {
-            data.queries.push({ ...q, items: newItems });
-            added += newItems.length;
-          }
-        }
-      });
-      uploadStatus.textContent = `✅ Added ${added} new unlabelled items from ${file.name}`;
-      uploadStatus.style.color = '#22c55e';
-      render();
-      // Switch back to Label tab
-      document.querySelector('[data-tab="labelTab"]').click();
-    } catch (err) {
-      uploadStatus.textContent = `❌ Error: ${err.message}`;
-      uploadStatus.style.color = '#ef4444';
-    }
-  }
-
-  // Data tab: backup labels as JSON
-  document.getElementById('backupLabelsBtn').addEventListener('click', () => {
-    const backup = { annotator: annotatorId, exportedAt: new Date().toISOString(), labels };
-    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `labels-backup-${annotatorId || 'unknown'}-${new Date().toISOString().slice(0,10)}.json`;
-    a.click();
-  });
-
-  // Data tab: restore labels from JSON backup
-  const restoreFileInput = document.getElementById('restoreFileInput');
-  document.getElementById('restoreLabelsBtn').addEventListener('click', () => restoreFileInput.click());
-  restoreFileInput.addEventListener('change', async (e) => {
+  document.getElementById('additionalFile').addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    try {
-      const backup = JSON.parse(await file.text());
-      const restored = backup.labels || backup;
-      const count = Object.keys(restored).length;
-      if (count === 0) throw new Error('No labels found in file');
-      if (!confirm(`Restore ${count} labels from ${file.name}? This merges with current labels.`)) return;
-      Object.assign(labels, restored);
-      localStorage.setItem('shopsense-labels', JSON.stringify(labels));
-      render();
-      alert(`Restored ${count} labels`);
-    } catch (err) {
-      alert(`Restore failed: ${err.message}`);
-    }
-    e.target.value = '';
+    const text = await file.text();
+    const additional = JSON.parse(text);
+    // Merge additional items, skipping already-labelled
+    let added = 0;
+    additional.queries.forEach((q) => {
+      const existing = data.queries.find((eq) => eq.file === q.file);
+      if (existing) {
+        q.items.forEach((item) => {
+          const key = itemKey(q.file, item.url);
+          if (!existing.items.find((i) => i.url === item.url) && labels[key] === undefined) {
+            existing.items.push(item);
+            added++;
+          }
+        });
+      } else {
+        // New query entirely
+        const newItems = q.items.filter((item) => labels[itemKey(q.file, item.url)] === undefined);
+        if (newItems.length > 0) {
+          data.queries.push({ ...q, items: newItems });
+          added += newItems.length;
+        }
+      }
+    });
+    alert(`Added ${added} new unlabelled items`);
+    render();
   });
 
   // Check for assignment parameter (?assignment=a)
@@ -284,7 +199,7 @@ function render() {
       const div = document.createElement('div');
       div.className = 'item';
       div.innerHTML = `
-        <img src="/api/img?url=${encodeURIComponent(item.image)}" alt="" loading="lazy" onerror="this.style.opacity=0.3" onclick="openLightbox(this.src, ${escapeHtml(JSON.stringify(item.title))})">
+        <img src="/api/img?url=${encodeURIComponent(item.image)}" alt="" onerror="this.style.opacity=0.3" onclick="openLightbox(this.src, ${escapeHtml(JSON.stringify(item.title))})">
         <div class="item-info">
           <h4>${escapeHtml(item.title)}</h4>
           <p>${escapeHtml(item.priceText)}</p>
@@ -348,18 +263,124 @@ function escapeHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// Lightbox: click any image to enlarge
+// Lightbox with free zoom, pan, and crop
+const lb = {
+  scale: 1, tx: 0, ty: 0,
+  cropMode: false, cropStart: null,
+  el: null, img: null, overlay: null,
+};
 function openLightbox(src, caption) {
-  document.getElementById('lightboxImg').src = src;
+  lb.el = document.getElementById('lightbox');
+  lb.img = document.getElementById('lightboxImg');
+  lb.overlay = document.getElementById('cropOverlay');
+  lbReset();
+  lb.img.src = src;
   document.getElementById('lightboxCaption').textContent = caption || '';
-  document.getElementById('lightbox').classList.add('show');
+  lb.el.classList.add('show');
 }
-document.addEventListener('keydown', (e) => {
-  // Escape closes lightbox
-  if (e.key === 'Escape') {
-    document.getElementById('lightbox').classList.remove('show');
-    return;
+function lbApply() {
+  lb.img.style.transform = `translate(${lb.tx}px, ${lb.ty}px) scale(${lb.scale})`;
+}
+function lbReset() {
+  lb.scale = 1; lb.tx = 0; lb.ty = 0;
+  lb.cropMode = false;
+  document.getElementById('lbCrop').classList.remove('active');
+  lb.overlay.style.display = 'none';
+  if (lb.img) lbApply();
+}
+function lbClose() {
+  document.getElementById('lightbox').classList.remove('show');
+  lbReset();
+}
+function lbZoom(factor, cx, cy) {
+  const old = lb.scale;
+  lb.scale = Math.min(8, Math.max(0.5, lb.scale * factor));
+  // Zoom toward cursor point
+  if (cx !== undefined && lb.img) {
+    const r = lb.img.getBoundingClientRect();
+    const px = cx - (r.left + r.width / 2), py = cy - (r.top + r.height / 2);
+    lb.tx -= px * (lb.scale / old - 1);
+    lb.ty -= py * (lb.scale / old - 1);
   }
+  lbApply();
+}
+// Wire up controls once
+(function initLightbox() {
+  const el = document.getElementById('lightbox');
+  const img = document.getElementById('lightboxImg');
+  const overlay = document.getElementById('cropOverlay');
+  lb.el = el; lb.img = img; lb.overlay = overlay;
+
+  document.getElementById('lbClose').addEventListener('click', (e) => { e.stopPropagation(); lbClose(); });
+  document.getElementById('lbZoomIn').addEventListener('click', (e) => { e.stopPropagation(); lbZoom(1.25); });
+  document.getElementById('lbZoomOut').addEventListener('click', (e) => { e.stopPropagation(); lbZoom(0.8); });
+  document.getElementById('lbReset').addEventListener('click', (e) => { e.stopPropagation(); lbReset(); });
+  document.getElementById('lbCrop').addEventListener('click', (e) => {
+    e.stopPropagation();
+    lb.cropMode = !lb.cropMode;
+    document.getElementById('lbCrop').classList.toggle('active', lb.cropMode);
+    overlay.style.display = 'none';
+    img.style.cursor = lb.cropMode ? 'crosshair' : 'grab';
+  });
+
+  // Wheel zoom (free)
+  el.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    lbZoom(e.deltaY < 0 ? 1.15 : 0.87, e.clientX, e.clientY);
+  }, { passive: false });
+
+  // Drag to pan, or drag to crop in crop mode
+  let dragging = false, sx = 0, sy = 0, stx = 0, sty = 0;
+  img.addEventListener('mousedown', (e) => {
+    if (lb.cropMode) {
+      const r = img.getBoundingClientRect();
+      lb.cropStart = { x: e.clientX - r.left, y: e.clientY - r.top, r };
+      overlay.style.display = 'block';
+      overlay.style.left = (r.left + lb.cropStart.x) + 'px';
+      overlay.style.top = (r.top + lb.cropStart.y) + 'px';
+      overlay.style.width = '0px'; overlay.style.height = '0px';
+      // Position overlay relative to viewport
+      overlay.style.position = 'fixed';
+    } else {
+      dragging = true; sx = e.clientX; sy = e.clientY; stx = lb.tx; sty = lb.ty;
+      img.classList.add('dragging');
+    }
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (lb.cropMode && lb.cropStart) {
+      const { x, y, r } = lb.cropStart;
+      const cx = e.clientX - r.left, cy = e.clientY - r.top;
+      overlay.style.left = (r.left + Math.min(x, cx)) + 'px';
+      overlay.style.top = (r.top + Math.min(y, cy)) + 'px';
+      overlay.style.width = Math.abs(cx - x) + 'px';
+      overlay.style.height = Math.abs(cy - y) + 'px';
+    } else if (dragging) {
+      lb.tx = stx + (e.clientX - sx);
+      lb.ty = sty + (e.clientY - sy);
+      lbApply();
+    }
+  });
+  window.addEventListener('mouseup', () => {
+    dragging = false;
+    img.classList.remove('dragging');
+    if (lb.cropMode) lb.cropStart = null; // keep overlay visible
+  });
+
+  // Double-click resets
+  img.addEventListener('dblclick', (e) => { e.stopPropagation(); lbReset(); });
+  // Click on backdrop closes (not on image or controls)
+  el.addEventListener('click', (e) => {
+    if (e.target === el) lbClose();
+  });
+})();
+document.addEventListener('keydown', (e) => {
+  const open = document.getElementById('lightbox').classList.contains('show');
+  if (e.key === 'Escape') { lbClose(); return; }
+  if (!open) return;
+  if (e.key === '+' || e.key === '=') lbZoom(1.25);
+  else if (e.key === '-' || e.key === '_') lbZoom(0.8);
+  else if (e.key === '0') lbReset();
 });
 
 document.getElementById('exportBtn').addEventListener('click', () => {
