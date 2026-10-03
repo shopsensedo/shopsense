@@ -787,49 +787,26 @@
     "lawn",
     "fabric"
   ],
-  "mardana": [
-    "men",
-    "mens",
-    "gents"
-  ],
-  "gents": [
-    "men",
-    "mens",
-    "gents"
-  ],
+  "mardana": "men",
+  "gents": "men",
   "men": [
     "men",
     "mens"
   ],
-  "zanana": [
-    "women",
-    "ladies",
-    "womens"
-  ],
-  "ladies": [
-    "women",
-    "ladies",
-    "womens"
-  ],
+  "zanana": "women",
+  "ladies": "women",
   "women": [
     "women",
     "ladies",
     "womens"
   ],
-  "bachon": [
-    "kids",
-    "children",
-    "baby"
-  ],
+  "bachon": "kids",
   "bachay": [
     "kids",
     "children",
     "baby"
   ],
-  "bacha": [
-    "kids",
-    "baby"
-  ],
+  "bacha": "kids",
   "kids": [
     "kids",
     "children"
@@ -1082,5 +1059,7 @@
   "attar": [
     "perfume",
     "attar"
-  ]
+  ],
+  "aurat": "women",
+  "mard": "men"
 }

@@ -25,6 +25,13 @@ import {
 import { parseQuery, isPriceWord, STOPWORDS, romanUrduMap, type PriceIntent } from './localSearch';
 import { IMAGE_CATEGORIES } from '../data/imageCategories';
 import { QUERY_PHRASES, PHRASE_TEMPLATES } from '../data/queryPhrases';
+import {
+  filterByGender,
+  detectQueryGender,
+  detectPhraseGender,
+  isGenderFilterEnabled,
+  type GenderPreference,
+} from './genderFilter';
 
 /**
  * Colour prompts for fused re-rank (Claude 2026-10-02).
@@ -1211,6 +1218,8 @@ export async function searchLive(
   dataUrl: string,
   onProgress?: (p: LiveProgress | number) => void,
   described?: DescribedImage | null,
+  /** Gender preference for filtering (explicit user chip overrides inference). */
+  genderPreference?: GenderPreference,
 ): Promise<{
   products: Product[];
   category: string;
@@ -1219,6 +1228,8 @@ export async function searchLive(
   /** R9: true when the server kill switch disabled live sources. */
   liveSourcesDisabled: boolean;
   described: DescribedImage | null;
+  /** Gender filter stats (only when filter active). */
+  genderFiltered?: number;
 }> {
   // 1. embed the user's photo (downloads the CLIP model on first use)
   const queryVec = await embedQueryImage(dataUrl, (f) =>
@@ -1232,6 +1243,7 @@ export async function searchLive(
   let category: string;
   let siteQueries: string[];
   let skipSource: 'priceoye' | 'daraz' | 'telemart' | undefined;
+  let winningPhrase: string | null = null; // for gender inference (fallback path)
   const describedOut = described && described.queries.length > 0 ? described : null;
   if (describedOut) {
     const words = `${describedOut.category} ${describedOut.product_type} ${describedOut.queries.join(' ')}`
@@ -1256,6 +1268,7 @@ export async function searchLive(
       embedding: p.embedding,
     }));
     const cls = classifyImage(queryVec, phraseAsCategory);
+    winningPhrase = cls.category;
     // Look up the parent category for the winning phrase
     const winner = phraseEmbeddings.find((p) => p.phrase === cls.category);
     category = winner?.category ?? cls.category;
@@ -1300,8 +1313,43 @@ export async function searchLive(
 
   // 6. rank: image-scored first (visual similarity), then title-scored
   scored.sort((a, b) => (a.imageOk === b.imageOk ? b.score - a.score : a.imageOk ? -1 : 1));
+
+  // 6b. gender filter (behind flag): resolve preference from explicit user
+  // choice > query text > winning phrase, then hard-exclude confident
+  // opposite-gender listings and down-rank unknowns.
+  let genderFiltered: number | undefined;
+  let ranked = scored;
+  if (isGenderFilterEnabled()) {
+    const effective: GenderPreference =
+      genderPreference ??
+      detectQueryGender(query) ??
+      detectPhraseGender(winningPhrase) ??
+      'any';
+    if (effective !== 'any') {
+      // Filter on listing titles; keep the {l, score, imageOk} wrappers
+      const titles = scored.map((s) => s.l.title);
+      const { kept: keptTitles, removed } = filterByGender(
+        titles.map((t) => ({ title: t })),
+        effective,
+      );
+      // Preserve original order for kept items (confident first, unknowns last
+      // is handled by filterByGender's return order — rebuild via title lookup)
+      const titleToItems = new Map<string, typeof scored>();
+      for (const s of scored) {
+        const arr = titleToItems.get(s.l.title) ?? [];
+        arr.push(s);
+        titleToItems.set(s.l.title, arr);
+      }
+      ranked = keptTitles.flatMap((k) => titleToItems.get(k.title) ?? []);
+      genderFiltered = removed;
+      if (removed > 0) {
+        console.info(`[gender-filter] preference=${effective} removed ${removed} opposite-gender listings`);
+      }
+    }
+  }
+
   return {
-    products: scored.slice(0, 12).map(({ l, score, imageOk }) =>
+    products: ranked.slice(0, 12).map(({ l, score, imageOk }) =>
       toLiveProduct(
         l,
         score,
@@ -1314,5 +1362,6 @@ export async function searchLive(
     sources,
     liveSourcesDisabled,
     described: describedOut,
+    ...(genderFiltered !== undefined ? { genderFiltered } : {}),
   };
 }
