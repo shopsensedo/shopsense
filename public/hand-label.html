@@ -45,6 +45,18 @@
   .rubric { background: #1e293b; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; }
   .rubric h2 { font-size: 1rem; margin-bottom: 0.75rem; }
   .rubric li { margin-left: 1.5rem; margin-bottom: 0.4rem; font-size: 0.9rem; color: #cbd5e1; }
+  .tab-btn { background: transparent; color: #94a3b8; border: none; padding: 0.6rem 1.2rem; font-size: 0.95rem; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; }
+  .tab-btn.active { color: #e2e8f0; border-bottom-color: #2563eb; }
+  .tab-btn:hover { color: #e2e8f0; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .data-card { background: #1e293b; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+  .data-card h2 { font-size: 1.1rem; margin-bottom: 0.75rem; }
+  .data-card p { font-size: 0.9rem; color: #94a3b8; margin-bottom: 1rem; }
+  .dl-link { display: inline-block; background: #334155; color: #e2e8f0; padding: 0.6rem 1.2rem; border-radius: 8px; text-decoration: none; margin: 0.25rem 0.5rem 0.25rem 0; font-size: 0.9rem; }
+  .dl-link:hover { background: #475569; }
+  .upload-zone { border: 2px dashed #475569; border-radius: 12px; padding: 2rem; text-align: center; cursor: pointer; }
+  .upload-zone:hover { border-color: #2563eb; background: #1e293b; }
   .hidden { display: none; }
 </style>
 </head>
@@ -56,14 +68,17 @@
     <div id="progressBar"><div id="progressFill" style="width: 0%"></div></div>
   </div>
   <div style="display: flex; gap: 1rem; align-items: center;">
+    <div style="display: flex; gap: 0.25rem;">
+      <button class="tab-btn active" data-tab="labelTab">Label</button>
+      <button class="tab-btn" data-tab="dataTab">Data</button>
+    </div>
     <label style="font-size: 0.9rem; color: #94a3b8;">Annotator:
       <input type="text" id="annotatorId" placeholder="Your name/ID" style="background: #334155; border: 1px solid #475569; color: #e2e8f0; padding: 0.4rem 0.8rem; border-radius: 6px; margin-left: 0.5rem;">
     </label>
-    <button id="loadMoreBtn" style="background: #475569; color: white; padding: 0.4rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">Load Additional Items</button>
-    <input type="file" id="additionalFile" accept=".json" style="display: none;">
   </div>
 </header>
 <main>
+<div id="labelTab" class="tab-content active">
   <div class="rubric">
     <h2>Rubric (arm identity hidden — judge only what you see)</h2>
     <ul>
@@ -77,6 +92,33 @@
   </div>
   <div id="queries"></div>
   <button id="exportBtn">Export Labels as CSV</button>
+</div><!-- /labelTab -->
+<div id="dataTab" class="tab-content">
+  <div class="data-card">
+    <h2>📥 Download Assignment Files</h2>
+    <p>Download the labelling data files, then re-import them via the upload box below (or share with annotators).</p>
+    <a class="dl-link" href="assignments/annotator-a.json" download="annotator-a.json">⬇ Annotator A (78 items)</a>
+    <a class="dl-link" href="assignments/annotator-b.json" download="annotator-b.json">⬇ Annotator B (78 items)</a>
+    <a class="dl-link" href="assignments/annotator-c.json" download="annotator-c.json">⬇ Annotator C (80 items)</a>
+  </div>
+  <div class="data-card">
+    <h2>📤 Load Data from Computer</h2>
+    <p>Upload a labelling JSON file (same format as the assignment files). New items are merged in; already-labelled items are skipped.</p>
+    <div class="upload-zone" id="uploadZone">
+      <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">📁 Click to choose a JSON file</p>
+      <p style="font-size: 0.85rem;">or drag &amp; drop here</p>
+    </div>
+    <input type="file" id="dataFileInput" accept=".json" style="display: none;">
+    <p id="uploadStatus" style="margin-top: 1rem; font-size: 0.9rem;"></p>
+  </div>
+  <div class="data-card">
+    <h2>💾 Backup / Restore Labels</h2>
+    <p>Download your current labels as JSON backup, or restore from a backup file.</p>
+    <button class="dl-link" id="backupLabelsBtn" style="border: none; cursor: pointer;">⬇ Backup Labels (JSON)</button>
+    <button class="dl-link" id="restoreLabelsBtn" style="border: none; cursor: pointer;">⬆ Restore Labels</button>
+    <input type="file" id="restoreFileInput" accept=".json" style="display: none;">
+  </div>
+</div><!-- /dataTab -->
 </main>
 <div id="lightbox" onclick="this.classList.remove('show')">
   <img id="lightboxImg" src="" alt="">
@@ -96,38 +138,97 @@ async function load() {
     localStorage.setItem('shopsense-annotator', annotatorId);
   });
 
-  // Load additional items button
-  document.getElementById('loadMoreBtn').addEventListener('click', () => {
-    document.getElementById('additionalFile').click();
+  // Tab switching
+  document.querySelectorAll('.tab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach((c) => c.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab).classList.add('active');
+    });
   });
-  document.getElementById('additionalFile').addEventListener('change', async (e) => {
+
+  // Data tab: upload JSON file (click or drag & drop)
+  const uploadZone = document.getElementById('uploadZone');
+  const dataFileInput = document.getElementById('dataFileInput');
+  const uploadStatus = document.getElementById('uploadStatus');
+  uploadZone.addEventListener('click', () => dataFileInput.click());
+  uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.style.borderColor = '#2563eb'; });
+  uploadZone.addEventListener('dragleave', () => { uploadZone.style.borderColor = '#475569'; });
+  uploadZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadZone.style.borderColor = '#475569';
+    if (e.dataTransfer.files.length) handleDataFile(e.dataTransfer.files[0]);
+  });
+  dataFileInput.addEventListener('change', (e) => {
+    if (e.target.files[0]) handleDataFile(e.target.files[0]);
+    e.target.value = '';
+  });
+  async function handleDataFile(file) {
+    try {
+      const text = await file.text();
+      const additional = JSON.parse(text);
+      if (!additional.queries || !Array.isArray(additional.queries)) throw new Error('Invalid format: missing queries array');
+      let added = 0;
+      additional.queries.forEach((q) => {
+        const existing = data.queries.find((eq) => eq.file === q.file);
+        if (existing) {
+          q.items.forEach((item) => {
+            const key = itemKey(q.file, item.url);
+            if (!existing.items.find((i) => i.url === item.url) && labels[key] === undefined) {
+              existing.items.push(item);
+              added++;
+            }
+          });
+        } else {
+          const newItems = (q.items || []).filter((item) => labels[itemKey(q.file, item.url)] === undefined);
+          if (newItems.length > 0) {
+            data.queries.push({ ...q, items: newItems });
+            added += newItems.length;
+          }
+        }
+      });
+      uploadStatus.textContent = `✅ Added ${added} new unlabelled items from ${file.name}`;
+      uploadStatus.style.color = '#22c55e';
+      render();
+      // Switch back to Label tab
+      document.querySelector('[data-tab="labelTab"]').click();
+    } catch (err) {
+      uploadStatus.textContent = `❌ Error: ${err.message}`;
+      uploadStatus.style.color = '#ef4444';
+    }
+  }
+
+  // Data tab: backup labels as JSON
+  document.getElementById('backupLabelsBtn').addEventListener('click', () => {
+    const backup = { annotator: annotatorId, exportedAt: new Date().toISOString(), labels };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `labels-backup-${annotatorId || 'unknown'}-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+  });
+
+  // Data tab: restore labels from JSON backup
+  const restoreFileInput = document.getElementById('restoreFileInput');
+  document.getElementById('restoreLabelsBtn').addEventListener('click', () => restoreFileInput.click());
+  restoreFileInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const text = await file.text();
-    const additional = JSON.parse(text);
-    // Merge additional items, skipping already-labelled
-    let added = 0;
-    additional.queries.forEach((q) => {
-      const existing = data.queries.find((eq) => eq.file === q.file);
-      if (existing) {
-        q.items.forEach((item) => {
-          const key = itemKey(q.file, item.url);
-          if (!existing.items.find((i) => i.url === item.url) && labels[key] === undefined) {
-            existing.items.push(item);
-            added++;
-          }
-        });
-      } else {
-        // New query entirely
-        const newItems = q.items.filter((item) => labels[itemKey(q.file, item.url)] === undefined);
-        if (newItems.length > 0) {
-          data.queries.push({ ...q, items: newItems });
-          added += newItems.length;
-        }
-      }
-    });
-    alert(`Added ${added} new unlabelled items`);
-    render();
+    try {
+      const backup = JSON.parse(await file.text());
+      const restored = backup.labels || backup;
+      const count = Object.keys(restored).length;
+      if (count === 0) throw new Error('No labels found in file');
+      if (!confirm(`Restore ${count} labels from ${file.name}? This merges with current labels.`)) return;
+      Object.assign(labels, restored);
+      localStorage.setItem('shopsense-labels', JSON.stringify(labels));
+      render();
+      alert(`Restored ${count} labels`);
+    } catch (err) {
+      alert(`Restore failed: ${err.message}`);
+    }
+    e.target.value = '';
   });
 
   // Check for assignment parameter (?assignment=a)
@@ -183,7 +284,7 @@ function render() {
       const div = document.createElement('div');
       div.className = 'item';
       div.innerHTML = `
-        <img src="/api/img?url=${encodeURIComponent(item.image)}" alt="" onerror="this.style.opacity=0.3" onclick="openLightbox(this.src, ${escapeHtml(JSON.stringify(item.title))})">
+        <img src="/api/img?url=${encodeURIComponent(item.image)}" alt="" loading="lazy" onerror="this.style.opacity=0.3" onclick="openLightbox(this.src, ${escapeHtml(JSON.stringify(item.title))})">
         <div class="item-info">
           <h4>${escapeHtml(item.title)}</h4>
           <p>${escapeHtml(item.priceText)}</p>
