@@ -33,9 +33,10 @@ const ALLOWED_HOSTS = new Set([
   // T3: Telemart (telex.pk, Shopify) product images.
   'cdn.shopify.com',
   // Hand-labelling tool: Wikimedia Commons query photos (Special:FilePath
-  // redirects to upload.wikimedia.org).
+  // redirects to upload.wikimedia.org or thumb.wikimedia.org).
   'commons.wikimedia.org',
   'upload.wikimedia.org',
+  'thumb.wikimedia.org',
 ]);
 
 function isAllowedUrl(u: string): boolean {
