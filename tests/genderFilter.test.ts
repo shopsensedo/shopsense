@@ -146,3 +146,19 @@ describe('biasQueryForGender', () => {
     expect(biasQueryForGender('kurta', 'any')).toBe(null);
   });
 });
+
+describe('inferGarmentGender', () => {
+  it('returns null for unsupported categories', async () => {
+    const { inferGarmentGender } = await import('../src/lib/liveSearch');
+    const vec = new Array(512).fill(0.1);
+    const r = await inferGarmentGender(vec, 'sneakers');
+    expect(r).toBe(null);
+  });
+
+  it('returns null when embedding fails', async () => {
+    const { inferGarmentGender } = await import('../src/lib/liveSearch');
+    // Empty vector will cause issues, should return null gracefully
+    const r = await inferGarmentGender([], 'kurta');
+    expect(r).toBe(null);
+  });
+});
