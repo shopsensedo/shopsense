@@ -64,6 +64,21 @@ describe('validateOutfitDescription', () => {
     expect(r!.items[0].brand).toBeNull();
   });
 
+  it('validates bounding boxes', () => {
+    const r = validateOutfitDescription({
+      photoType: 'person',
+      apparentGender: null,
+      items: [
+        { type: 'shoes', queries: ['shoes'], box: { x: 100, y: 200, width: 300, height: 150 } },
+        { type: 'watch', queries: ['watch'], box: { x: -10, y: 0, width: 50, height: 50 } }, // invalid → dropped
+        { type: 'bag', queries: ['bag'] }, // no box → ok, undefined
+      ],
+    });
+    expect(r!.items[0].box).toEqual({ x: 100, y: 200, width: 300, height: 150 });
+    expect(r!.items[1].box).toBeUndefined();
+    expect(r!.items[2].box).toBeUndefined();
+  });
+
   it('returns null for garbage', () => {
     expect(validateOutfitDescription(null)).toBeNull();
     expect(validateOutfitDescription('nope')).toBeNull();

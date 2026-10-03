@@ -46,6 +46,7 @@ import { BottomNav } from './components/ui/BottomNav';
 import { HomeScreen } from './components/features/HomeScreen';
 import { loadDemoCatalogueFile, demoItemsToProducts } from './lib/demoCatalogue';
 import { CropPreviewModal } from './components/features/CropPreviewModal';
+import { OutfitItemPicker } from './components/features/OutfitItemPicker';
 import { SearchLoadingScreen } from './components/features/SearchLoadingScreen';
 import { ResultsScreen } from './components/features/ResultsScreen';
 import { ComparisonViewScreen } from './components/features/ComparisonViewScreen';
@@ -207,6 +208,11 @@ function ShopSenseApp() {
   // Search & Products State
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+  // Outfit analysis (Phase A): item picker shown before the cropper
+  const [isOutfitPickerOpen, setIsOutfitPickerOpen] = useState(false);
+  const [outfitItems, setOutfitItems] = useState<import('./lib/describeImage').OutfitItem[]>([]);
+  const [outfitGender, setOutfitGender] = useState<'men' | 'women' | null>(null);
+  const [outfitLoading, setOutfitLoading] = useState(false);
   const [localClipProgress, setLocalClipProgress] = useState<number | null>(null);
   const [clipProgressLabel, setClipProgressLabel] = useState<string | undefined>(undefined);
   // Background CLIP preload progress (0-100) shown as a small pill on the
@@ -326,11 +332,131 @@ function ShopSenseApp() {
   }, [demoMode]);
 
   // Handle image selected for upload
-  const handleImageSelected = (imageDataUrl: string, sourceName?: string) => {
+  const handleImageSelected = async (imageDataUrl: string, sourceName?: string) => {
     setUploadedImage(imageDataUrl);
     setSearchQueryText(sourceName || (isUrduMode ? 'Screenshot se talash' : 'Visual Search Query'));
+
+    // Outfit flow (Phase A, behind flag): analyse the outfit first. If a
+    // person with items is detected, show the item picker; otherwise fall
+    // through to the cropper. Skip logic: 0 items or 1 item covering >50%
+    // of the frame → skip the picker.
+    const { isOutfitEnabled, describeOutfit, downscaleToJpeg } = await import('./lib/describeImage');
+    if (isOutfitEnabled()) {
+      setOutfitLoading(true);
+      try {
+        const jpeg = await downscaleToJpeg(imageDataUrl, 768);
+        const r = await describeOutfit(jpeg);
+        if (r.ok && r.outfit.photoType === 'person' && r.outfit.items.length > 0) {
+          const items = r.outfit.items.slice(0, 5); // cap at 5 per Claude
+          // Skip if single item covers >50% of frame
+          if (items.length === 1 && items[0].box) {
+            const b = items[0].box;
+            const coverage = (b.width * b.height) / (1000 * 1000);
+            if (coverage > 0.5) {
+              setIsCropModalOpen(true); // single dominant item → straight to cropper
+              return;
+            }
+          }
+          setOutfitItems(items);
+          setOutfitGender(r.outfit.apparentGender);
+          setIsOutfitPickerOpen(true);
+          return;
+        }
+      } catch {
+        // fall through to cropper on any error
+      } finally {
+        setOutfitLoading(false);
+      }
+    }
     setIsCropModalOpen(true);
   };
+
+  /**
+   * Outfit picker: "Find this" — search for the tapped item using its own
+   * queries. Crops to the item's box (with padding) when available, so the
+   * visual search focuses on that item.
+   */
+  const handleOutfitFindItem = async (item: import('./lib/describeImage').OutfitItem) => {
+    setIsOutfitPickerOpen(false);
+    if (!uploadedImage) return;
+    // Crop to the item's box with 12% padding when we have one
+    let searchImage = uploadedImage;
+    if (item.box) {
+      try {
+        searchImage = await cropToBox(uploadedImage, item.box, 0.12);
+      } catch {
+        // fall back to full image
+      }
+    }
+    // Inject the item's queries as the description (skip describe-image call)
+    // by stashing them for handleConfirmCrop to pick up.
+    (window as any).__outfitItemQueries = {
+      category: item.type,
+      product_type: item.type,
+      brand: item.brand,
+      queries: item.queries,
+    };
+    (window as any).__outfitGender = outfitGender;
+    handleConfirmCrop(searchImage);
+  };
+
+  /** Outfit picker: "Adjust" — open the cropper pre-snapped to the item's box. */
+  const handleOutfitAdjustItem = (item: import('./lib/describeImage').OutfitItem) => {
+    setIsOutfitPickerOpen(false);
+    // Stash the box for CropPreviewModal to pick up as initial crop
+    (window as any).__outfitInitialBox = item.box ?? null;
+    (window as any).__outfitItemQueries = {
+      category: item.type,
+      product_type: item.type,
+      brand: item.brand,
+      queries: item.queries,
+    };
+    setIsCropModalOpen(true);
+  };
+
+  /** Outfit picker: skip → search the whole photo. */
+  const handleOutfitSkipAll = () => {
+    setIsOutfitPickerOpen(false);
+    setIsCropModalOpen(true);
+  };
+
+  /**
+   * Crop a data-URL image to a normalized 0-1000 box with padding fraction.
+   * Returns a JPEG data URL. Pads with white, never black.
+   */
+  async function cropToBox(
+    dataUrl: string,
+    box: { x: number; y: number; width: number; height: number },
+    paddingFrac: number,
+  ): Promise<string> {
+    const img = new Image();
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error('decode failed'));
+      img.src = dataUrl;
+    });
+    const px = (box.x / 1000) * img.width;
+    const py = (box.y / 1000) * img.height;
+    const pw = (box.width / 1000) * img.width;
+    const ph = (box.height / 1000) * img.height;
+    const padX = pw * paddingFrac;
+    const padY = ph * paddingFrac;
+    const sx = Math.max(0, px - padX);
+    const sy = Math.max(0, py - padY);
+    const sw = Math.min(img.width - sx, pw + padX * 2);
+    const sh = Math.min(img.height - sy, ph + padY * 2);
+    // Enforce minimum 224px on short side (upscale)
+    const scale = Math.max(1, 224 / Math.min(sw, sh));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(sw * scale);
+    canvas.height = Math.round(sh * scale);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('no 2d context');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg', 0.9);
+  }
 
   // If the user starts a search before the background preload finished, wait
   // for the models (showing the honest label) instead of starting a second
@@ -427,17 +553,37 @@ function ShopSenseApp() {
           setClipProgressLabel(
             isUrduMode ? 'Tasveer samjhi ja rahi hai…' : 'Understanding your photo…',
           );
-          const d = await describeImage(jpeg);
-          if (d.ok) {
+          // Outfit flow: if the user picked an item in the outfit picker, its
+          // queries are stashed — use them directly instead of describe-image.
+          const stashed = (window as any).__outfitItemQueries as {
+            category: string; product_type: string; brand: string | null; queries: string[];
+          } | undefined;
+          if (stashed && Array.isArray(stashed.queries) && stashed.queries.length > 0) {
             described = {
-              category: d.description.category,
-              product_type: d.description.product_type,
-              brand: d.description.brand,
-              queries: d.description.queries,
+              category: stashed.category,
+              product_type: stashed.product_type,
+              brand: stashed.brand,
+              queries: stashed.queries,
             };
             setImageDescription(described);
+            (window as any).__outfitItemQueries = undefined;
+            // Feed the outfit's apparent gender into the gender filter
+            const og = (window as any).__outfitGender as 'men' | 'women' | null;
+            if (og) (window as any).__outfitGenderPref = og;
+            (window as any).__outfitGender = undefined;
           } else {
-            setDescribeFallback(true);
+            const d = await describeImage(jpeg);
+            if (d.ok) {
+              described = {
+                category: d.description.category,
+                product_type: d.description.product_type,
+                brand: d.description.brand,
+                queries: d.description.queries,
+              };
+              setImageDescription(described);
+            } else {
+              setDescribeFallback(true);
+            }
           }
         } catch {
           setDescribeFallback(true); // downscale/describe blew up — basic recognition
@@ -467,7 +613,10 @@ function ShopSenseApp() {
           }
           },
           described,
+          // Outfit flow: gender from the outfit's apparentGender (clothing-based)
+          (window as any).__outfitGenderPref as 'men' | 'women' | undefined,
         );
+        (window as any).__outfitGenderPref = undefined;
         // Always surface what each source did — even when it failed.
         setSourceStatus(live.sources);
         setLiveSourcesDisabled(!!live.liveSourcesDisabled);
@@ -1119,6 +1268,22 @@ function ShopSenseApp() {
           }}
           onClose={() => setIsCropModalOpen(false)}
           isUrduMode={isUrduMode}
+        />
+      )}
+
+      {/* 1b. Outfit Item Picker (Phase A) — shown before the cropper when a
+          person with items is detected and the outfit flag is on */}
+      {uploadedImage && (
+        <OutfitItemPicker
+          isOpen={isOutfitPickerOpen}
+          imageSrc={uploadedImage}
+          items={outfitItems}
+          apparentGender={outfitGender}
+          isUrduMode={isUrduMode}
+          onFindItem={handleOutfitFindItem}
+          onAdjustItem={handleOutfitAdjustItem}
+          onClose={() => setIsOutfitPickerOpen(false)}
+          onSkipAll={handleOutfitSkipAll}
         />
       )}
 

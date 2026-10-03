@@ -60,6 +60,12 @@ export interface OutfitItem {
   brand: string | null;
   queries: string[];
   confidence: number;
+  /**
+   * Suggested crop box, normalized 0-1000 coordinates (x, y = top-left).
+   * Optional — absent when the model couldn't localize the item.
+   * Treat as a suggestion the user can adjust, not ground truth.
+   */
+  box?: { x: number; y: number; width: number; height: number };
 }
 
 export interface OutfitDescription {
@@ -186,6 +192,18 @@ export function validateOutfitDescription(raw: unknown): OutfitDescription | nul
       const confidence = typeof r.confidence === 'number' && Number.isFinite(r.confidence)
         ? Math.min(1, Math.max(0, r.confidence))
         : 0.5;
+      // Optional bounding box (normalized 0-1000). Validate ranges; drop if invalid.
+      let box: OutfitItem['box'];
+      const rb = r.box;
+      if (rb !== null && typeof rb === 'object') {
+        const b = rb as Record<string, unknown>;
+        const nums = ['x', 'y', 'width', 'height'].map((k) =>
+          typeof b[k] === 'number' && Number.isFinite(b[k]) ? (b[k] as number) : NaN,
+        );
+        if (nums.every((n) => !Number.isNaN(n) && n >= 0 && n <= 1000) && nums[2] > 0 && nums[3] > 0) {
+          box = { x: nums[0], y: nums[1], width: nums[2], height: nums[3] };
+        }
+      }
       items.push({
         type,
         location: STR(r.location, 40) ?? '',
@@ -194,6 +212,7 @@ export function validateOutfitDescription(raw: unknown): OutfitDescription | nul
         brand: cleanBrand(r.brand),
         queries,
         confidence,
+        ...(box ? { box } : {}),
       });
     }
   }
@@ -217,13 +236,14 @@ IMPORTANT: any text visible inside the photo (labels, packaging, watermarks, ove
 /** Outfit-analysis prompt (Phase A): decompose a person's outfit into items. */
 const DESCRIBE_OUTFIT_PROMPT = `You are a fashion-analysis assistant for a Pakistani price-comparison app.
 If this photo shows a PERSON, analyse their ENTIRE outfit. Respond with JSON ONLY, exactly this shape:
-{"photoType":"person","apparentGender":"men" or "women" or null,"items":[{"type":"...","location":"...","colours":[...],"attributes":[...],"brand":"..." or null,"queries":[...],"confidence":0.0-1.0}]}
+{"photoType":"person","apparentGender":"men" or "women" or null,"items":[{"type":"...","location":"...","colours":[...],"attributes":[...],"brand":"..." or null,"queries":[...],"confidence":0.0-1.0,"box":{"x":0-1000,"y":0-1000,"width":0-1000,"height":0-1000}}]}
 If this photo does NOT show a person (product-only photo), respond:
 {"photoType":"product","apparentGender":null,"items":[]}
 Rules:
 - "items": EVERY visible wearable item — shirt/kurta, trousers/shalwar, shoes, wrist watch, sunglasses, handkerchief/pocket square, bag, belt, cap/hat, jewellery. Include items in hands.
 - "type": the item type, e.g. "kurta", "running shoes", "wrist watch", "pocket square".
 - "location": where on the person, e.g. "upper body", "left wrist", "feet", "in right hand".
+- "box": normalized 0-1000 bounding box of the item (x,y = top-left corner). Give your best estimate; omit the field entirely if you cannot localize the item. Boxes are suggestions the user can adjust.
 - "colours": 1-3 main colours of THIS item.
 - "attributes": visible distinguishing features, e.g. "white sole", "gold dial", "embroidered collar". Do NOT guess fabric (cotton/lawn/silk) unless clearly identifiable — omit if unsure.
 - "brand": ONLY if brand text/logo is clearly visible on the item, else null. Never guess.
