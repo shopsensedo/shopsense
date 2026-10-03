@@ -1238,6 +1238,69 @@ export async function searchLiveText(
  * status, so the caller can show an honest error instead of fake results.
  * Only a broken query-image embedding (model load failure) still throws.
  */
+
+/**
+ * Garment-level gender inference via CLIP zero-shot (Claude 2026-10-03).
+ * Prompts about the GARMENT, not the person — "a women's embroidered kurti"
+ * vs "a men's kurta pajama". Returns 'women'/'men' if the margin exceeds
+ * the threshold, else null (unknown).
+ *
+ * Currently supports kurta category; returns null for others (no prompts).
+ */
+export async function inferGarmentGender(
+  queryVec: number[],
+  category: string,
+): Promise<'women' | 'men' | null> {
+  // Gendered prompts per category — garment-focused, not person-focused
+  const prompts: Record<string, { women: string[]; men: string[] }> = {
+    kurta: {
+      women: [
+        "a women's embroidered kurti",
+        "a ladies kurti",
+        "a women's stitched suit",
+      ],
+      men: [
+        "a men's kurta pajama",
+        "a men's kurta shalwar",
+        "a men's embroidered kurta",
+      ],
+    },
+  };
+
+  const p = prompts[category];
+  if (!p) return null;
+
+  try {
+    const { embedTextBatch } = await import('./clipEmbed');
+    const allPrompts = [...p.women, ...p.men];
+    const vectors = await embedTextBatch(allPrompts);
+
+    const cosineSim = (a: number[], b: number[]): number => {
+      let dot = 0, na = 0, nb = 0;
+      for (let i = 0; i < a.length; i++) {
+        dot += a[i] * b[i];
+        na += a[i] * a[i];
+        nb += b[i] * b[i];
+      }
+      return dot / (Math.sqrt(na) * Math.sqrt(nb) + 1e-9);
+    };
+
+    const womenScores = vectors.slice(0, p.women.length).map((v) => cosineSim(queryVec, v));
+    const menScores = vectors.slice(p.women.length).map((v) => cosineSim(queryVec, v));
+
+    const avgWomen = womenScores.reduce((a, b) => a + b, 0) / womenScores.length;
+    const avgMen = menScores.reduce((a, b) => a + b, 0) / menScores.length;
+
+    const margin = Math.abs(avgWomen - avgMen);
+    const MARGIN_THRESHOLD = 0.02; // require clear signal
+
+    if (margin < MARGIN_THRESHOLD) return null;
+    return avgWomen > avgMen ? 'women' : 'men';
+  } catch {
+    return null; // embedding failed — no gender signal
+  }
+}
+
 export async function searchLive(
   dataUrl: string,
   onProgress?: (p: LiveProgress | number) => void,
@@ -1291,6 +1354,19 @@ export async function searchLive(
     siteQueries = [cls.query];
     // Source routing by category
     skipSource = priceOyeSellsCategory(category) ? undefined : 'priceoye';
+
+    // Garment-level gender inference (Claude 2026-10-03): when Gemini fails,
+    // use CLIP zero-shot with gendered garment prompts to infer from the
+    // clothing itself (not the person). This gives photo search a gender
+    // signal for the filter.
+    if (isGenderFilterEnabled() && (!genderPreference || genderPreference === 'any')) {
+      const inferredGender = await inferGarmentGender(queryVec, category);
+      if (inferredGender) {
+        // Store for the filter in section 6b (soft strength since inferred)
+        (siteQueries as any).__inferredGender = inferredGender;
+        console.info(`[gender-infer] category=${category} inferred=${inferredGender}`);
+      }
+    }
   }
 
   // 2b. Query biasing is handled in searchLiveText (text queries have rawQuery
@@ -1335,8 +1411,8 @@ export async function searchLive(
   scored.sort((a, b) => (a.imageOk === b.imageOk ? b.score - a.score : a.imageOk ? -1 : 1));
 
   // 6b. gender filter (TIERED per Claude 2026-10-03): resolve preference from
-  // explicit user choice > query text > winning phrase. Explicit → hard
-  // exclusion; inferred → soft penalty (never empties the page).
+  // explicit user choice > query text > winning phrase > garment inference.
+  // Explicit → hard exclusion; inferred → soft penalty (never empties the page).
   let genderFiltered: number | undefined;
   let ranked = scored;
   if (isGenderFilterEnabled()) {
@@ -1356,6 +1432,13 @@ export async function searchLive(
         if (pg) {
           effective = pg;
           strength = 'soft'; // inferred from classifier
+        } else {
+          // Garment-level CLIP inference (photo search, Gemini failed)
+          const ig = (siteQueries as any).__inferredGender as GenderPreference | undefined;
+          if (ig === 'women' || ig === 'men') {
+            effective = ig;
+            strength = 'soft'; // inferred from garment
+          }
         }
       }
     }
