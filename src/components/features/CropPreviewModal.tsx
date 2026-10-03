@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Crop, Sparkles, RefreshCw, ZoomIn, ZoomOut, Check } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Crop, RefreshCw, Sparkles, Check } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { handleImageError } from '../../utils/imageFallback';
 
@@ -10,8 +10,16 @@ interface CropPreviewModalProps {
   onChangeImage: () => void;
   onClose: () => void;
   isUrduMode?: boolean;
+  /** Pre-snapped box from outfit picker (percent 0-100). */
+  initialBox?: { x: number; y: number; width: number; height: number } | null;
 }
 
+/**
+ * Free crop modal (per Claude 2026-10-03 + user request):
+ * - No zoom controls, no ratio presets — just a free draggable/resizable box.
+ * - User crops whatever they want; pinch/drag on the box itself.
+ * - Actually crops the image on confirm (previous version passed full image).
+ */
 export const CropPreviewModal: React.FC<CropPreviewModalProps> = ({
   isOpen,
   imageSrc,
@@ -19,34 +27,129 @@ export const CropPreviewModal: React.FC<CropPreviewModalProps> = ({
   onChangeImage,
   onClose,
   isUrduMode = false,
+  initialBox = null,
 }) => {
-  const [aspectPreset, setAspectPreset] = useState<'free' | '1:1' | '4:3' | '3:4'>('free');
-  const [zoomLevel, setZoomLevel] = useState(1);
-  const [cropBox, setCropBox] = useState({
-    x: 15,
-    y: 15,
-    width: 70,
-    height: 70,
-  });
+  const [cropBox, setCropBox] = useState({ x: 10, y: 10, width: 80, height: 80 });
+  const [imgSize, setImgSize] = useState({ w: 0, h: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{
+    mode: 'move' | 'resize' | null;
+    handle?: string;
+    startX: number; startY: number;
+    origBox: typeof cropBox;
+  }>({ mode: null, startX: 0, startY: 0, origBox: { x: 10, y: 10, width: 80, height: 80 } });
+
+  // Apply pre-snapped box from outfit picker
+  useEffect(() => {
+    if (isOpen && initialBox) {
+      setCropBox({
+        x: Math.max(0, Math.min(90, initialBox.x)),
+        y: Math.max(0, Math.min(90, initialBox.y)),
+        width: Math.max(10, Math.min(100 - initialBox.x, initialBox.width)),
+        height: Math.max(10, Math.min(100 - initialBox.y, initialBox.height)),
+      });
+    } else if (isOpen && !initialBox) {
+      setCropBox({ x: 10, y: 10, width: 80, height: 80 });
+    }
+  }, [isOpen, initialBox]);
 
   if (!isOpen) return null;
 
-  const handleRatioChange = (ratio: 'free' | '1:1' | '4:3' | '3:4') => {
-    setAspectPreset(ratio);
-    if (ratio === '1:1') {
-      setCropBox({ x: 20, y: 20, width: 60, height: 60 });
-    } else if (ratio === '4:3') {
-      setCropBox({ x: 10, y: 20, width: 80, height: 60 });
-    } else if (ratio === '3:4') {
-      setCropBox({ x: 20, y: 10, width: 60, height: 80 });
-    } else {
-      setCropBox({ x: 15, y: 15, width: 70, height: 70 });
+  const clampBox = (b: typeof cropBox) => ({
+    x: Math.max(0, Math.min(95, b.x)),
+    y: Math.max(0, Math.min(95, b.y)),
+    width: Math.max(5, Math.min(100 - b.x, b.width)),
+    height: Math.max(5, Math.min(100 - b.y, b.height)),
+  });
+
+  const toPercent = (clientX: number, clientY: number) => {
+    const el = containerRef.current;
+    if (!el) return { x: 0, y: 0 };
+    const r = el.getBoundingClientRect();
+    return {
+      x: ((clientX - r.left) / r.width) * 100,
+      y: ((clientY - r.top) / r.height) * 100,
+    };
+  };
+
+  const onPointerDown = (e: React.PointerEvent, mode: 'move' | 'resize', handle?: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    dragRef.current = {
+      mode, handle,
+      startX: e.clientX, startY: e.clientY,
+      origBox: { ...cropBox },
+    };
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    const d = dragRef.current;
+    if (!d.mode) return;
+    const el = containerRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const dx = ((e.clientX - d.startX) / r.width) * 100;
+    const dy = ((e.clientY - d.startY) / r.height) * 100;
+    const o = d.origBox;
+
+    if (d.mode === 'move') {
+      setCropBox(clampBox({ ...o, x: o.x + dx, y: o.y + dy }));
+    } else if (d.mode === 'resize' && d.handle) {
+      let nb = { ...o };
+      if (d.handle.includes('e')) nb.width = o.width + dx;
+      if (d.handle.includes('s')) nb.height = o.height + dy;
+      if (d.handle.includes('w')) { nb.x = o.x + dx; nb.width = o.width - dx; }
+      if (d.handle.includes('n')) { nb.y = o.y + dy; nb.height = o.height - dy; }
+      setCropBox(clampBox(nb));
     }
   };
 
-  const handleSearch = () => {
-    onConfirmCrop(imageSrc);
+  const onPointerUp = () => {
+    dragRef.current.mode = null;
   };
+
+  /** Crop the source image to the box; returns JPEG data URL. */
+  const doCrop = (): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const sx = (cropBox.x / 100) * img.width;
+          const sy = (cropBox.y / 100) * img.height;
+          const sw = (cropBox.width / 100) * img.width;
+          const sh = (cropBox.height / 100) * img.height;
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, Math.round(sw));
+          canvas.height = Math.max(1, Math.round(sh));
+          const ctx = canvas.getContext('2d');
+          if (!ctx) throw new Error('no 2d context');
+          ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', 0.92));
+        } catch (err) {
+          reject(err);
+        }
+      };
+      img.onerror = () => reject(new Error('decode failed'));
+      img.src = imageSrc;
+    });
+  };
+
+  const handleSearch = async () => {
+    try {
+      const cropped = await doCrop();
+      onConfirmCrop(cropped);
+    } catch {
+      onConfirmCrop(imageSrc); // fall back to full image
+    }
+  };
+
+  const handles = [
+    { id: 'nw', className: '-top-2 -left-2 cursor-nwse-resize' },
+    { id: 'ne', className: '-top-2 -right-2 cursor-nesw-resize' },
+    { id: 'sw', className: '-bottom-2 -left-2 cursor-nesw-resize' },
+    { id: 'se', className: '-bottom-2 -right-2 cursor-nwse-resize' },
+  ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-sm animate-fade-in">
@@ -56,15 +159,14 @@ export const CropPreviewModal: React.FC<CropPreviewModalProps> = ({
           <div>
             <h3 className="text-base sm:text-lg font-bold text-[#0C0C0C] dark:text-[#F5F5F5] font-heading flex items-center gap-2">
               <Crop className="w-5 h-5 text-[#0C0C0C] dark:text-[#B9C006]" />
-              <span>{isUrduMode ? 'Tasweer ko Crop Karein' : 'Crop & Focus on Item'}</span>
+              <span>{isUrduMode ? 'Jo chahiye crop karein' : 'Crop what you want'}</span>
             </h3>
             <p className="text-xs text-[#5F5F60] dark:text-[#9C9C9D] mt-0.5">
               {isUrduMode
-                ? 'Box ko us cheez par set karein jo aap Pakistan mein dhoondna chahtay hain'
-                : 'Adjust the box to frame the exact shoe, dress, or accessory'}
+                ? 'Box ko drag karein — jo cheez chahiye us par set karein'
+                : 'Drag the box — frame whatever you want to find'}
             </p>
           </div>
-
           <button
             type="button"
             onClick={onChangeImage}
@@ -75,34 +177,45 @@ export const CropPreviewModal: React.FC<CropPreviewModalProps> = ({
           </button>
         </div>
 
-        {/* Crop Canvas Viewport */}
-        <div className="relative flex-1 bg-[#0C0C0C] flex items-center justify-center p-4 overflow-hidden min-h-[300px] select-none">
-          <div className="relative max-h-[50vh] max-w-full flex items-center justify-center">
+        {/* Free crop viewport — drag box to move, drag corners to resize */}
+        <div className="relative flex-1 bg-[#0C0C0C] flex items-center justify-center p-4 overflow-hidden min-h-[300px] select-none touch-none">
+          <div
+            ref={containerRef}
+            className="relative max-h-[52vh] max-w-full flex items-center justify-center"
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerLeave={onPointerUp}
+          >
             <img
               onError={handleImageError}
               src={imageSrc}
-              alt="Screenshot Preview"
-              className="max-h-[48vh] max-w-full object-contain rounded-lg transition-transform duration-150"
-              style={{ transform: `scale(${zoomLevel})` }}
+              alt="Crop preview"
+              className="max-h-[52vh] max-w-full object-contain rounded-lg"
+              draggable={false}
+              onLoad={(e) => {
+                const t = e.target as HTMLImageElement;
+                setImgSize({ w: t.naturalWidth, h: t.naturalHeight });
+              }}
             />
-
-            {/* Simulated Interactive Crop Box Overlay */}
+            {/* Free crop box */}
             <div
-              className="absolute border-2 border-[#B9C006] bg-[#B9C006]/10 rounded-lg shadow-2xl pointer-events-none"
+              className="absolute border-2 border-[#B9C006] bg-[#B9C006]/10 rounded-lg shadow-2xl cursor-move touch-none"
               style={{
                 top: `${cropBox.y}%`,
                 left: `${cropBox.x}%`,
                 width: `${cropBox.width}%`,
                 height: `${cropBox.height}%`,
               }}
+              onPointerDown={(e) => onPointerDown(e, 'move')}
             >
-              {/* Corner Handles */}
-              <div className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-[#B9C006] rounded-full border-2 border-white shadow-xs" />
-              <div className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-[#B9C006] rounded-full border-2 border-white shadow-xs" />
-              <div className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-[#B9C006] rounded-full border-2 border-white shadow-xs" />
-              <div className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-[#B9C006] rounded-full border-2 border-white shadow-xs" />
-
-              {/* Rule of Thirds Hairlines */}
+              {handles.map((h) => (
+                <div
+                  key={h.id}
+                  className={`absolute w-5 h-5 bg-[#B9C006] rounded-full border-2 border-white shadow ${h.className}`}
+                  style={{ minWidth: 20, minHeight: 20 }}
+                  onPointerDown={(e) => onPointerDown(e, 'resize', h.id)}
+                />
+              ))}
               <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none opacity-40">
                 <div className="border-r border-b border-[#B9C006]/60" />
                 <div className="border-r border-b border-[#B9C006]/60" />
@@ -111,69 +224,13 @@ export const CropPreviewModal: React.FC<CropPreviewModalProps> = ({
                 <div className="border-r border-b border-[#B9C006]/60" />
                 <div className="border-b border-[#B9C006]/60" />
               </div>
-
-              {/* Center Target Indicator */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap">
-                {isUrduMode ? 'Yahan Focus Hai' : 'Item Focused'}
-              </div>
             </div>
           </div>
         </div>
 
-        {/* Toolbar: Aspect presets and Zoom */}
-        <div className="p-3 bg-slate-50 dark:bg-[#262626] border-t border-slate-200 dark:border-[#333333] flex items-center justify-between gap-2 flex-wrap">
-          {/* Preset Buttons */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 mr-1">
-              Ratio:
-            </span>
-            {(['free', '1:1', '4:3', '3:4'] as const).map((ratio) => (
-              <button
-                key={ratio}
-                type="button"
-                onClick={() => handleRatioChange(ratio)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                  aspectPreset === ratio
-                    ? 'bg-[#0C0C0C] dark:bg-[#B9C006] text-white'
-                    : 'bg-white dark:bg-[#1A1A1A] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#333333] hover:bg-slate-100 dark:hover:bg-slate-800'
-                }`}
-              >
-                {ratio === 'free' ? 'Auto' : ratio}
-              </button>
-            ))}
-          </div>
-
-          {/* Zoom Controls */}
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setZoomLevel((z) => Math.max(0.8, z - 0.2))}
-              className="p-1.5 rounded-lg bg-white dark:bg-[#1A1A1A] border border-slate-200 dark:border-[#333333] hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 min-h-[36px] min-w-[36px] flex items-center justify-center cursor-pointer"
-              title="Zoom Out"
-            >
-              <ZoomOut className="w-4 h-4" />
-            </button>
-            <span className="text-xs font-medium text-slate-600 dark:text-slate-300 w-12 text-center tabular-nums">
-              {Math.round(zoomLevel * 100)}%
-            </span>
-            <button
-              type="button"
-              onClick={() => setZoomLevel((z) => Math.min(2, z + 0.2))}
-              className="p-1.5 rounded-lg bg-white dark:bg-[#1A1A1A] border border-slate-200 dark:border-[#333333] hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 min-h-[36px] min-w-[36px] flex items-center justify-center cursor-pointer"
-              title="Zoom In"
-            >
-              <ZoomIn className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Footer Actions */}
+        {/* Footer */}
         <div className="p-4 sm:p-5 border-t border-slate-200 dark:border-[#262626] flex items-center justify-end gap-3 bg-white dark:bg-[#1A1A1A]">
-          <Button
-            variant="outline"
-            size="md"
-            onClick={onClose}
-          >
+          <Button variant="outline" size="md" onClick={onClose}>
             Cancel
           </Button>
           <Button
@@ -182,7 +239,7 @@ export const CropPreviewModal: React.FC<CropPreviewModalProps> = ({
             onClick={handleSearch}
             leftIcon={<Sparkles className="w-4 h-4 text-[#B9C006]" />}
           >
-            {isUrduMode ? 'Talash Shuru Karein' : 'Search Similar Products'}
+            {isUrduMode ? 'Yehi dhoondo' : 'Search this'}
           </Button>
         </div>
       </div>

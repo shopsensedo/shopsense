@@ -1256,7 +1256,7 @@ function ShopSenseApp() {
         />
 
       {/* Global Modals */}
-      {/* 1. Crop & Preview Modal */}
+      {/* 1. Crop & Preview Modal — free crop, no zoom/ratio controls */}
       {uploadedImage && (
         <CropPreviewModal
           isOpen={isCropModalOpen}
@@ -1266,8 +1266,17 @@ function ShopSenseApp() {
             const input = document.querySelector('input[type="file"]') as HTMLInputElement;
             input?.click();
           }}
-          onClose={() => setIsCropModalOpen(false)}
+          onClose={() => {
+            setIsCropModalOpen(false);
+            (window as any).__outfitInitialBox = null;
+          }}
           isUrduMode={isUrduMode}
+          initialBox={(() => {
+            const b = (window as any).__outfitInitialBox;
+            if (!b || typeof b.x !== 'number') return null;
+            // Convert normalized 0-1000 to percent 0-100
+            return { x: b.x / 10, y: b.y / 10, width: b.width / 10, height: b.height / 10 };
+          })()}
         />
       )}
 
