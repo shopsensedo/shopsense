@@ -14,13 +14,20 @@
   #progressBar { height: 4px; background: #334155; margin-top: 0.5rem; border-radius: 2px; }
   #progressFill { height: 100%; background: #22c55e; border-radius: 2px; transition: width 0.3s; }
   main { max-width: 1200px; margin: 0 auto; padding: 2rem; }
-  .query-section { display: grid; grid-template-columns: 300px 1fr; gap: 2rem; margin-bottom: 2rem; }
+  .query-section { display: grid; grid-template-columns: 340px 1fr; gap: 2rem; margin-bottom: 2rem; }
   .query-photo { background: #1e293b; border-radius: 12px; padding: 1rem; text-align: center; position: sticky; top: 100px; align-self: start; }
-  .query-photo img { max-width: 100%; max-height: 300px; border-radius: 8px; }
+  .query-photo img { max-width: 100%; max-height: 380px; border-radius: 8px; cursor: zoom-in; }
+  .query-photo img:hover { outline: 2px solid #60a5fa; }
   .query-photo h3 { margin-top: 0.5rem; font-size: 0.9rem; color: #94a3b8; }
   .items { display: flex; flex-direction: column; gap: 1rem; }
-  .item { background: #1e293b; border-radius: 12px; padding: 1rem; display: grid; grid-template-columns: 120px 1fr auto; gap: 1rem; align-items: center; }
-  .item img { width: 120px; height: 120px; object-fit: cover; border-radius: 8px; background: #334155; }
+  .item { background: #1e293b; border-radius: 12px; padding: 1rem; display: grid; grid-template-columns: 180px 1fr auto; gap: 1rem; align-items: center; }
+  .item img { width: 180px; height: 180px; object-fit: cover; border-radius: 8px; background: #334155; cursor: zoom-in; }
+  .item img:hover { outline: 2px solid #60a5fa; }
+  /* Lightbox for enlarged view */
+  #lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 100; cursor: zoom-out; }
+  #lightbox.show { display: flex; }
+  #lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 12px; object-fit: contain; }
+  #lightbox .lb-caption { position: absolute; bottom: 2rem; color: #94a3b8; font-size: 0.9rem; background: rgba(0,0,0,0.7); padding: 0.5rem 1rem; border-radius: 8px; }
   .item-info h4 { font-size: 0.95rem; margin-bottom: 0.25rem; }
   .item-info p { font-size: 0.85rem; color: #94a3b8; }
   .item-info a { color: #60a5fa; font-size: 0.8rem; }
@@ -62,41 +69,23 @@
     <ul>
       <li><strong>0 — Wrong:</strong> wrong product category entirely</li>
       <li><strong>1 — Partly:</strong> right category, but wrong colour, style, or type</li>
-      <li><strong>2 — Right:</strong> right category + colour + style match (use 2 for close matches — if a shopper would consider these the same product, it's a 2)</li>
+      <li><strong>2 — Right:</strong> right category + colour + style match</li>
     </ul>
     <p style="margin-top: 0.75rem; font-size: 0.85rem; color: #94a3b8;">
       Compare the candidate (right) against the query photo (left). Label blind — don't guess which ranking produced it.
-      When in doubt between 1 and 2: if the colour and style are close enough that a shopper would buy it as a match, give 2.
     </p>
   </div>
   <div id="queries"></div>
   <button id="exportBtn">Export Labels as CSV</button>
 </main>
+<div id="lightbox" onclick="this.classList.remove('show')">
+  <img id="lightboxImg" src="" alt="">
+  <div class="lb-caption" id="lightboxCaption"></div>
+</div>
 <script>
 let data = null;
 let labels = {}; // itemKey -> {label, timestamp, annotator}
 let annotatorId = '';
-
-// Namespaced localStorage key per annotator (prevents overwrites across sessions)
-function labelsKey() {
-  return annotatorId ? `shopsense-labels-${annotatorId}` : 'shopsense-labels';
-}
-
-function saveLabels() {
-  try {
-    localStorage.setItem(labelsKey(), JSON.stringify(labels));
-  } catch {}
-}
-
-function loadLabels() {
-  try {
-    const saved = localStorage.getItem(labelsKey());
-    if (saved) labels = JSON.parse(saved);
-    else labels = {};
-  } catch {
-    labels = {};
-  }
-}
 
 async function load() {
   // Restore annotator ID
@@ -105,9 +94,6 @@ async function load() {
   document.getElementById('annotatorId').addEventListener('change', (e) => {
     annotatorId = e.target.value.trim();
     localStorage.setItem('shopsense-annotator', annotatorId);
-    // Reload labels for the new annotator namespace
-    loadLabels();
-    render();
   });
 
   // Load additional items button
@@ -178,7 +164,7 @@ function render() {
     const section = document.createElement('div');
     section.innerHTML = `<div class="query-section">
       <div class="query-photo">
-        <img src="${q.photo}" alt="query">
+        <img src="/api/img?url=${encodeURIComponent(q.photo)}" alt="query" onerror="this.style.opacity=0.3" onclick="openLightbox(this.src, 'Query: ${q.file}')">
         <h3>${q.file}</h3>
       </div>
       <div class="items" id="items-${q.file}"></div>
@@ -197,7 +183,7 @@ function render() {
       const div = document.createElement('div');
       div.className = 'item';
       div.innerHTML = `
-        <img src="/api/img?url=${encodeURIComponent(item.image)}" alt="" loading="lazy" onerror="this.style.opacity=0.3">
+        <img src="/api/img?url=${encodeURIComponent(item.image)}" alt="" loading="lazy" onerror="this.style.opacity=0.3" onclick="openLightbox(this.src, ${escapeHtml(JSON.stringify(item.title))})">
         <div class="item-info">
           <h4>${escapeHtml(item.title)}</h4>
           <p>${escapeHtml(item.priceText)}</p>
@@ -231,8 +217,8 @@ function render() {
       siblings.forEach((s) => s.classList.remove('selected-0', 'selected-1', 'selected-2'));
       btn.classList.add(`selected-${val}`);
       updateProgress();
-      // Save to localStorage (namespaced by annotator)
-      saveLabels();
+      // Save to localStorage
+      localStorage.setItem('shopsense-labels', JSON.stringify(labels));
       // Remind to export every 25 items
       const count = Object.keys(labels).length;
       if (count % 25 === 0) {
@@ -241,8 +227,11 @@ function render() {
     });
   });
 
-  // Restore from localStorage (namespaced by annotator)
-  loadLabels();
+  // Restore from localStorage
+  try {
+    const saved = localStorage.getItem('shopsense-labels');
+    if (saved) labels = JSON.parse(saved);
+  } catch {}
 
   updateProgress(total, done);
 }
@@ -257,6 +246,20 @@ function updateProgress() {
 function escapeHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// Lightbox: click any image to enlarge
+function openLightbox(src, caption) {
+  document.getElementById('lightboxImg').src = src;
+  document.getElementById('lightboxCaption').textContent = caption || '';
+  document.getElementById('lightbox').classList.add('show');
+}
+document.addEventListener('keydown', (e) => {
+  // Escape closes lightbox
+  if (e.key === 'Escape') {
+    document.getElementById('lightbox').classList.remove('show');
+    return;
+  }
+});
 
 document.getElementById('exportBtn').addEventListener('click', () => {
   if (!annotatorId) {
