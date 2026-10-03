@@ -19,12 +19,18 @@ import {
   embedTextBatch,
   cosineSim,
   getCategoryEmbeddings,
-  getPhraseEmbeddings,
   type CategoryTextEmbedding,
 } from './clipEmbed';
 import { parseQuery, isPriceWord, STOPWORDS, romanUrduMap, type PriceIntent } from './localSearch';
 import { IMAGE_CATEGORIES } from '../data/imageCategories';
-import { QUERY_PHRASES, PHRASE_TEMPLATES } from '../data/queryPhrases';
+import {
+  filterByGender,
+  detectQueryGender,
+  detectPhraseGender,
+  biasQueryForGender,
+  isGenderFilterEnabled,
+  type GenderPreference,
+} from './genderFilter';
 
 /**
  * Colour prompts for fused re-rank (Claude 2026-10-02).
@@ -1089,7 +1095,21 @@ export async function searchLiveText(
   const category = categorizeKeywords(keywords);
   // Short query for the marketplaces (brand + colour + product type, ≤3 words);
   // the longer expanded string above stays as the CLIP ranking text.
-  const marketplaceQuery = buildMarketplaceQuery(rawQuery, keywords, category) || english;
+  let marketplaceQuery = buildMarketplaceQuery(rawQuery, keywords, category) || english;
+
+  // Query biasing (Claude 2026-10-03): if the text query carries gender,
+  // rewrite to gendered vocabulary before fetching. Fixes "kurta" (male-coded
+  // in Pakistan) returning men's items for women's queries.
+  if (isGenderFilterEnabled()) {
+    const qg = detectQueryGender(rawQuery);
+    if (qg === 'women' || qg === 'men') {
+      const biased = biasQueryForGender(marketplaceQuery, qg);
+      if (biased && biased !== marketplaceQuery) {
+        console.info(`[gender-bias] "${marketplaceQuery}" → "${biased}"`);
+        marketplaceQuery = biased;
+      }
+    }
+  }
 
   // 2. live listings from the sites (short query sent to both sources)
   // Source routing: PriceOye sells electronics/appliances only — a fashion,
@@ -1222,6 +1242,8 @@ export async function searchLive(
   dataUrl: string,
   onProgress?: (p: LiveProgress | number) => void,
   described?: DescribedImage | null,
+  /** Gender preference for filtering (explicit user chip overrides inference). */
+  genderPreference?: GenderPreference,
 ): Promise<{
   products: Product[];
   category: string;
@@ -1230,6 +1252,8 @@ export async function searchLive(
   /** R9: true when the server kill switch disabled live sources. */
   liveSourcesDisabled: boolean;
   described: DescribedImage | null;
+  /** Gender filter stats (only when filter active). */
+  genderFiltered?: number;
 }> {
   // 1. embed the user's photo (downloads the CLIP model on first use)
   const queryVec = await embedQueryImage(dataUrl, (f) =>
@@ -1243,6 +1267,7 @@ export async function searchLive(
   let category: string;
   let siteQueries: string[];
   let skipSource: 'priceoye' | 'daraz' | 'telemart' | undefined;
+  let winningPhrase: string | null = null; // for gender inference (phrase path, when wired)
   const describedOut = described && described.queries.length > 0 ? described : null;
   if (describedOut) {
     const words = `${describedOut.category} ${describedOut.product_type} ${describedOut.queries.join(' ')}`
@@ -1257,23 +1282,20 @@ export async function searchLive(
     siteQueries = describedOut.queries.slice(0, 2);
     skipSource = describedSkipSource(describedOut);
   } else {
-    // Phrase embeddings: classify directly against marketplace query phrases
-    // (Claude 2026-10-02). The winning phrase is the marketplace query.
-    // Prompt ensembling (3 templates) is baked into getPhraseEmbeddings.
-    const phraseEmbeddings = await getPhraseEmbeddings(QUERY_PHRASES, PHRASE_TEMPLATES);
-    // classifyImage expects CategoryTextEmbedding[]; phrases adapt via key=phrase
-    const phraseAsCategory = phraseEmbeddings.map((p) => ({
-      key: p.phrase,
-      embedding: p.embedding,
-    }));
-    const cls = classifyImage(queryVec, phraseAsCategory);
-    // Look up the parent category for the winning phrase
-    const winner = phraseEmbeddings.find((p) => p.phrase === cls.category);
-    category = winner?.category ?? cls.category;
-    siteQueries = [cls.category]; // the phrase itself is the query
-    // Source routing by parent category
+    // Fallback path: the on-device 80-category zero-shot classification.
+    // (Phrase-query expansion against marketplace phrases is unfinished work
+    // on the phrase-query-expansion branch — do not re-add it here.)
+    const categoryEmbeddings = await getCategoryEmbeddings(IMAGE_CATEGORIES);
+    const cls = classifyImage(queryVec, categoryEmbeddings);
+    category = cls.category;
+    siteQueries = [cls.query];
+    // Source routing by category
     skipSource = priceOyeSellsCategory(category) ? undefined : 'priceoye';
   }
+
+  // 2b. Query biasing is handled in searchLiveText (text queries have rawQuery
+  // for gender detection). For photo search, gender comes from the explicit
+  // chip or the filter's soft penalty — see section 6b below.
 
   // 3. live listings from the sites — one fetch per query, merged and
   // deduped by URL (the describe path uses up to 2 queries).
@@ -1311,8 +1333,58 @@ export async function searchLive(
 
   // 6. rank: image-scored first (visual similarity), then title-scored
   scored.sort((a, b) => (a.imageOk === b.imageOk ? b.score - a.score : a.imageOk ? -1 : 1));
+
+  // 6b. gender filter (TIERED per Claude 2026-10-03): resolve preference from
+  // explicit user choice > query text > winning phrase. Explicit → hard
+  // exclusion; inferred → soft penalty (never empties the page).
+  let genderFiltered: number | undefined;
+  let ranked = scored;
+  if (isGenderFilterEnabled()) {
+    // Track source for tiering: explicit (chip) = hard, inferred = soft
+    let effective: GenderPreference = 'any';
+    let strength: 'hard' | 'soft' = 'soft';
+    if (genderPreference && genderPreference !== 'any') {
+      effective = genderPreference;
+      strength = 'hard'; // explicit user chip
+    } else {
+      const qg = detectQueryGender(query);
+      if (qg) {
+        effective = qg;
+        strength = 'hard'; // query word = explicit intent
+      } else {
+        const pg = detectPhraseGender(winningPhrase);
+        if (pg) {
+          effective = pg;
+          strength = 'soft'; // inferred from classifier
+        }
+      }
+    }
+    if (effective !== 'any') {
+      // Filter on listing titles; keep the {l, score, imageOk} wrappers
+      const titles = scored.map((s) => s.l.title);
+      const { kept: keptTitles, removed, relaxed } = filterByGender(
+        titles.map((t) => ({ title: t })),
+        effective,
+        strength,
+      );
+      // Preserve original order for kept items (confident first, unknowns last
+      // is handled by filterByGender's return order — rebuild via title lookup)
+      const titleToItems = new Map<string, typeof scored>();
+      for (const s of scored) {
+        const arr = titleToItems.get(s.l.title) ?? [];
+        arr.push(s);
+        titleToItems.set(s.l.title, arr);
+      }
+      ranked = keptTitles.flatMap((k) => titleToItems.get(k.title) ?? []);
+      genderFiltered = removed;
+      if (removed > 0 || relaxed) {
+        console.info(`[gender-filter] preference=${effective} strength=${strength} removed=${removed} relaxed=${!!relaxed}`);
+      }
+    }
+  }
+
   return {
-    products: scored.slice(0, 12).map(({ l, score, imageOk }) =>
+    products: ranked.slice(0, 12).map(({ l, score, imageOk }) =>
       toLiveProduct(
         l,
         score,
@@ -1325,5 +1397,6 @@ export async function searchLive(
     sources,
     liveSourcesDisabled,
     described: describedOut,
+    ...(genderFiltered !== undefined ? { genderFiltered } : {}),
   };
 }
