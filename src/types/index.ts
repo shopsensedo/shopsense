@@ -46,6 +46,12 @@ export interface Product {
    *  title-match scoring — the card shows "Image unavailable" instead of a
    *  broken image, and the match pill uses the title-derived label. */
   imageUnavailable?: boolean;
+  /** ISO timestamp of when this price was fetched (live items only).
+   *  Rendered as "Price checked X min ago" for price-accuracy transparency. */
+  fetchedAt?: string;
+  /** True when the price is a "from" price (lowest across merchants/variants),
+   *  e.g. PriceOye's lowest_price. Card shows "from Rs X". */
+  priceIsFrom?: boolean;
   rating: number;
   reviewsCount: number;
   deliveryTime: string;

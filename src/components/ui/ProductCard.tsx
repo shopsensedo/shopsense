@@ -128,7 +128,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Price — "Price unavailable" when the parsed price is missing,
             below Rs 50, or the source text carries no currency marker.
-            Live items with raw originalPrice+discount show "was Rs 999 · 81% off". */}
+            Live items with raw originalPrice+discount show "was Rs 999 · 81% off".
+            PriceOye "from" prices show "from Rs X" (lowest across merchants).
+            fetchedAt renders as "checked X ago" for price-accuracy transparency. */}
         <div className="flex items-baseline gap-2 mb-1 flex-wrap">
           {(() => {
             const priceStr = formatPriceOrUnavailable(product.price, product.priceText);
@@ -136,11 +138,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               priceStr && product.isLive
                 ? liveWasDiscount(product.rawPrice, product.price)
                 : null;
+            // "checked X ago" from fetchedAt
+            let checkedAgo: string | null = null;
+            if (product.fetchedAt) {
+              const mins = Math.max(0, Math.round((Date.now() - new Date(product.fetchedAt).getTime()) / 60000));
+              checkedAgo = mins < 1 ? 'just now' : mins < 60 ? `${mins}m ago` : `${Math.round(mins / 60)}h ago`;
+            }
             return (
               <>
                 {priceStr ? (
                   <span className="text-xl font-bold text-void dark:text-bone tracking-tight tabular-nums font-heading">
-                    {priceStr}
+                    {product.priceIsFrom ? 'from ' : ''}{priceStr}
                   </span>
                 ) : (
                   <span className="text-sm font-semibold text-smoke dark:text-fog">
@@ -150,6 +158,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 {was && (
                   <span className="text-xs font-medium text-smoke dark:text-fog tabular-nums">
                     was {was.was} · {was.off}
+                  </span>
+                )}
+                {checkedAgo && priceStr && (
+                  <span className="text-[11px] text-smoke/70 dark:text-fog/70 tabular-nums" title={`Price fetched at ${product.fetchedAt}`}>
+                    · checked {checkedAgo}
                   </span>
                 )}
               </>
